@@ -1,0 +1,433 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useAccount, useNetwork, useContractRead, useContractWrite, usePrepareContractWrite } from 'wagmi';
+import { parseEther, formatEther } from 'viem';
+import Link from 'next/link';
+import { toast } from 'react-hot-toast';
+import { ArrowLeft, Plus, Coins, Eye, ExternalLink, Copy, Users, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { getContractAddress, getContractABI } from '@/config/contracts';
+
+interface CreatedToken {
+  id: number;
+  name: string;
+  symbol: string;
+  totalSupply: string;
+  address: string;
+  creator: string;
+  timestamp: string;
+  txHash: string;
+  decimals: number;
+}
+
+interface TokenForm {
+  name: string;
+  symbol: string;
+  totalSupply: string;
+  decimals: number;
+}
+
+export default function TokenFactoryPage() {
+  const { address, isConnected } = useAccount();
+  const { chain } = useNetwork();
+  const [loading, setLoading] = useState(false);
+  const [createdTokens, setCreatedTokens] = useState<CreatedToken[]>([]);
+  const [newToken, setNewToken] = useState<TokenForm>({
+    name: '',
+    symbol: '',
+    totalSupply: '1000000',
+    decimals: 18,
+  });
+  const [activeView, setActiveView] = useState<'create' | 'manage' | 'explore'>('create');
+
+  // Get contract address and ABI
+  const contractAddress = chain?.id ? getContractAddress(chain.id, 'TokenFactory') : undefined;
+  const contractABI = getContractABI('TokenFactory');
+
+  // Read creation fee
+  const { data: creationFee } = useContractRead({
+    address: contractAddress as `0x${string}`,
+    abi: contractABI,
+    functionName: 'creationFee',
+    enabled: !!contractAddress && isConnected,
+  });
+
+  // Read token count
+  const { data: tokenCount, refetch: refetchTokenCount } = useContractRead({
+    address: contractAddress as `0x${string}`,
+    abi: contractABI,
+    functionName: 'getTokenCount',
+    enabled: !!contractAddress && isConnected,
+  });
+
+  // Prepare create token transaction
+  const { config: createTokenConfig } = usePrepareContractWrite({
+    address: contractAddress as `0x${string}`,
+    abi: contractABI,
+    functionName: 'createToken',
+    args: [newToken.name, newToken.symbol, parseEther(newToken.totalSupply), newToken.decimals],
+    value: creationFee as bigint,
+    enabled: !!contractAddress && isConnected && !!newToken.name && !!newToken.symbol && !!creationFee,
+  });
+
+  const { write: createToken, isLoading: isCreatingToken } = useContractWrite({
+    ...createTokenConfig,
+    onSuccess: (data) => {
+      toast.success('Token created successfully!');
+      
+      // Add the new token to localStorage immediately
+      const newTokenData: CreatedToken = {
+        id: createdTokens.length,
+        name: newToken.name,
+        symbol: newToken.symbol,
+        totalSupply: newToken.totalSupply,
+        address: `0x${Math.random().toString(16).substr(2, 40)}`, // Mock address for now
+        creator: address || '',
+        timestamp: new Date().toISOString(),
+        txHash: data.hash,
+        decimals: newToken.decimals,
+      };
+      
+      const updatedTokens = [...createdTokens, newTokenData];
+      setCreatedTokens(updatedTokens);
+      saveTokens(updatedTokens);
+      
+      // Reset form
+      setNewToken({
+        name: '',
+        symbol: '',
+        totalSupply: '1000000',
+        decimals: 18,
+      });
+      
+      refetchTokenCount();
+      setActiveView('manage');
+    },
+    onError: (error) => {
+      console.error('Failed to create token:', error);
+      toast.error('Failed to create token');
+    },
+  });
+
+  // localStorage functions
+  const getTokenKey = () => {
+    return `created_tokens_${address}_${chain?.id}`;
+  };
+
+  const loadStoredTokens = () => {
+    if (!address || !chain?.id) return [];
+    
+    try {
+      const key = getTokenKey();
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (error) {
+      console.error('Error loading tokens:', error);
+    }
+    return [];
+  };
+
+  const saveTokens = (tokensToSave: CreatedToken[]) => {
+    if (!address || !chain?.id) return;
+    
+    try {
+      const key = getTokenKey();
+      localStorage.setItem(key, JSON.stringify(tokensToSave));
+    } catch (error) {
+      console.error('Error saving tokens:', error);
+    }
+  };
+
+  // Load tokens when component mounts
+  useEffect(() => {
+    if (isConnected && address && chain?.id) {
+      const tokens = loadStoredTokens();
+      setCreatedTokens(tokens);
+    }
+  }, [isConnected, address, chain?.id]);
+
+  // Create token function
+  const handleCreateToken = async () => {
+    if (!isConnected) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+
+    if (!newToken.name.trim()) {
+      toast.error('Please enter token name');
+      return;
+    }
+
+    if (!newToken.symbol.trim()) {
+      toast.error('Please enter token symbol');
+      return;
+    }
+
+    if (!newToken.totalSupply || parseFloat(newToken.totalSupply) <= 0) {
+      toast.error('Please enter valid total supply');
+      return;
+    }
+
+    if (!createToken) {
+      toast.error('Unable to create token, please check network connection');
+      return;
+    }
+
+    createToken();
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Copied to clipboard!');
+  };
+
+  const formatSupply = (supply: string) => {
+    const num = parseFloat(supply);
+    if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}M`;
+    } else if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}K`;
+    }
+    return num.toString();
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50">
+      {/* Navigation */}
+      <nav className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <Link href="/" className="flex items-center text-purple-600 hover:text-purple-800">
+              <ArrowLeft className="h-5 w-5 mr-2" />
+              Back to Home
+            </Link>
+            <h1 className="text-xl font-bold text-gray-900">Token Factory</h1>
+            <div className="text-sm text-gray-500">
+              {creationFee && `Fee: ${formatEther(creationFee as bigint)} ETH`}
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {!isConnected ? (
+          <div className="text-center py-12">
+            <Coins className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Wallet Connection Required</h2>
+            <p className="text-gray-600 mb-6">Please connect your wallet to access the token factory</p>
+            <Link href="/">
+              <Button>Return to Home and Connect Wallet</Button>
+            </Link>
+          </div>
+        ) : !contractAddress ? (
+          <div className="text-center py-12">
+            <Coins className="mx-auto h-16 w-16 text-red-400 mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Unsupported Network</h2>
+            <p className="text-gray-600 mb-6">Please switch to a supported network</p>
+          </div>
+        ) : (
+          <>
+            {/* Navigation Tabs */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
+              <div className="border-b border-gray-200">
+                <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+                  {[
+                    { id: 'create', name: 'Create Token', icon: Plus },
+                    { id: 'manage', name: 'My Tokens', icon: Coins },
+                    { id: 'explore', name: 'Explore', icon: TrendingUp },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveView(tab.id as any)}
+                      className={`${
+                        activeView === tab.id
+                          ? 'border-purple-500 text-purple-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm flex items-center`}
+                    >
+                      <tab.icon className="h-5 w-5 mr-2" />
+                      {tab.name}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            </div>
+
+            {/* Create Token Tab */}
+            {activeView === 'create' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Create New Token</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Token Name</label>
+                        <input
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          placeholder="e.g. My Awesome Token"
+                          value={newToken.name}
+                          onChange={(e) => setNewToken({ ...newToken, name: e.target.value })}
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Token Symbol</label>
+                        <input
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          placeholder="e.g. MAT"
+                          value={newToken.symbol}
+                          onChange={(e) => setNewToken({ ...newToken, symbol: e.target.value.toUpperCase() })}
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Total Supply</label>
+                        <input
+                          type="number"
+                          min="1"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          placeholder="1000000"
+                          value={newToken.totalSupply}
+                          onChange={(e) => setNewToken({ ...newToken, totalSupply: e.target.value })}
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Decimals</label>
+                        <select
+                          value={newToken.decimals}
+                          onChange={(e) => setNewToken({ ...newToken, decimals: parseInt(e.target.value) })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        >
+                          <option value={18}>18 (Standard)</option>
+                          <option value={6}>6 (USDC Style)</option>
+                          <option value={8}>8 (Bitcoin Style)</option>
+                          <option value={0}>0 (No Decimals)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {creationFee && (
+                      <div className="mt-6 bg-purple-50 border border-purple-200 rounded-lg p-4">
+                        <div className="flex items-center text-sm text-purple-700">
+                          <div className="flex-shrink-0 w-4 h-4 mr-2">💰</div>
+                          <div>
+                            <strong>Creation Fee:</strong> {formatEther(creationFee as bigint)} ETH
+                            <br />
+                            <span className="text-purple-600">This fee supports the platform and prevents spam</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <Button
+                      onClick={handleCreateToken}
+                      disabled={isCreatingToken || !newToken.name.trim() || !newToken.symbol.trim()}
+                      className="w-full mt-6"
+                    >
+                      {isCreatingToken ? 'Creating...' : `Create Token ${creationFee ? `(${formatEther(creationFee as bigint)} ETH)` : ''}`}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* My Tokens Tab */}
+            {activeView === 'manage' && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    My Created Tokens ({createdTokens.length})
+                  </h3>
+                  
+                  {createdTokens.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Coins className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                      <p className="text-gray-600">No tokens created yet</p>
+                      <Button 
+                        onClick={() => setActiveView('create')}
+                        className="mt-4"
+                      >
+                        Create Your First Token
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {createdTokens.map((token) => (
+                        <div key={token.id} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div>
+                              <h4 className="font-semibold text-gray-900">{token.name}</h4>
+                              <p className="text-sm text-gray-600">{token.symbol}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-medium text-gray-900">
+                                {formatSupply(token.totalSupply)}
+                              </p>
+                              <p className="text-xs text-gray-500">{token.decimals} decimals</p>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-gray-600">Address:</span>
+                              <div className="flex items-center">
+                                <span className="font-mono">{token.address.slice(0, 6)}...{token.address.slice(-4)}</span>
+                                <button
+                                  onClick={() => copyToClipboard(token.address)}
+                                  className="ml-1 text-gray-400 hover:text-gray-600"
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </button>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-gray-600">Created:</span>
+                              <span>{new Date(token.timestamp).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-4 flex space-x-2">
+                            <Button variant="outline" size="sm" className="flex-1">
+                              <Eye className="h-4 w-4 mr-1" />
+                              View
+                            </Button>
+                            <Button variant="outline" size="sm" className="flex-1">
+                              <ExternalLink className="h-4 w-4 mr-1" />
+                              Explorer
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Explore Tab */}
+            {activeView === 'explore' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Explore All Tokens</h3>
+                <div className="text-center py-8">
+                  <TrendingUp className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <p className="text-gray-600">Token explorer coming soon...</p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    This will show all tokens created on the platform by all users
+                  </p>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+} 

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简单工厂测试</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        button { padding: 10px 20px; margin: 10px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        .result { margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 3px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 简单工厂测试</h1>
+        
+        <button onclick="connectAndTest()">连接并测试投票工厂</button>
+        <button onclick="testBankFactory()">测试银行工厂</button>
+        
+        <div id="result" class="result">点击按钮开始测试...</div>
+    </div>
+
+    <script>
+        let web3;
+        let currentAccount;
+        
+        async function connectAndTest() {
+            const resultDiv = document.getElementById('result');
+            try {
+                resultDiv.textContent = '正在连接Web3...';
+                
+                web3 = new Web3('http://127.0.0.1:7545');
+                const accounts = await web3.eth.getAccounts();
+                currentAccount = accounts[0];
+                
+                resultDiv.textContent += `\n已连接: ${currentAccount}`;
+                
+                // 使用最新的投票工厂地址
+                const factoryAddress = '0x5B84Ae8D44d6331843c17898F9EC204593429eC7';
+                resultDiv.textContent += `\n使用投票工厂: ${factoryAddress}`;
+                
+                const factoryABI = [
+                    {
+                        "inputs": [{"internalType": "uint256", "name": "_duration", "type": "uint256"}],
+                        "name": "createVoting",
+                        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+                        "stateMutability": "nonpayable",
+                        "type": "function"
+                    },
+                    {
+                        "inputs": [],
+                        "name": "votingCount",
+                        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    }
+                ];
+                
+                const factory = new web3.eth.Contract(factoryABI, factoryAddress);
+                
+                // 获取当前投票数量
+                const count = await factory.methods.votingCount().call();
+                resultDiv.textContent += `\n当前投票合约数量: ${count}`;
+                
+                // 创建新的投票合约
+                resultDiv.textContent += `\n正在创建新的投票合约...`;
+                const result = await factory.methods.createVoting(24 * 3600).send({
+                    from: currentAccount,
+                    gas: 3000000
+                });
+                
+                resultDiv.textContent += `\n交易哈希: ${result.transactionHash}`;
+                
+                // 获取新的投票数量
+                const newCount = await factory.methods.votingCount().call();
+                resultDiv.textContent += `\n新的投票合约数量: ${newCount}`;
+                
+                // 获取新创建的合约地址
+                const newVotingAddress = await factory.methods.getVotingContract(newCount - 1).call();
+                resultDiv.textContent += `\n新创建的投票合约地址: ${newVotingAddress}`;
+                
+                // 测试新创建的投票合约
+                const votingABI = [
+                    {
+                        "inputs": [],
+                        "name": "candidatesCount",
+                        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    },
+                    {
+                        "inputs": [{"internalType": "uint256", "name": "_candidateId", "type": "uint256"}],
+                        "name": "getCandidate",
+                        "outputs": [{"internalType": "string", "name": "", "type": "string"}, {"internalType": "uint256", "name": "", "type": "uint256"}, {"internalType": "bool", "name": "", "type": "bool"}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    }
+                ];
+                
+                const voting = new web3.eth.Contract(votingABI, newVotingAddress);
+                const candidatesCount = await voting.methods.candidatesCount().call();
+                resultDiv.textContent += `\n候选人数量: ${candidatesCount}`;
+                
+                if (candidatesCount > 0) {
+                    const candidate = await voting.methods.getCandidate(0).call();
+                    resultDiv.textContent += `\n第一个候选人: ${candidate[0]} (票数: ${candidate[1]})`;
+                }
+                
+                resultDiv.textContent += `\n✅ 投票工厂测试成功！`;
+                
+            } catch (error) {
+                resultDiv.textContent += `\n❌ 错误: ${error.message}`;
+                console.error('测试失败:', error);
+            }
+        }
+        
+        async function testBankFactory() {
+            const resultDiv = document.getElementById('result');
+            try {
+                if (!web3) {
+                    web3 = new Web3('http://127.0.0.1:7545');
+                    const accounts = await web3.eth.getAccounts();
+                    currentAccount = accounts[0];
+                }
+                
+                resultDiv.textContent = '正在测试银行工厂...';
+                
+                // 使用最新的银行工厂地址
+                const factoryAddress = '0x4e46D0a1c1a0A24a8e5506A58C474b82EAd0dFd2';
+                resultDiv.textContent += `\n使用银行工厂: ${factoryAddress}`;
+                
+                const factoryABI = [
+                    {
+                        "inputs": [{"internalType": "bool", "name": "_withExtensions", "type": "bool"}],
+                        "name": "createBank",
+                        "outputs": [{"internalType": "address", "name": "", "type": "address"}, {"internalType": "address", "name": "", "type": "address"}],
+                        "stateMutability": "nonpayable",
+                        "type": "function"
+                    },
+                    {
+                        "inputs": [],
+                        "name": "bankCount",
+                        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    },
+                    {
+                        "inputs": [{"internalType": "uint256", "name": "_bankId", "type": "uint256"}],
+                        "name": "getBankContract",
+                        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    }
+                ];
+                
+                const factory = new web3.eth.Contract(factoryABI, factoryAddress);
+                
+                // 获取当前银行数量
+                const count = await factory.methods.bankCount().call();
+                resultDiv.textContent += `\n当前银行合约数量: ${count}`;
+                
+                // 创建新的银行合约
+                resultDiv.textContent += `\n正在创建新的银行合约...`;
+                const result = await factory.methods.createBank(true).send({
+                    from: currentAccount,
+                    gas: 3000000
+                });
+                
+                resultDiv.textContent += `\n交易哈希: ${result.transactionHash}`;
+                
+                // 获取新的银行数量
+                const newCount = await factory.methods.bankCount().call();
+                resultDiv.textContent += `\n新的银行合约数量: ${newCount}`;
+                
+                // 获取新创建的合约地址
+                const newBankAddress = await factory.methods.getBankContract(newCount - 1).call();
+                resultDiv.textContent += `\n新创建的银行合约地址: ${newBankAddress}`;
+                
+                // 测试新创建的银行合约
+                const bankABI = [
+                    {
+                        "inputs": [],
+                        "name": "getBalance",
+                        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    },
+                    {
+                        "inputs": [],
+                        "name": "getBankBalance",
+                        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    },
+                    {
+                        "inputs": [],
+                        "name": "deposit",
+                        "outputs": [],
+                        "stateMutability": "payable",
+                        "type": "function"
+                    }
+                ];
+                
+                const bank = new web3.eth.Contract(bankABI, newBankAddress);
+                const bankBalance = await bank.methods.getBankBalance().call();
+                resultDiv.textContent += `\n银行总余额: ${web3.utils.fromWei(bankBalance, 'ether')} ETH`;
+                
+                // 测试存款
+                resultDiv.textContent += `\n正在存入0.1 ETH...`;
+                await bank.methods.deposit().send({
+                    from: currentAccount,
+                    value: web3.utils.toWei('0.1', 'ether'),
+                    gas: 200000
+                });
+                
+                const userBalance = await bank.methods.getBalance().call({ from: currentAccount });
+                resultDiv.textContent += `\n存款成功！我的余额: ${web3.utils.fromWei(userBalance, 'ether')} ETH`;
+                
+                resultDiv.textContent += `\n✅ 银行工厂测试成功！`;
+                
+            } catch (error) {
+                resultDiv.textContent += `\n❌ 错误: ${error.message}`;
+                console.error('测试失败:', error);
+            }
+        }
+    </script>
+</body>
+</html> 

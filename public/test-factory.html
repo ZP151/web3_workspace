@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工厂合约测试</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 20px; margin: 5px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #005a87; }
+        input { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 3px; }
+        .result { margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏭 工厂合约测试页面</h1>
+        
+        <div class="section">
+            <h2>连接状态</h2>
+            <button onclick="connectWeb3()">连接 Web3</button>
+            <div id="connection-status">未连接</div>
+        </div>
+        
+        <div class="section">
+            <h2>🗳️ 投票工厂测试</h2>
+            <input type="text" id="voting-factory-address" placeholder="投票工厂地址" style="width: 400px;">
+            <button onclick="testVotingFactory()">测试投票工厂</button>
+            <div id="voting-result" class="result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>💰 银行工厂测试</h2>
+            <input type="text" id="bank-factory-address" placeholder="银行工厂地址" style="width: 400px;">
+            <button onclick="testBankFactory()">测试银行工厂</button>
+            <div id="bank-result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        let web3;
+        let currentAccount;
+        
+        async function connectWeb3() {
+            try {
+                web3 = new Web3('http://127.0.0.1:7545');
+                const accounts = await web3.eth.getAccounts();
+                currentAccount = accounts[0];
+                document.getElementById('connection-status').innerHTML = `已连接: ${currentAccount}`;
+            } catch (error) {
+                document.getElementById('connection-status').innerHTML = `连接失败: ${error.message}`;
+            }
+        }
+        
+        async function testVotingFactory() {
+            const factoryAddress = document.getElementById('voting-factory-address').value;
+            if (!factoryAddress || !web3 || !currentAccount) {
+                alert('请先输入工厂地址并连接Web3');
+                return;
+            }
+            
+            try {
+                const factoryABI = [
+                    {
+                        "inputs": [{"internalType": "uint256", "name": "_duration", "type": "uint256"}],
+                        "name": "createVoting",
+                        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+                        "stateMutability": "nonpayable",
+                        "type": "function"
+                    },
+                    {
+                        "inputs": [],
+                        "name": "votingCount",
+                        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    }
+                ];
+                
+                const factory = new web3.eth.Contract(factoryABI, factoryAddress);
+                
+                // 获取当前投票数量
+                const count = await factory.methods.votingCount().call();
+                document.getElementById('voting-result').innerHTML = `当前投票合约数量: ${count}`;
+                
+                // 创建新的投票合约
+                const result = await factory.methods.createVoting(24 * 3600).send({
+                    from: currentAccount,
+                    gas: 3000000
+                });
+                
+                console.log('投票创建结果:', result);
+                let votingAddress;
+                if (result.events && result.events.VotingCreated) {
+                    votingAddress = result.events.VotingCreated.returnValues.contractAddress;
+                } else {
+                    // 从交易回执中获取地址
+                    const receipt = await web3.eth.getTransactionReceipt(result.transactionHash);
+                    if (receipt.logs && receipt.logs.length > 0) {
+                        // 解析事件日志
+                        const eventLog = receipt.logs.find(log => log.topics.length > 0);
+                        if (eventLog) {
+                            votingAddress = '0x' + eventLog.data.slice(-40);
+                        }
+                    }
+                }
+                document.getElementById('voting-result').innerHTML += `<br>新创建的投票合约地址: ${votingAddress}`;
+                
+                // 测试新创建的投票合约
+                const votingABI = [
+                    {
+                        "inputs": [],
+                        "name": "candidatesCount",
+                        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    },
+                    {
+                        "inputs": [{"internalType": "uint256", "name": "_candidateId", "type": "uint256"}],
+                        "name": "getCandidate",
+                        "outputs": [{"internalType": "string", "name": "", "type": "string"}, {"internalType": "uint256", "name": "", "type": "uint256"}, {"internalType": "bool", "name": "", "type": "bool"}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    }
+                ];
+                
+                const voting = new web3.eth.Contract(votingABI, votingAddress);
+                const candidatesCount = await voting.methods.candidatesCount().call();
+                document.getElementById('voting-result').innerHTML += `<br>候选人数量: ${candidatesCount}`;
+                
+                if (candidatesCount > 0) {
+                    const candidate = await voting.methods.getCandidate(0).call();
+                    document.getElementById('voting-result').innerHTML += `<br>第一个候选人: ${candidate[0]} (票数: ${candidate[1]})`;
+                }
+                
+            } catch (error) {
+                document.getElementById('voting-result').innerHTML = `错误: ${error.message}`;
+            }
+        }
+        
+        async function testBankFactory() {
+            const factoryAddress = document.getElementById('bank-factory-address').value;
+            if (!factoryAddress || !web3 || !currentAccount) {
+                alert('请先输入工厂地址并连接Web3');
+                return;
+            }
+            
+            try {
+                const factoryABI = [
+                    {
+                        "inputs": [{"internalType": "bool", "name": "_withExtensions", "type": "bool"}],
+                        "name": "createBank",
+                        "outputs": [{"internalType": "address", "name": "", "type": "address"}, {"internalType": "address", "name": "", "type": "address"}],
+                        "stateMutability": "nonpayable",
+                        "type": "function"
+                    },
+                    {
+                        "inputs": [],
+                        "name": "bankCount",
+                        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    }
+                ];
+                
+                const factory = new web3.eth.Contract(factoryABI, factoryAddress);
+                
+                // 获取当前银行数量
+                const count = await factory.methods.bankCount().call();
+                document.getElementById('bank-result').innerHTML = `当前银行合约数量: ${count}`;
+                
+                // 创建新的银行合约
+                const result = await factory.methods.createBank(true).send({
+                    from: currentAccount,
+                    gas: 3000000
+                });
+                
+                console.log('银行创建结果:', result);
+                let bankAddress;
+                if (result.events && result.events.BankCreated) {
+                    bankAddress = result.events.BankCreated.returnValues.coreContract;
+                } else {
+                    // 从交易回执中获取地址
+                    const receipt = await web3.eth.getTransactionReceipt(result.transactionHash);
+                    if (receipt.logs && receipt.logs.length > 0) {
+                        // 解析事件日志 - 银行地址通常在第一个log的data中
+                        const eventLog = receipt.logs[0];
+                        if (eventLog && eventLog.data && eventLog.data.length >= 66) {
+                            bankAddress = '0x' + eventLog.data.slice(26, 66);
+                        }
+                    }
+                }
+                document.getElementById('bank-result').innerHTML += `<br>新创建的银行合约地址: ${bankAddress}`;
+                
+                // 测试新创建的银行合约
+                const bankABI = [
+                    {
+                        "inputs": [],
+                        "name": "getBalance",
+                        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    },
+                    {
+                        "inputs": [],
+                        "name": "getBankBalance",
+                        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    },
+                    {
+                        "inputs": [],
+                        "name": "deposit",
+                        "outputs": [],
+                        "stateMutability": "payable",
+                        "type": "function"
+                    }
+                ];
+                
+                const bank = new web3.eth.Contract(bankABI, bankAddress);
+                const bankBalance = await bank.methods.getBankBalance().call();
+                document.getElementById('bank-result').innerHTML += `<br>银行总余额: ${web3.utils.fromWei(bankBalance, 'ether')} ETH`;
+                
+                // 测试存款
+                await bank.methods.deposit().send({
+                    from: currentAccount,
+                    value: web3.utils.toWei('0.1', 'ether'),
+                    gas: 200000
+                });
+                
+                const userBalance = await bank.methods.getBalance().call({ from: currentAccount });
+                document.getElementById('bank-result').innerHTML += `<br>存款成功！我的余额: ${web3.utils.fromWei(userBalance, 'ether')} ETH`;
+                
+            } catch (error) {
+                document.getElementById('bank-result').innerHTML = `错误: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html> 

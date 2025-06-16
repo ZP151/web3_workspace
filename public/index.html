@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web3 Smart Contract Demo Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Navigation Bar -->
+    <nav class="bg-blue-600 text-white p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">🚀 Web3 Smart Contract Platform</h1>
+            <div id="connection-status" class="flex items-center">
+                <span id="status-text">Disconnected</span>
+                <div id="status-indicator" class="w-3 h-3 rounded-full ml-2 bg-red-500"></div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto p-6">
+        <!-- Account Information Card -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">🏦 Account Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-blue-50 p-4 rounded">
+                    <p class="text-sm text-gray-600">Current Account</p>
+                    <p id="current-account" class="font-mono text-sm">Not Connected</p>
+                    <select id="account-selector" class="mt-2 w-full p-1 border rounded text-xs hidden">
+                        <option value="">Select Account</option>
+                    </select>
+                </div>
+                <div class="bg-green-50 p-4 rounded">
+                    <p class="text-sm text-gray-600">ETH Balance</p>
+                    <p id="eth-balance" class="text-2xl font-bold text-green-600">0</p>
+                </div>
+                <div class="bg-purple-50 p-4 rounded">
+                    <p class="text-sm text-gray-600">Network</p>
+                    <p id="network-id" class="text-lg font-semibold">Unknown</p>
+                </div>
+                <div class="bg-orange-50 p-4 rounded">
+                    <p class="text-sm text-gray-600">Total Accounts</p>
+                    <p id="total-accounts" class="text-lg font-semibold">0</p>
+                </div>
+            </div>
+            <button id="connect-wallet" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                Connect Wallet
+            </button>
+            <button id="refresh-accounts" class="mt-4 ml-2 bg-gray-600 text-white px-6 py-2 rounded hover:bg-gray-700">
+                Refresh Accounts
+            </button>
+        </div>
+
+        <!-- Feature Tabs -->
+        <div class="bg-white rounded-lg shadow-lg">
+            <div class="border-b">
+                <nav class="flex">
+                    <button class="tab-button active px-6 py-3 text-blue-600 border-b-2 border-blue-600" data-tab="voting">
+                        🗳️ Voting System
+                    </button>
+                    <button class="tab-button px-6 py-3 text-gray-600 hover:text-blue-600" data-tab="banking">
+                        💰 Banking System
+                    </button>
+                    <button class="tab-button px-6 py-3 text-gray-600 hover:text-blue-600" data-tab="contracts">
+                        📋 Contract Management
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Voting System Panel -->
+            <div id="voting-panel" class="tab-content p-6">
+                <h3 class="text-lg font-semibold mb-4">Voting Smart Contract</h3>
+                
+                <div class="mb-6">
+                    <div class="flex flex-wrap gap-2 mb-3">
+                        <button id="deploy-voting" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                            Deploy Basic Voting
+                        </button>
+                        <button id="deploy-voting-advanced" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
+                            Deploy Advanced Voting
+                        </button>
+                        <button id="load-voting" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                            Load Existing Contract
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-600">Advanced voting includes proposals, time limits, and enhanced features</p>
+                </div>
+
+                <div id="voting-interface" class="hidden">
+                    <div class="mb-4 p-3 bg-blue-50 rounded">
+                        <p class="text-sm">Contract Address: <span id="voting-address" class="font-mono">Not Deployed</span></p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-gray-50 p-4 rounded">
+                            <h4 class="font-semibold mb-3">Candidates</h4>
+                            <div id="candidates-list"></div>
+                            <div class="mt-4">
+                                <select id="candidate-select" class="w-full p-2 border rounded">
+                                    <option value="">Select Candidate</option>
+                                </select>
+                                <button id="vote-button" class="w-full mt-2 bg-red-600 text-white py-2 rounded hover:bg-red-700">
+                                    Cast Vote
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded">
+                            <h4 class="font-semibold mb-3">Voting Results</h4>
+                            <div id="voting-results"></div>
+                            <button id="refresh-votes" class="mt-4 bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
+                                Refresh Results
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 高级功能：提案系统 -->
+                    <div id="proposals-section" class="mt-6 hidden">
+                        <h4 class="font-semibold mb-3 text-purple-600">🏛️ Advanced Feature: Proposals</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-purple-50 p-4 rounded">
+                                <h5 class="font-semibold mb-3">Create Proposal</h5>
+                                <input id="proposal-description" type="text" class="w-full p-2 border rounded mb-2" placeholder="Proposal description">
+                                <input id="proposal-duration" type="number" class="w-full p-2 border rounded mb-2" placeholder="Duration (hours)" value="24">
+                                <button id="create-proposal" class="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700">
+                                    Create Proposal
+                                </button>
+                            </div>
+                            <div class="bg-purple-50 p-4 rounded">
+                                <h5 class="font-semibold mb-3">Active Proposals</h5>
+                                <div id="proposals-list"></div>
+                                <button id="refresh-proposals" class="mt-2 bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
+                                    Refresh Proposals
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Banking System Panel -->
+            <div id="banking-panel" class="tab-content p-6 hidden">
+                <h3 class="text-lg font-semibold mb-4">Banking Smart Contract</h3>
+                
+                <div class="mb-6">
+                    <div class="flex flex-wrap gap-2 mb-3">
+                        <button id="deploy-bank" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                            Deploy Basic Bank
+                        </button>
+                        <button id="deploy-bank-advanced" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
+                            Deploy Advanced Bank
+                        </button>
+                        <button id="load-bank" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                            Load Existing Contract
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-600">Advanced bank includes interest earning, loans, and transaction history</p>
+                </div>
+
+                <div id="banking-interface" class="hidden">
+                    <div class="mb-4 p-3 bg-blue-50 rounded">
+                        <p class="text-sm">Contract Address: <span id="bank-address" class="font-mono">Not Deployed</span></p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-gray-50 p-4 rounded">
+                            <h4 class="font-semibold mb-3">Banking Operations</h4>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium mb-2">Deposit Amount (ETH)</label>
+                                <input id="deposit-amount" type="number" step="0.01" class="w-full p-2 border rounded" placeholder="0.1">
+                                <button id="deposit-button" class="w-full mt-2 bg-green-600 text-white py-2 rounded hover:bg-green-700">
+                                    Deposit
+                                </button>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Withdraw Amount (ETH)</label>
+                                <input id="withdraw-amount" type="number" step="0.01" class="w-full p-2 border rounded" placeholder="0.05">
+                                <button id="withdraw-button" class="w-full mt-2 bg-red-600 text-white py-2 rounded hover:bg-red-700">
+                                    Withdraw
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded">
+                            <h4 class="font-semibold mb-3">Banking Information</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span>My Bank Balance:</span>
+                                    <span id="bank-balance" class="font-semibold">0 ETH</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Total Bank Funds:</span>
+                                    <span id="total-bank-balance" class="font-semibold">0 ETH</span>
+                                </div>
+                            </div>
+                            <button id="refresh-bank" class="mt-4 bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
+                                Refresh Information
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 高级功能：利息和扩展 -->
+                    <div id="bank-extensions-section" class="mt-6 hidden">
+                        <h4 class="font-semibold mb-3 text-green-600">💎 Advanced Feature: Interest & Extensions</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-green-50 p-4 rounded">
+                                <h5 class="font-semibold mb-3">Interest Management</h5>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between">
+                                        <span>Current Interest Rate:</span>
+                                        <span id="interest-rate" class="font-semibold">5%</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Accrued Interest:</span>
+                                        <span id="accrued-interest" class="font-semibold">0 ETH</span>
+                                    </div>
+                                </div>
+                                <button id="calculate-interest" class="w-full mt-2 bg-green-600 text-white py-2 rounded hover:bg-green-700">
+                                    Calculate Interest
+                                </button>
+                            </div>
+                            <div class="bg-green-50 p-4 rounded">
+                                <h5 class="font-semibold mb-3">Extension Contract</h5>
+                                <div id="extension-info">
+                                    <p class="text-sm text-gray-600">Extension contract provides additional features like interest calculation and advanced banking operations.</p>
+                                </div>
+                                <button id="refresh-extensions" class="mt-2 bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
+                                    Refresh Extensions
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contract Management Panel -->
+            <div id="contracts-panel" class="tab-content p-6 hidden">
+                <h3 class="text-lg font-semibold mb-4">Contract Management</h3>
+                
+                <div class="bg-gray-50 p-4 rounded">
+                    <h4 class="font-semibold mb-3">Deployed Contracts</h4>
+                    <button id="scan-contracts" class="mb-4 bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
+                        Scan Blockchain
+                    </button>
+                    <div id="contracts-list" class="space-y-2">
+                        <p class="text-gray-600">Click "Scan Blockchain" to view all contracts</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-green-600 text-white px-6 py-3 rounded shadow-lg hidden">
+        <span id="toast-message"></span>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-lg">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p class="mt-2 text-center">Processing...</p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html> 

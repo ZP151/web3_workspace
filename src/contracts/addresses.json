@@ -1,0 +1,22 @@
+{
+  "1337": {
+    "VotingCore": "0x675D3E317a36E11D554D2dB12E8d8971D939Dd05",
+    "SimpleBank": "0x65aaF4239c648f7ff93811dCe4F961b83f084b11",
+    "TokenFactory": "0xF87d5c794C1F3636DE9D18dc3FA151546539573E",
+    "PlatformNFT": "0x9f91D1900930b7a0Dd48F84ae09B720eFB1e8dE3",
+    "NFTMarketplace": "0x6Fec4a50c50913A4223dcE9AEeDB52507D3dB728",
+    "DEXPlatform": "0xf8102d5cdc702bc8B9DffEBa03196f5E5b728Ed0",
+    "network": "Ganache Local",
+    "deployedAt": "2025-06-16T13:12:11.040Z"
+  },
+  "31337": {
+    "VotingCore": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    "SimpleBank": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+    "TokenFactory": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+    "PlatformNFT": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+    "NFTMarketplace": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+    "DEXPlatform": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+    "network": "Hardhat Local",
+    "deployedAt": "2025-06-16T13:11:51.326Z"
+  }
+}
