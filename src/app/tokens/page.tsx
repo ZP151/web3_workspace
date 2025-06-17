@@ -66,9 +66,15 @@ export default function TokenFactoryPage() {
     address: contractAddress as `0x${string}`,
     abi: contractABI,
     functionName: 'createToken',
-    args: [newToken.name, newToken.symbol, parseEther(newToken.totalSupply), newToken.decimals],
-    value: creationFee as bigint,
-    enabled: !!contractAddress && isConnected && !!newToken.name && !!newToken.symbol && !!creationFee,
+    args: [
+      newToken.name, 
+      newToken.symbol, 
+      newToken.decimals, 
+      parseEther(newToken.totalSupply), 
+      parseEther(newToken.totalSupply) // maxSupply = initialSupply for simplicity
+    ],
+    value: creationFee && typeof creationFee === 'bigint' ? creationFee : BigInt(0),
+    enabled: !!contractAddress && isConnected && !!newToken.name && !!newToken.symbol && creationFee !== undefined,
   });
 
   const { write: createToken, isLoading: isCreatingToken } = useContractWrite({
@@ -151,32 +157,55 @@ export default function TokenFactoryPage() {
 
   // Create token function
   const handleCreateToken = async () => {
+    console.log('🔍 开始创建代币流程调试...');
+    console.log('isConnected:', isConnected);
+    console.log('contractAddress:', contractAddress);
+    console.log('newToken:', newToken);
+    console.log('creationFee:', creationFee);
+    console.log('createToken function:', createToken);
+    console.log('createTokenConfig:', createTokenConfig);
+
     if (!isConnected) {
+      console.log('❌ 钱包未连接');
       toast.error('Please connect your wallet first');
       return;
     }
 
     if (!newToken.name.trim()) {
+      console.log('❌ 代币名称为空');
       toast.error('Please enter token name');
       return;
     }
 
     if (!newToken.symbol.trim()) {
+      console.log('❌ 代币符号为空');
       toast.error('Please enter token symbol');
       return;
     }
 
     if (!newToken.totalSupply || parseFloat(newToken.totalSupply) <= 0) {
+      console.log('❌ 总供应量无效');
       toast.error('Please enter valid total supply');
       return;
     }
 
     if (!createToken) {
+      console.log('❌ createToken函数未定义 - 这是主要问题!');
+      console.log('contractAddress:', contractAddress);
+      console.log('createTokenConfig:', createTokenConfig || 'undefined');
       toast.error('Unable to create token, please check network connection');
       return;
     }
 
-    createToken();
+    console.log('✅ 所有检查通过，开始调用createToken函数...');
+    try {
+      console.log('📤 正在发送交易到MetaMask...');
+      createToken();
+      console.log('✅ createToken函数调用成功');
+    } catch (error) {
+      console.error('❌ createToken函数调用失败:', error);
+      toast.error('Failed to send create token transaction');
+    }
   };
 
   const copyToClipboard = (text: string) => {
@@ -206,13 +235,34 @@ export default function TokenFactoryPage() {
             </Link>
             <h1 className="text-xl font-bold text-gray-900">Token Factory</h1>
             <div className="text-sm text-gray-500">
-              {creationFee && `Fee: ${formatEther(creationFee as bigint)} ETH`}
+              {creationFee && typeof creationFee === 'bigint' && `Fee: ${formatEther(creationFee)} ETH`}
             </div>
           </div>
         </div>
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Token Factory Information */}
+        {isConnected && contractAddress && (
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Your Token Factory Information</h3>
+                <p className="text-gray-600">Address: {address?.slice(0, 6)}...{address?.slice(-4)}</p>
+                <p className="text-gray-600">Network: {chain?.name || 'Unknown'} (ID: {chain?.id})</p>
+                <p className="text-gray-600">Contract: {contractAddress?.slice(0, 6)}...{contractAddress?.slice(-4)}</p>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-purple-600">{Number(tokenCount || 0)}</div>
+                <div className="text-gray-600">Total Tokens</div>
+                <div className="text-sm text-gray-500 mt-1">
+                  Creation Fee: {creationFee && typeof creationFee === 'bigint' ? formatEther(creationFee) : '0'} ETH
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {!isConnected ? (
           <div className="text-center py-12">
             <Coins className="mx-auto h-16 w-16 text-gray-400 mb-4" />
@@ -318,7 +368,7 @@ export default function TokenFactoryPage() {
                         <div className="flex items-center text-sm text-purple-700">
                           <div className="flex-shrink-0 w-4 h-4 mr-2">💰</div>
                           <div>
-                            <strong>Creation Fee:</strong> {formatEther(creationFee as bigint)} ETH
+                            <strong>Creation Fee:</strong> {creationFee && typeof creationFee === 'bigint' ? formatEther(creationFee) : '0'} ETH
                             <br />
                             <span className="text-purple-600">This fee supports the platform and prevents spam</span>
                           </div>
@@ -331,7 +381,7 @@ export default function TokenFactoryPage() {
                       disabled={isCreatingToken || !newToken.name.trim() || !newToken.symbol.trim()}
                       className="w-full mt-6"
                     >
-                      {isCreatingToken ? 'Creating...' : `Create Token ${creationFee ? `(${formatEther(creationFee as bigint)} ETH)` : ''}`}
+                      {isCreatingToken ? 'Creating...' : `Create Token ${creationFee && typeof creationFee === 'bigint' ? `(${formatEther(creationFee)} ETH)` : ''}`}
                     </Button>
                   </div>
                 </div>

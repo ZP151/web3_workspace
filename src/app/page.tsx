@@ -116,7 +116,7 @@ export default function HomePage() {
         </div>
 
         {/* Feature Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8 mb-16">
           <FeatureCard
             icon={Vote}
             title="Decentralized Voting"
@@ -138,12 +138,30 @@ export default function HomePage() {
             href="/tokens"
             bgColor="bg-gradient-to-br from-purple-600 to-purple-700"
           />
+        </div>
+
+        {/* Secondary Feature Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
           <FeatureCard
             icon={Network}
             title="Network Manager"
             description="Monitor blockchain networks and manage multiple accounts"
             href="/networks"
             bgColor="bg-gradient-to-br from-orange-600 to-orange-700"
+          />
+          <FeatureCard
+            icon={Zap}
+            title="DEX Platform"
+            description="Trade tokens and provide liquidity in our decentralized exchange"
+            href="/dex"
+            bgColor="bg-gradient-to-br from-indigo-600 to-indigo-700"
+          />
+          <FeatureCard
+            icon={Shield}
+            title="NFT Marketplace"
+            description="Mint, buy, and sell unique digital assets on our NFT platform"
+            href="/nft"
+            bgColor="bg-gradient-to-br from-pink-600 to-pink-700"
           />
         </div>
 
@@ -196,7 +214,7 @@ export default function HomePage() {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600 mb-2">2</div>
+              <div className="text-3xl font-bold text-blue-600 mb-2">6</div>
               <div className="text-gray-600">Smart Contracts Deployed</div>
             </div>
             <div className="text-center">
@@ -204,8 +222,8 @@ export default function HomePage() {
               <div className="text-gray-600">Modern Tech Stack</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-purple-600 mb-2">∞</div>
-              <div className="text-gray-600">Decentralized Features</div>
+              <div className="text-3xl font-bold text-purple-600 mb-2">6</div>
+              <div className="text-gray-600">Platform Features</div>
             </div>
           </div>
 
@@ -217,11 +235,15 @@ export default function HomePage() {
                 <div className="text-gray-600">Chain ID: 31337 - Port: 8545</div>
                 <div className="text-gray-600 font-mono text-xs mt-1">VotingCore: 0x5FbDB...0aa3</div>
                 <div className="text-gray-600 font-mono text-xs">SimpleBank: 0xe7f17...0512</div>
+                <div className="text-gray-600 font-mono text-xs">TokenFactory: 0x9fE46...6e0</div>
+                <div className="text-gray-600 font-mono text-xs">+3 more contracts</div>
               </div>
               <div className="bg-gray-50 rounded-lg p-3">
                 <div className="font-medium text-gray-900">Ganache Network</div>
                 <div className="text-gray-600">Chain ID: 1337 - Port: 7545</div>
-                <div className="text-gray-600 text-xs mt-1">Deploy contracts using migration scripts</div>
+                <div className="text-gray-600 font-mono text-xs mt-1">VotingCore: 0xa8e0...7341</div>
+                <div className="text-gray-600 font-mono text-xs">SimpleBank: 0xF9c8...F3CB</div>
+                <div className="text-gray-600 font-mono text-xs">All 6 contracts deployed</div>
               </div>
             </div>
             

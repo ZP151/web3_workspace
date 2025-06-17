@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全新MetaMask连接测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .button {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+        .button:hover {
+            transform: translateY(-2px);
+        }
+        .step {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 10px;
+            border-left: 4px solid #00d2d3;
+        }
+        .success {
+            border-left-color: #00b894;
+        }
+        .warning {
+            border-left-color: #fdcb6e;
+        }
+        .error {
+            border-left-color: #e17055;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 全新MetaMask连接测试</h1>
+        
+        <div class="step warning">
+            <h3>⚠️ 重要提示</h3>
+            <p>在开始之前，请确保：</p>
+            <ul>
+                <li>已从MetaMask断开所有localhost连接</li>
+                <li>已导入新的Ganache账户</li>
+                <li>当前网络为Ganache Local (Chain ID: 1337)</li>
+            </ul>
+        </div>
+        
+        <button class="button" onclick="step1_FreshConnect()">🔌 第1步：全新连接MetaMask</button>
+        <button class="button" onclick="step2_TestTransaction()">💸 第2步：测试交易</button>
+        <button class="button" onclick="step3_TestContract()">📄 第3步：测试合约调用</button>
+        <button class="button" onclick="clearResults()">🧹 清除结果</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'step') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `step ${type}`;
+            div.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            results.appendChild(div);
+            console.log(message);
+            div.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        async function step1_FreshConnect() {
+            log('🔌 开始全新连接流程...', 'step');
+            
+            if (typeof window.ethereum === 'undefined') {
+                log('❌ MetaMask未检测到，请安装MetaMask扩展', 'error');
+                return;
+            }
+            
+            try {
+                // 首先检查当前状态
+                log('🔍 检查当前连接状态...', 'step');
+                const currentAccounts = await window.ethereum.request({ method: 'eth_accounts' });
+                
+                if (currentAccounts.length > 0) {
+                    log(`⚠️ 检测到已连接账户: ${currentAccounts[0]}`, 'warning');
+                    log('建议先在MetaMask中断开连接，然后重新测试', 'warning');
+                }
+                
+                // 请求新的连接
+                log('📱 请求连接MetaMask...', 'step');
+                log('🔥 <strong>现在应该弹出MetaMask连接请求！</strong>', 'warning');
+                
+                const accounts = await window.ethereum.request({
+                    method: 'eth_requestAccounts'
+                });
+                
+                log(`✅ 连接成功！账户: ${accounts[0]}`, 'success');
+                
+                // 验证网络
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                const chainIdNum = parseInt(chainId, 16);
+                
+                if (chainIdNum === 1337) {
+                    log(`✅ 网络正确：Ganache Local (${chainIdNum})`, 'success');
+                } else {
+                    log(`⚠️ 网络不正确：当前为 ${chainIdNum}，请切换到Ganache (1337)`, 'warning');
+                }
+                
+                // 检查余额
+                const balance = await window.ethereum.request({
+                    method: 'eth_getBalance',
+                    params: [accounts[0], 'latest']
+                });
+                const balanceEth = parseInt(balance, 16) / Math.pow(10, 18);
+                log(`💰 账户余额: ${balanceEth.toFixed(4)} ETH`, 'success');
+                
+            } catch (error) {
+                if (error.code === 4001) {
+                    log('ℹ️ 用户取消了连接请求', 'warning');
+                } else {
+                    log(`❌ 连接失败: ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        async function step2_TestTransaction() {
+            log('💸 测试基础交易功能...', 'step');
+            
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                
+                if (accounts.length === 0) {
+                    log('⚠️ 请先完成第1步连接', 'warning');
+                    return;
+                }
+                
+                log('📤 发送测试交易...', 'step');
+                log('🚨 <strong>重点关注：MetaMask应该弹出交易确认窗口！</strong>', 'warning');
+                
+                const txParams = {
+                    from: accounts[0],
+                    to: accounts[0],
+                    value: '0x1BC16D674EC80000', // 2 ETH
+                    gas: '0x5208'
+                };
+                
+                log(`交易详情: 发送 2 ETH 给自己`, 'step');
+                
+                const txHash = await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [txParams]
+                });
+                
+                log(`🎉 交易成功！Hash: ${txHash}`, 'success');
+                log('✅ MetaMask弹窗功能正常工作！', 'success');
+                
+            } catch (error) {
+                if (error.code === 4001) {
+                    log('✅ 用户取消交易 - 但这说明弹窗是正常的！', 'success');
+                } else {
+                    log(`❌ 交易失败 (${error.code}): ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        async function step3_TestContract() {
+            log('📄 测试智能合约调用...', 'step');
+            
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                
+                if (accounts.length === 0) {
+                    log('⚠️ 请先完成第1步连接', 'warning');
+                    return;
+                }
+                
+                const contractAddress = "0xf3dcB0d7497694405D433de5F46C6e77A8Fc467E";
+                const depositAmount = '0x16345785D8A0000'; // 0.1 ETH
+                
+                log('📄 调用SimpleBank合约存款功能...', 'step');
+                log('🚨 <strong>应该弹出MetaMask合约交互确认！</strong>', 'warning');
+                
+                const txHash = await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [{
+                        from: accounts[0],
+                        to: contractAddress,
+                        value: depositAmount,
+                        data: '0xd0e30db0', // deposit() 函数选择器
+                        gas: '0x186A0'
+                    }]
+                });
+                
+                log(`🎉 合约调用成功！Hash: ${txHash}`, 'success');
+                log('✅ 智能合约交互功能正常！', 'success');
+                
+            } catch (error) {
+                if (error.code === 4001) {
+                    log('✅ 用户取消合约调用 - 弹窗功能正常！', 'success');
+                } else {
+                    log(`❌ 合约调用失败 (${error.code}): ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        // 监听MetaMask事件
+        if (typeof window.ethereum !== 'undefined') {
+            window.ethereum.on('accountsChanged', function (accounts) {
+                log(`🔄 账户变更: ${accounts[0] || '已断开'}`, 'warning');
+            });
+            
+            window.ethereum.on('chainChanged', function (chainId) {
+                const chainIdNum = parseInt(chainId, 16);
+                log(`🔄 网络变更: ${chainIdNum}`, 'warning');
+            });
+        }
+        
+        log('🚀 全新连接测试工具已加载', 'success');
+        log('📋 请按顺序执行测试步骤', 'step');
+    </script>
+</body>
+</html> 

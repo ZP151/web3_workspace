@@ -1,7 +1,7 @@
 {
   "name": "web3-smart-contract-platform",
   "version": "1.0.0",
-  "description": "现代化 Web3 智能合约演示平台",
+  "description": "Modern Web3 Smart Contract Demo Platform",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

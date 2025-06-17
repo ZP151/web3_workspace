@@ -30,38 +30,6 @@ async function updateAddressesConfig(deployedContracts, networkName, chainId) {
   }
 }
 
-async function updateContractsConfig(deployedContracts, chainId) {
-  const contractsPath = path.join(__dirname, "../src/config/contracts.ts");
-  
-  try {
-    // 读取现有配置文件
-    let configContent = fs.readFileSync(contractsPath, "utf8");
-    
-    // 构建新的地址配置
-    const newAddresses = Object.entries(deployedContracts)
-      .map(([name, address]) => `    ${name}: '${address}',`)
-      .join('\n');
-    
-    // 替换指定网络的配置
-    const chainIdPattern = new RegExp(`(\\s*${chainId}:\\s*{[^}]*)(})`);
-    const replacement = `  ${chainId}: {\n${newAddresses}\n  },`;
-    
-    if (configContent.match(chainIdPattern)) {
-      configContent = configContent.replace(chainIdPattern, replacement);
-    } else {
-      // 如果网络配置不存在，添加新的配置
-      const addressesPattern = /(export const CONTRACT_ADDRESSES = {[^}]*)(} as const;)/;
-      const newConfig = `${replacement}\n  $2`;
-      configContent = configContent.replace(addressesPattern, `$1  ${newConfig}`);
-    }
-    
-    fs.writeFileSync(contractsPath, configContent);
-    console.log(`✅ contracts.ts 配置已更新`);
-    
-  } catch (error) {
-    console.error("❌ 更新 contracts.ts 失败:", error.message);
-  }
-}
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -88,14 +56,14 @@ async function main() {
     deployedContracts.VotingCore = votingCoreAddress;
     console.log("VotingCore 合约地址:", votingCoreAddress);
 
-    // 2. 部署 SimpleBank 合约
-    console.log("\n=== 部署 SimpleBank 合约 ===");
-    const SimpleBank = await ethers.getContractFactory("SimpleBank");
-    const simpleBank = await SimpleBank.deploy();
-    await simpleBank.waitForDeployment();
-    const simpleBankAddress = await simpleBank.getAddress();
-    deployedContracts.SimpleBank = simpleBankAddress;
-    console.log("SimpleBank 合约地址:", simpleBankAddress);
+    // 2. 部署 EnhancedBank 合约
+    console.log("\n=== 部署 EnhancedBank 合约 ===");
+    const EnhancedBank = await ethers.getContractFactory("EnhancedBank");
+    const enhancedBank = await EnhancedBank.deploy();
+    await enhancedBank.waitForDeployment();
+    const enhancedBankAddress = await enhancedBank.getAddress();
+    deployedContracts.EnhancedBank = enhancedBankAddress;
+    console.log("EnhancedBank 合约地址:", enhancedBankAddress);
 
     // 3. 部署 TokenFactory 合约
     console.log("\n=== 部署 TokenFactory 合约 ===");
@@ -146,16 +114,8 @@ async function main() {
     // 自动更新配置文件
     console.log("\n📝 自动更新配置文件...");
     await updateAddressesConfig(deployedContracts, networkName, chainId);
-    await updateContractsConfig(deployedContracts, chainId);
 
-    // 生成环境变量配置
-    console.log("\n📝 环境变量配置 (.env.local):");
-    console.log(`NEXT_PUBLIC_VOTING_CORE_ADDRESS=${deployedContracts.VotingCore}`);
-    console.log(`NEXT_PUBLIC_SIMPLE_BANK_ADDRESS=${deployedContracts.SimpleBank}`);
-    console.log(`NEXT_PUBLIC_TOKEN_FACTORY_ADDRESS=${deployedContracts.TokenFactory}`);
-    console.log(`NEXT_PUBLIC_PLATFORM_NFT_ADDRESS=${deployedContracts.PlatformNFT}`);
-    console.log(`NEXT_PUBLIC_NFT_MARKETPLACE_ADDRESS=${deployedContracts.NFTMarketplace}`);
-    console.log(`NEXT_PUBLIC_DEX_PLATFORM_ADDRESS=${deployedContracts.DEXPlatform}`);
+
 
     // 验证部署的合约
     console.log("\n🔍 验证合约部署状态:");
@@ -187,7 +147,7 @@ async function main() {
 
     // 在银行合约中存入一些初始资金
     try {
-      const depositTx = await simpleBank.deposit({ value: ethers.parseEther("1.0") });
+      const depositTx = await enhancedBank.deposit({ value: ethers.parseEther("1.0") });
       await depositTx.wait();
       console.log("✅ 银行合约初始存款成功 (1 ETH)");
     } catch (error) {

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网络连接调试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .disabled {
+            background-color: #6c757d !important;
+            cursor: not-allowed !important;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Web3 网络连接调试工具</h1>
+    
+    <div id="status"></div>
+    
+    <h2>测试步骤</h2>
+    <button onclick="testWalletConnection()">1. 测试钱包连接</button>
+    <button onclick="testNetworkConnection()">2. 测试网络连接</button>
+    <button onclick="testContractConnection()">3. 测试合约连接</button>
+    <button onclick="testSimpleTransaction()">4. 测试简单交易</button>
+    
+    <div id="results"></div>
+
+    <script>
+        let web3;
+        let accounts = [];
+        let chainId;
+        
+        const contractAddresses = {
+            "1337": {
+                "SimpleBank": "0xf3dcB0d7497694405D433de5F46C6e77A8Fc467E",
+                "VotingCore": "0x0ea3dd08Fe63166DdEeFf22745CB774CfAD03337"
+            }
+        };
+        
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = message;
+            results.appendChild(div);
+            console.log(message);
+        }
+        
+        async function testWalletConnection() {
+            log('🔄 测试钱包连接...', 'info');
+            
+            if (typeof window.ethereum === 'undefined') {
+                log('❌ 未检测到 MetaMask 或其他 Web3 钱包', 'error');
+                return false;
+            }
+            
+            try {
+                // 请求连接钱包
+                accounts = await window.ethereum.request({
+                    method: 'eth_requestAccounts'
+                });
+                
+                if (accounts.length === 0) {
+                    log('❌ 没有可用的账户', 'error');
+                    return false;
+                }
+                
+                log(`✅ 钱包连接成功，账户: ${accounts[0]}`, 'success');
+                
+                // 获取当前网络
+                chainId = await window.ethereum.request({
+                    method: 'eth_chainId'
+                });
+                
+                const chainIdDecimal = parseInt(chainId, 16);
+                log(`✅ 当前网络 Chain ID: ${chainIdDecimal} (0x${chainIdDecimal.toString(16)})`, 'success');
+                
+                if (chainIdDecimal !== 1337) {
+                    log(`⚠️ 当前不在 Ganache 网络 (Chain ID: 1337)`, 'warning');
+                    log('请在 MetaMask 中切换到 Ganache 网络', 'warning');
+                }
+                
+                return true;
+            } catch (error) {
+                log(`❌ 钱包连接失败: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        async function testNetworkConnection() {
+            log('🔄 测试网络连接...', 'info');
+            
+            if (!accounts.length) {
+                log('❌ 请先连接钱包', 'error');
+                return false;
+            }
+            
+            try {
+                // 获取账户余额
+                const balance = await window.ethereum.request({
+                    method: 'eth_getBalance',
+                    params: [accounts[0], 'latest']
+                });
+                
+                const balanceInEth = parseInt(balance, 16) / Math.pow(10, 18);
+                log(`✅ 账户余额: ${balanceInEth.toFixed(4)} ETH`, 'success');
+                
+                if (balanceInEth < 0.01) {
+                    log('⚠️ 账户余额较低，可能影响交易', 'warning');
+                }
+                
+                // 获取最新区块号
+                const blockNumber = await window.ethereum.request({
+                    method: 'eth_blockNumber'
+                });
+                
+                log(`✅ 最新区块: ${parseInt(blockNumber, 16)}`, 'success');
+                
+                // 测试Gas价格
+                const gasPrice = await window.ethereum.request({
+                    method: 'eth_gasPrice'
+                });
+                
+                const gasPriceInGwei = parseInt(gasPrice, 16) / Math.pow(10, 9);
+                log(`✅ Gas 价格: ${gasPriceInGwei} Gwei`, 'success');
+                
+                return true;
+            } catch (error) {
+                log(`❌ 网络连接测试失败: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        async function testContractConnection() {
+            log('🔄 测试合约连接...', 'info');
+            
+            const currentChainId = parseInt(chainId, 16);
+            const addresses = contractAddresses[currentChainId.toString()];
+            
+            if (!addresses) {
+                log(`❌ 没有找到 Chain ID ${currentChainId} 的合约地址`, 'error');
+                return false;
+            }
+            
+            try {
+                // 测试 SimpleBank 合约
+                const bankAddress = addresses.SimpleBank;
+                log(`🔄 测试 SimpleBank 合约: ${bankAddress}`, 'info');
+                
+                // 检查合约代码
+                const code = await window.ethereum.request({
+                    method: 'eth_getCode',
+                    params: [bankAddress, 'latest']
+                });
+                
+                if (code === '0x') {
+                    log(`❌ SimpleBank 合约在地址 ${bankAddress} 没有找到代码`, 'error');
+                    return false;
+                }
+                
+                log(`✅ SimpleBank 合约代码存在 (${code.length} 字符)`, 'success');
+                
+                // 测试 VotingCore 合约
+                const votingAddress = addresses.VotingCore;
+                log(`🔄 测试 VotingCore 合约: ${votingAddress}`, 'info');
+                
+                const votingCode = await window.ethereum.request({
+                    method: 'eth_getCode',
+                    params: [votingAddress, 'latest']
+                });
+                
+                if (votingCode === '0x') {
+                    log(`❌ VotingCore 合约在地址 ${votingAddress} 没有找到代码`, 'error');
+                    return false;
+                }
+                
+                log(`✅ VotingCore 合约代码存在 (${votingCode.length} 字符)`, 'success');
+                
+                return true;
+            } catch (error) {
+                log(`❌ 合约连接测试失败: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        async function testSimpleTransaction() {
+            log('🔄 测试简单交易...', 'info');
+            
+            const currentChainId = parseInt(chainId, 16);
+            if (currentChainId !== 1337) {
+                log('❌ 请切换到 Ganache 网络 (Chain ID: 1337)', 'error');
+                return false;
+            }
+            
+            try {
+                // 构造一个简单的转账交易（转给自己）
+                const txParams = {
+                    from: accounts[0],
+                    to: accounts[0],
+                    value: '0x0', // 0 ETH
+                    gas: '0x5208', // 21000 gas
+                    gasPrice: '0x3B9ACA00' // 1 Gwei
+                };
+                
+                log('🔄 发送测试交易...', 'info');
+                
+                const txHash = await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [txParams]
+                });
+                
+                log(`✅ 交易发送成功! Hash: ${txHash}`, 'success');
+                
+                // 等待交易确认
+                log('🔄 等待交易确认...', 'info');
+                
+                let receipt = null;
+                let attempts = 0;
+                
+                while (!receipt && attempts < 30) {
+                    try {
+                        receipt = await window.ethereum.request({
+                            method: 'eth_getTransactionReceipt',
+                            params: [txHash]
+                        });
+                        
+                        if (!receipt) {
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            attempts++;
+                        }
+                    } catch (error) {
+                        log(`⚠️ 获取交易收据失败 (尝试 ${attempts + 1}): ${error.message}`, 'warning');
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        attempts++;
+                    }
+                }
+                
+                if (receipt) {
+                    log(`✅ 交易确认成功! 区块: ${parseInt(receipt.blockNumber, 16)}`, 'success');
+                    log('🎉 网络连接完全正常，可以正常发送交易', 'success');
+                    return true;
+                } else {
+                    log('⚠️ 交易发送成功但未能获取确认', 'warning');
+                    return true;
+                }
+                
+            } catch (error) {
+                log(`❌ 简单交易测试失败: ${error.message}`, 'error');
+                
+                if (error.message.includes('User denied')) {
+                    log('ℹ️ 用户取消了交易', 'info');
+                } else if (error.message.includes('insufficient funds')) {
+                    log('ℹ️ 账户余额不足', 'warning');
+                } else {
+                    log('🔧 可能的解决方案:', 'info');
+                    log('1. 确保 Ganache 正在运行', 'info');
+                    log('2. 检查 MetaMask 网络设置', 'info');
+                    log('3. 重启 Ganache 和 MetaMask', 'info');
+                }
+                
+                return false;
+            }
+        }
+        
+        // 页面加载时显示初始状态
+        window.addEventListener('load', function() {
+            log('🚀 网络连接调试工具已加载', 'info');
+            log('请按顺序点击测试按钮进行诊断', 'info');
+        });
+    </script>
+</body>
+</html> 

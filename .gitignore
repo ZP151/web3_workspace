@@ -21,6 +21,9 @@ artifacts/
 typechain/
 typechain-types/
 
+# TypeScript
+*.tsbuildinfo
+
 # IDE
 .vscode/
 .idea/

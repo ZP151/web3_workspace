@@ -1,279 +1,306 @@
-# 🚀 Modern Web3 Smart Contract Platform
+# 🚀 Web3 Smart Contract Platform
 
-A modern decentralized application built with cutting-edge Web3 technologies including React, Next.js, Wagmi, RainbowKit, and Hardhat.
+A comprehensive decentralized application platform featuring banking system, DEX exchange, NFT marketplace, token factory, and governance voting.
 
-## 🛠️ Technology Stack
+> 📖 **Language**: [English](README.md) | [中文](README_CN.md)
 
-### Frontend
-- **React.js 18** with TypeScript
-- **Next.js 14** with App Router
-- **Tailwind CSS** for styling
-- **Responsive Design** for all devices
+## ✨ Key Features
 
-### Web3 Integration
-- **Wagmi React Hooks** for blockchain interactions
-- **RainbowKit** for wallet connections
-- **Ethers.js v6** for contract interactions
-- **Multi-chain Support** (Ethereum, Polygon, etc.)
+- 🏦 **Banking System** - Deposits, loans, and staking functionality
+- 🔄 **DEX Exchange** - Token swapping and liquidity mining
+- 🎨 **NFT Marketplace** - Mint and trade NFTs
+- 🏭 **Token Factory** - Create custom ERC20 tokens
+- 🗳️ **Governance Voting** - Community proposals and voting
 
-### Smart Contract Development
-- **Solidity 0.8.x** for contract development
-- **Hardhat** development environment
-- **OpenZeppelin** security libraries
-- **Automated Testing** with comprehensive test suites
+## 🚀 Quick Start
 
-## 🏗️ Features
+### 1. Environment Setup
 
-### Decentralized Voting System
-- Create and manage proposals
-- Weighted voting mechanisms
-- Automatic proposal execution
-- Transparent governance
-
-### DeFi Banking System
-- Deposit and earn interest
-- Real-time yield calculation
-- Secure fund management
-- Transaction history tracking
-
-## 🛠️ Local Development Setup
-
-### Prerequisites
-- Node.js 18+ and npm
-- MetaMask or compatible wallet
+**Prerequisites**
+- Node.js 18+ (LTS version recommended)
 - Git
+- Modern browser (Chrome/Firefox/Edge)
 
-### Installation
-
-1. **Clone the repository**
 ```bash
-git clone <repository-url>
+# Clone the project
+git clone https://github.com/ZP151/web3_workspace.git
 cd web3_workspace
-```
 
-2. **Install dependencies**
-```bash
+# Install all dependencies (includes all necessary libraries)
+npm install
+
+# If installation fails, try clearing cache and reinstalling
+npm cache clean --force
 npm install
 ```
 
-3. **Environment Setup**
+> 💡 **Note**: First-time installation may take several minutes as it includes all Web3 development libraries
+
+### 2. Install MetaMask Browser Extension
+
+1. **Download and Install MetaMask**
+   - Chrome: https://chrome.google.com/webstore/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn
+   - Firefox: https://addons.mozilla.org/en-US/firefox/addon/ether-metamask/
+   - Edge: https://microsoftedge.microsoft.com/addons/detail/metamask/ejbalbakoplchlghecdalmeeeajnimhm
+
+2. **Create or Import Wallet** (follow MetaMask setup guide)
+
+### 3. Start Local Blockchain
+
+**Option 1: Ganache GUI Application (Recommended)**
+1. Download Ganache GUI: https://trufflesuite.com/ganache/
+2. Install and launch Ganache, recommend "Quick Start" for easy setup
+3. If creating custom workspace, configure:
+   - **Port**: 8545
+   - **Network ID**: 1337
+   - **Account Count**: 10
+   - **Mnemonic**: Use fixed mnemonic for consistent addresses
+
+**Option 2: Command Line**
 ```bash
-cp env.example .env.local
-# Edit .env.local with your configuration
+# If you don't have Ganache GUI, use command line
+npx ganache --deterministic --accounts 10 --host 0.0.0.0 --port 8545 --networkId 1337 --chain.chainId 1337
 ```
 
-## 🌐 Local Networks Configuration
-
-This platform supports two local blockchain networks for development:
-
-### Option 1: Hardhat Network (Recommended)
-- **Chain ID**: 31337
-- **Port**: 8545
-- **Auto-deployment**: Yes
-
-#### Quick Start with Hardhat:
+### 4. Compile Smart Contracts
 ```bash
-# Terminal 1: Start Hardhat network with auto-deployed contracts
-npm run node
+# Compile all smart contracts
+npm run compile
+```
 
-# Terminal 2: Start the frontend
+### 5. Deploy All Contracts and Data
+```bash
+# Deploy contracts and create test data
+npx hardhat run scripts/deploy-and-setup-all.js --network ganache
+```
+
+### 6. Start Frontend Application
+```bash
+# Start development server
 npm run dev
 ```
 
-Access the application at `http://localhost:3001`
+Visit `http://localhost:3000` to start using the platform!
 
-#### Hardhat Features:
-- Contracts auto-deploy on network start
-- Built-in test accounts with 10,000 ETH each
-- Console logging and debugging
-- Deterministic addresses
+## 🔧 MetaMask Configuration Guide
 
-### Option 2: Ganache Network
-- **Chain ID**: 1337
-- **Port**: 7545
-- **Manual deployment**: Required
+### Step 1: Add Ganache Network
+1. Open MetaMask extension
+2. Click the network dropdown at the top left
+3. Select "Add a custom network"
+4. Fill in the following information:
+   - **Network Name**: `Ganache Local`
+   - **New RPC URL**: `http://localhost:8545`
+   - **Chain ID**: `1337`
+   - **Currency Symbol**: `ETH`
+   - **Block Explorer URL**: Leave empty
+5. Click "Save"
 
-#### Setup with Ganache:
-```bash
-# 1. Start Ganache on port 7545 (using Ganache GUI or CLI)
-ganache-cli --port 7545 --networkId 1337
+### Step 2: Import Test Accounts
+Use the following private keys to import Ganache test accounts (each has 1000 ETH):
 
-# 2. Deploy contracts to Ganache
-npm run deploy:ganache
+**How to get private keys:**
+1. Open Ganache GUI application
+2. View all accounts in the main interface
+3. Click the 🔑 icon next to any account to view private key
+4. Copy the private key for MetaMask import
 
-# 3. Start the frontend
-npm run dev
-```
+![Ganache Account Interface](resources/image.png)
 
-#### Ganache Features:
-- Visual interface (if using Ganache GUI)
-- Custom account management
-- Manual contract deployment
-- Network state persistence
 
-## 📜 Available Scripts
+### MetaMask Import Steps:
+1. **Open MetaMask extension**
+2. **Click the account dropdown** (shows current account name)
+3. **Select "Add account or hardware wallet"**
+4. **Choose "Import account"**
+5. **Select "Private Key" in "Select Type"**
+6. **Paste private key into input field**
+7. **Click "Import" button**
+8. **Set a recognizable name** (e.g., "Ganache Account 1")
+9. **Repeat for multiple test accounts**
 
-```bash
-# Development
-npm run dev          # Start Next.js development server
-npm run build        # Build for production
-npm run start        # Start production server
+> 📝 **Suggestion**: Give each account a meaningful name like "Deployer Account", "Test Account 1", etc., for easy identification
 
-# Smart Contracts
-npm run compile      # Compile smart contracts
-npm run test         # Run contract tests
-npm run node         # Start Hardhat network
+> ⚠️ **Security Warning**: These private keys are for local development testing only, never use on mainnet!
 
-# Deployment
-npm run deploy:local    # Deploy to Hardhat localhost
-npm run deploy:ganache  # Deploy to Ganache network
-npm run deploy:sepolia  # Deploy to Sepolia testnet
-```
-
-## 🔗 Wallet Connection
-
-### Supported Wallets
-- MetaMask
-- WalletConnect
-- Coinbase Wallet
-- Rainbow Wallet
-
-### Network Switching
-The application provides easy network switching buttons:
-- **Hardhat**: Quick switch to Hardhat local network
-- **Ganache**: Quick switch to Ganache local network
-
-### Test Accounts (Hardhat)
-The following test accounts are available with Hardhat:
-
-```
-Account #0: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
-Private Key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-
-Account #1: 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
-Private Key: 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
-```
-
-## 📱 Application Features
-
-### 🗳️ Voting System (`/voting`)
-- Connect wallet to participate
-- Create new proposals with custom parameters
-- Vote on active proposals
-- View proposal status and progress
-- Automatic execution when thresholds are met
+## 📱 Feature Modules
 
 ### 🏦 Banking System (`/banking`)
-- Deposit ETH to earn interest
-- Real-time yield calculations
-- Withdraw funds anytime
-- Track transaction history
-- View yield forecasts
+- Earn interest on deposits (5% annual rate)
+- Request loans (8.5% annual rate, 150% collateral ratio)
+- Staking rewards (12.5% annual rate, 7-day lock period)
+- Real-time earnings and status tracking
 
-## 🔧 Configuration
+### 🔄 DEX Exchange (`/dex`)
+- Swap WETH/USDC/DAI tokens
+- Add liquidity to earn fees
+- View real-time prices and slippage
+- Liquidity mining rewards
 
-### Environment Variables
+### 🎨 NFT Marketplace (`/nft`)
+- Mint personal NFTs (0.001 ETH)
+- Purchase NFTs from marketplace
+- List your NFTs for sale
+- View NFT collections and statistics
 
-Create `.env.local` file:
-```env
-# Contract Addresses (auto-filled for local development)
-NEXT_PUBLIC_VOTING_CORE_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3
-NEXT_PUBLIC_SIMPLE_BANK_ADDRESS=0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
+### 🏭 Token Factory (`/tokens`)
+- Create custom ERC20 tokens
+- Set token name, symbol, and supply
+- View created tokens
+- Token management features
 
-# Optional: Production API keys
-NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your-project-id
-NEXT_PUBLIC_ALCHEMY_API_KEY=your-alchemy-key
-NEXT_PUBLIC_INFURA_PROJECT_ID=your-infura-key
-```
+### 🗳️ Governance Voting (`/voting`)
+- Create governance proposals
+- Participate in community voting
+- View proposal status and results
+- Transparent governance process
 
-### Smart Contract Addresses
-
-#### Hardhat Network (Chain ID: 31337)
-- **VotingCore**: `0x5FbDB2315678afecb367f032d93F642f64180aa3`
-- **SimpleBank**: `0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512`
-
-#### Ganache Network (Chain ID: 1337)
-- Addresses generated after manual deployment
-
-## 🚀 Deployment to Testnets
-
-### Sepolia Testnet
-```bash
-npm run deploy:sepolia
-```
-
-### Mumbai Testnet
-```bash
-npm run deploy:mumbai
-```
-
-## 🧪 Testing
+## 🛠️ Development Scripts
 
 ```bash
-# Run all tests
-npm run test
+# Contract related
+npm run compile              # Compile smart contracts
+npm run test                # Run contract tests
 
-# Run with gas reporting
-REPORT_GAS=true npm run test
+# Deployment related
+npx hardhat run scripts/deploy-and-setup-all.js --network ganache    # Full deployment
+npx hardhat run scripts/setup-complete-nft-data.js --network ganache # NFT data only
+
+# Network check
+npx hardhat run scripts/test-network-stability.js --network ganache  # Check network status
+
+# Frontend related
+npm run dev                 # Start development server
+npm run build              # Build for production
+npm run start              # Start production server
 ```
+
+### 🔍 Quick Status Check
+Run these commands to verify environment setup:
+```bash
+# 1. Check Node.js version
+node --version
+
+# 2. Check dependency installation
+npm list --depth=0
+
+# 3. Compile contracts
+npm run compile
+
+# 4. Check Ganache connection
+npx hardhat run scripts/test-network-stability.js --network ganache
+```
+
+## 🔄 Environment Reset
+
+When Ganache network is reset, simply run:
+```bash
+npx hardhat run scripts/deploy-and-setup-all.js --network ganache
+```
+
+This will automatically:
+- Redeploy all contracts
+- Create test tokens (USDC, DAI, WETH)
+- Initialize DEX pools
+- Create NFT test data
+- Create voting proposals
+- Update configuration files
+
+## 📊 Test Data
+
+The deployment script automatically creates:
+- **Smart Contracts**: 7 core contracts
+- **Test Tokens**: USDC, DAI, WETH
+- **DEX Pools**: 3 trading pairs with liquidity
+- **NFT Data**: 20 different types of NFTs
+- **Voting Proposals**: 3 governance proposals
 
 ## 🎯 Project Structure
 
 ```
 src/
-├── app/                 # Next.js App Router pages
-│   ├── banking/        # Banking system page
-│   ├── voting/         # Voting system page
-│   └── page.tsx        # Home page
-├── components/         # React components
-│   ├── ui/            # UI components
-│   └── WalletConnection.tsx
-├── lib/               # Utility libraries
-│   └── wagmi.ts       # Wagmi configuration
-contracts/             # Smart contracts
-├── VotingCore.sol     # Voting governance contract
-└── SimpleBank.sol     # Banking contract
-scripts/               # Deployment scripts
-└── deploy.js          # Contract deployment
+├── app/                    # Next.js pages
+│   ├── banking/           # Banking system
+│   ├── dex/              # DEX exchange
+│   ├── nft/              # NFT marketplace
+│   ├── tokens/           # Token factory
+│   └── voting/           # Governance voting
+├── components/            # React components
+├── lib/                  # Utility libraries
+└── config/               # Configuration files
+
+contracts/                 # Smart contracts
+├── EnhancedBank.sol      # Banking contract
+├── DEXPlatform.sol       # DEX contract
+├── NFTMarketplace.sol    # NFT marketplace
+├── TokenFactory.sol      # Token factory
+└── VotingCore.sol        # Voting contract
+
+scripts/                  # Deployment scripts
+├── deploy-and-setup-all.js    # Complete deployment script
+└── setup-complete-nft-data.js # NFT data script
 ```
 
 ## 🔒 Security Features
 
 - OpenZeppelin security libraries
-- Reentrancy protection
+- Reentrancy attack protection
 - Access control mechanisms
-- Input validation
-- Safe math operations
+- Input validation and boundary checks
+- Safe mathematical operations
 
-## 🌟 Modern UX Features
+## 💡 Usage Tips
 
-- Responsive design for mobile and desktop
-- Real-time transaction feedback
-- Loading states and error handling
-- Toast notifications
-- Network status indicators
-- Automatic wallet reconnection
+- **Network Switching**: Use in-app network switching buttons
+- **Account Management**: Switch between different test accounts in MetaMask
+- **Transaction Confirmation**: Watch for MetaMask popups for transaction confirmation
+- **Balance Refresh**: Pages automatically refresh balances after transactions
+- **Error Handling**: Check browser console for detailed error information
 
-## 📚 Learn More
+## 📚 Technology Stack
 
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Wagmi Documentation](https://wagmi.sh)
-- [RainbowKit Documentation](https://www.rainbowkit.com)
-- [Hardhat Documentation](https://hardhat.org/docs)
-- [Solidity Documentation](https://docs.soliditylang.org)
+- **Frontend**: React 18, Next.js 14, TypeScript, Tailwind CSS
+- **Web3**: Wagmi, RainbowKit, Ethers.js v6
+- **Smart Contracts**: Solidity 0.8.x, Hardhat, OpenZeppelin
+- **Development Tools**: Ganache, MetaMask, Hardhat Network
 
-## 🤝 Contributing
+## 🆘 Common Issues
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+**Setup Problems?**
+- Ensure Node.js 18+ is installed
+- Clear npm cache: `npm cache clean --force`
+- Check Ganache is running on port 8545
 
-## 📄 License
+**MetaMask Issues?**
+- Verify network is set to Chain ID 1337
+- Ensure accounts are imported correctly
+- Check sufficient ETH balance for transactions
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+**Contract Deployment Fails?**
+```bash
+npm run compile
+npx hardhat run scripts/deploy-and-setup-all.js --network ganache
+```
+
+> 📖 **Need Help?** See detailed troubleshooting in [`docs/QUICK_SETUP_GUIDE.md`](docs/QUICK_SETUP_GUIDE.md)
+
+## 🌐 Multi-Chain Support
+
+Deploy to testnets and mainnets:
+- **Testnets**: Sepolia, Mumbai, Goerli
+- **Mainnets**: Ethereum, Polygon, BSC, Arbitrum, Optimism, Avalanche
+
+```bash
+# Deploy to testnet
+npx hardhat run scripts/deploy-and-setup-all.js --network sepolia
+```
+
+> ⚙️ **Production Setup**: See environment configuration in [`docs/QUICK_SETUP_GUIDE.md`](docs/QUICK_SETUP_GUIDE.md)
+
+## 📄 Detailed Documentation
+
+See [`docs/QUICK_SETUP_GUIDE.md`](docs/QUICK_SETUP_GUIDE.md) for more detailed setup instructions.
 
 ---
 
-**Built with modern Web3 technologies for the decentralized future** 🚀 
+**Start Your Web3 Development Journey!** 🚀 

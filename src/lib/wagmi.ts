@@ -36,7 +36,7 @@ const hardhatLocal = {
   testnet: true,
 } as const;
 
-// Configure supported chains
+// Configure supported chains - 简化配置，只使用公共提供商避免API密钥问题
 const { chains, publicClient } = configureChains(
   [
     hardhatLocal,
@@ -45,16 +45,14 @@ const { chains, publicClient } = configureChains(
     ...(process.env.NODE_ENV === 'production' ? [mainnet, polygon, optimism, arbitrum] : []),
   ],
   [
-    alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || 'demo' }),
-    infuraProvider({ apiKey: process.env.NEXT_PUBLIC_INFURA_PROJECT_ID || 'demo' }),
     publicProvider(),
   ]
 );
 
-// Configure supported wallets
+// Configure supported wallets - 简化配置避免WalletConnect问题
 const { connectors } = getDefaultWallets({
   appName: 'Modern Web3 Smart Contract Platform',
-  projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || 'demo-project-id',
+  projectId: 'demo-project-id', // 使用固定的demo ID避免API问题
   chains,
 });
 

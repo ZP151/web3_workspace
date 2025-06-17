@@ -23,14 +23,14 @@ async function main() {
     deployedContracts.VotingCore = votingCoreAddress;
     console.log("VotingCore 合约地址:", votingCoreAddress);
 
-    // 2. 部署 SimpleBank 合约
-    console.log("\n=== 部署 SimpleBank 合约 ===");
-    const SimpleBank = await ethers.getContractFactory("SimpleBank");
-    const simpleBank = await SimpleBank.deploy();
-    await simpleBank.waitForDeployment();
-    const simpleBankAddress = await simpleBank.getAddress();
-    deployedContracts.SimpleBank = simpleBankAddress;
-    console.log("SimpleBank 合约地址:", simpleBankAddress);
+    // 2. 部署 EnhancedBank 合约
+    console.log("\n=== 部署 EnhancedBank 合约 ===");
+    const EnhancedBank = await ethers.getContractFactory("EnhancedBank");
+    const enhancedBank = await EnhancedBank.deploy();
+    await enhancedBank.waitForDeployment();
+    const enhancedBankAddress = await enhancedBank.getAddress();
+    deployedContracts.EnhancedBank = enhancedBankAddress;
+    console.log("EnhancedBank 合约地址:", enhancedBankAddress);
 
     // 3. 部署 TokenFactory 合约
     console.log("\n=== 部署 TokenFactory 合约 ===");
@@ -52,12 +52,14 @@ async function main() {
       console.log("❌ VotingCore 验证失败:", error.message);
     }
 
-    // 验证SimpleBank
+    // 验证EnhancedBank
     try {
-      const minDeposit = await simpleBank.minimumDeposit();
-      console.log("✅ SimpleBank 验证成功，最小存款:", ethers.formatEther(minDeposit), "ETH");
+      const minDeposit = await enhancedBank.minimumDeposit();
+      const interestRate = await enhancedBank.interestRate();
+      console.log("✅ EnhancedBank 验证成功，最小存款:", ethers.formatEther(minDeposit), "ETH");
+      console.log("✅ EnhancedBank 年利率:", interestRate.toString(), "%");
     } catch (error) {
-      console.log("❌ SimpleBank 验证失败:", error.message);
+      console.log("❌ EnhancedBank 验证失败:", error.message);
     }
 
     // 验证TokenFactory
@@ -92,10 +94,11 @@ async function main() {
     // 测试银行存款
     try {
       console.log("测试银行存款 0.01 ETH...");
-      const depositTx = await simpleBank.deposit({ value: ethers.parseEther("0.01") });
+      const depositTx = await enhancedBank.deposit({ value: ethers.parseEther("0.01") });
       await depositTx.wait();
-      const balance = await simpleBank.getAccountInfo(await deployer.getAddress());
+      const balance = await enhancedBank.getAccountInfo(await deployer.getAddress());
       console.log("✅ 存款成功，余额:", ethers.formatEther(balance[0]), "ETH");
+      console.log("✅ 最后交易时间:", new Date(Number(balance[1]) * 1000).toLocaleString());
     } catch (error) {
       console.log("❌ 存款测试失败:", error.message);
     }

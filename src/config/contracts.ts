@@ -1,6 +1,19 @@
 import VotingCoreABI from '../../artifacts/contracts/VotingCore.sol/VotingCore.json';
 import SimpleBankABI from '../../artifacts/contracts/SimpleBank.sol/SimpleBank.json';
 import TokenFactoryABI from '../../artifacts/contracts/TokenFactory.sol/TokenFactory.json';
+import PlatformNFTABI from '../../artifacts/contracts/NFTMarketplace.sol/PlatformNFT.json';
+import NFTMarketplaceABI from '../../artifacts/contracts/NFTMarketplace.sol/NFTMarketplace.json';
+import DEXPlatformABI from '../../artifacts/contracts/DEXPlatform.sol/DEXPlatform.json';
+
+// 动态加载 EnhancedBank ABI，如果不存在则回退到 SimpleBank ABI
+let EnhancedBankABI: any;
+try {
+  EnhancedBankABI = require('../../artifacts/contracts/EnhancedBank.sol/EnhancedBank.json');
+  console.log('✅ 成功加载 EnhancedBank ABI');
+} catch (error) {
+  console.warn('⚠️ EnhancedBank ABI 未找到，使用 SimpleBank ABI 作为回退');
+  EnhancedBankABI = SimpleBankABI;
+}
 
 // 动态加载地址配置
 let dynamicAddresses: any = {};
@@ -12,7 +25,6 @@ try {
 
 // 网络信息配置
 export const NETWORK_CONFIG = {
-  // 开发环境
   31337: { 
     name: "Hardhat Local", 
     type: "development",
@@ -27,8 +39,6 @@ export const NETWORK_CONFIG = {
     blockExplorer: "http://localhost:7545",
     rpc: "http://127.0.0.1:7545"
   },
-  
-  // 测试网络
   11155111: { 
     name: "Sepolia Testnet", 
     type: "testnet",
@@ -43,8 +53,6 @@ export const NETWORK_CONFIG = {
     blockExplorer: "https://mumbai.polygonscan.com",
     rpc: "https://polygon-mumbai.infura.io/v3/YOUR_INFURA_KEY"
   },
-  
-  // 主网络
   1: { 
     name: "Ethereum Mainnet", 
     type: "mainnet",
@@ -68,76 +76,40 @@ export const NETWORK_CONFIG = {
   }
 } as const;
 
-// 合约地址配置 - 支持多网络部署
-export const CONTRACT_ADDRESSES = {
-  // 开发环境
-  31337: {
-    VotingCore: dynamicAddresses['31337']?.VotingCore || '0x5FbDB2315678afecb367f032d93F642f64180aa3',
-    SimpleBank: dynamicAddresses['31337']?.SimpleBank || '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
-    TokenFactory: dynamicAddresses['31337']?.TokenFactory || '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
-    PlatformNFT: dynamicAddresses['31337']?.PlatformNFT || '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
-    NFTMarketplace: dynamicAddresses['31337']?.NFTMarketplace || '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
-    DEXPlatform: dynamicAddresses['31337']?.DEXPlatform || '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707'
-  },
-  1337: {
-    VotingCore: dynamicAddresses['1337']?.VotingCore || '0x675D3E317a36E11D554D2dB12E8d8971D939Dd05',
-    SimpleBank: dynamicAddresses['1337']?.SimpleBank || '0x65aaF4239c648f7ff93811dCe4F961b83f084b11',
-    TokenFactory: dynamicAddresses['1337']?.TokenFactory || '0xF87d5c794C1F3636DE9D18dc3FA151546539573E',
-    PlatformNFT: dynamicAddresses['1337']?.PlatformNFT || '0x9f91D1900930b7a0Dd48F84ae09B720eFB1e8dE3',
-    NFTMarketplace: dynamicAddresses['1337']?.NFTMarketplace || '0x6Fec4a50c50913A4223dcE9AEeDB52507D3dB728',
-    DEXPlatform: dynamicAddresses['1337']?.DEXPlatform || '0xf8102d5cdc702bc8B9DffEBa03196f5E5b728Ed0'
-  },
+// 动态生成合约地址配置 - 从 addresses.json 读取实际部署的地址
+function generateContractAddresses() {
+  const addresses: Record<number, Record<string, string>> = {};
   
-  // 测试网络 - 用于公开测试
-  11155111: {
-    VotingCore: dynamicAddresses['11155111']?.VotingCore || '',
-    SimpleBank: dynamicAddresses['11155111']?.SimpleBank || '',
-    TokenFactory: dynamicAddresses['11155111']?.TokenFactory || '',
-    PlatformNFT: dynamicAddresses['11155111']?.PlatformNFT || '',
-    NFTMarketplace: dynamicAddresses['11155111']?.NFTMarketplace || '',
-    DEXPlatform: dynamicAddresses['11155111']?.DEXPlatform || ''
-  },
-  80001: {
-    VotingCore: dynamicAddresses['80001']?.VotingCore || '',
-    SimpleBank: dynamicAddresses['80001']?.SimpleBank || '',
-    TokenFactory: dynamicAddresses['80001']?.TokenFactory || '',
-    PlatformNFT: dynamicAddresses['80001']?.PlatformNFT || '',
-    NFTMarketplace: dynamicAddresses['80001']?.NFTMarketplace || '',
-    DEXPlatform: dynamicAddresses['80001']?.DEXPlatform || ''
-  },
+  // 支持的网络列表
+  const supportedNetworks = [31337, 1337, 11155111, 80001, 1, 137, 56];
   
-  // 主网络 - 生产环境
-  1: {
-    VotingCore: dynamicAddresses['1']?.VotingCore || '',
-    SimpleBank: dynamicAddresses['1']?.SimpleBank || '',
-    TokenFactory: dynamicAddresses['1']?.TokenFactory || '',
-    PlatformNFT: dynamicAddresses['1']?.PlatformNFT || '',
-    NFTMarketplace: dynamicAddresses['1']?.NFTMarketplace || '',
-    DEXPlatform: dynamicAddresses['1']?.DEXPlatform || ''
-  },
-  137: {
-    VotingCore: dynamicAddresses['137']?.VotingCore || '',
-    SimpleBank: dynamicAddresses['137']?.SimpleBank || '',
-    TokenFactory: dynamicAddresses['137']?.TokenFactory || '',
-    PlatformNFT: dynamicAddresses['137']?.PlatformNFT || '',
-    NFTMarketplace: dynamicAddresses['137']?.NFTMarketplace || '',
-    DEXPlatform: dynamicAddresses['137']?.DEXPlatform || ''
-  },
-  56: {
-    VotingCore: dynamicAddresses['56']?.VotingCore || '',
-    SimpleBank: dynamicAddresses['56']?.SimpleBank || '',
-    TokenFactory: dynamicAddresses['56']?.TokenFactory || '',
-    PlatformNFT: dynamicAddresses['56']?.PlatformNFT || '',
-    NFTMarketplace: dynamicAddresses['56']?.NFTMarketplace || '',
-    DEXPlatform: dynamicAddresses['56']?.DEXPlatform || ''
-  }
-} as const;
+  // 支持的合约列表
+  const contractNames = ['VotingCore', 'SimpleBank', 'EnhancedBank', 'TokenFactory', 'PlatformNFT', 'NFTMarketplace', 'DEXPlatform'];
+  
+  // 为每个网络生成配置
+  supportedNetworks.forEach(chainId => {
+    addresses[chainId] = {};
+    contractNames.forEach(contractName => {
+      // 优先使用动态地址，如果没有则为空字符串（表示未部署）
+      addresses[chainId][contractName] = dynamicAddresses[chainId.toString()]?.[contractName] || '';
+    });
+  });
+  
+  return addresses;
+}
+
+// 合约地址配置 - 完全基于 addresses.json 动态生成
+export const CONTRACT_ADDRESSES = generateContractAddresses();
 
 // ABI 导出
 export const ABIS = {
   VotingCore: VotingCoreABI.abi as any,
   SimpleBank: SimpleBankABI.abi as any,
-  TokenFactory: TokenFactoryABI.abi as any
+  EnhancedBank: EnhancedBankABI.abi as any, // 动态加载的 EnhancedBank ABI
+  TokenFactory: TokenFactoryABI.abi as any,
+  PlatformNFT: PlatformNFTABI.abi as any,
+  NFTMarketplace: NFTMarketplaceABI.abi as any,
+  DEXPlatform: DEXPlatformABI.abi as any
 } as const;
 
 // 获取网络信息
@@ -151,13 +123,26 @@ export function getNetworkInfo(chainId: number) {
   };
 }
 
-// 获取合约地址的辅助函数
-export function getContractAddress(chainId: number, contractName: keyof typeof CONTRACT_ADDRESSES[31337]) {
-  const addresses = CONTRACT_ADDRESSES[chainId as keyof typeof CONTRACT_ADDRESSES];
+// 获取合约地址
+export function getContractAddress(chainId: number, contractName: string) {
+  const addresses = CONTRACT_ADDRESSES[chainId];
   if (!addresses) {
-    console.warn(`不支持的网络 Chain ID: ${chainId}，使用 Hardhat 默认值`);
-    return CONTRACT_ADDRESSES[31337][contractName];
+    console.warn(`不支持的网络 Chain ID: ${chainId}`);
+    return null;
   }
+  
+  // 优先使用增强版银行合约
+  if (contractName === 'SimpleBank' && addresses['EnhancedBank']) {
+    console.log('使用增强版银行合约 EnhancedBank:', addresses['EnhancedBank']);
+    return addresses['EnhancedBank'];
+  }
+  
+  // 如果请求 EnhancedBank 但未部署，回退到 SimpleBank
+  if (contractName === 'EnhancedBank' && !addresses['EnhancedBank'] && addresses['SimpleBank']) {
+    console.log('EnhancedBank 未部署，回退到 SimpleBank:', addresses['SimpleBank']);
+    return addresses['SimpleBank'];
+  }
+  
   const address = addresses[contractName];
   if (!address) {
     console.warn(`合约 ${contractName} 在网络 ${chainId} 上未部署`);
@@ -166,13 +151,13 @@ export function getContractAddress(chainId: number, contractName: keyof typeof C
   return address;
 }
 
-// 获取合约ABI的辅助函数
+// 获取合约ABI
 export function getContractABI(contractName: keyof typeof ABIS) {
   return ABIS[contractName];
 }
 
-// 检查合约是否已部署的辅助函数
-export function isContractDeployed(chainId: number, contractName: keyof typeof CONTRACT_ADDRESSES[31337]): boolean {
+// 检查合约是否已部署
+export function isContractDeployed(chainId: number, contractName: string): boolean {
   const address = getContractAddress(chainId, contractName);
   return address !== null && address !== undefined && address !== '';
 }
@@ -188,15 +173,15 @@ export function isMainNetwork(chainId: number): boolean {
   return network.type === 'mainnet';
 }
 
-// 更新合约地址的函数
-export function updateContractAddress(chainId: number, contractName: keyof typeof CONTRACT_ADDRESSES[31337], address: string) {
-  if (CONTRACT_ADDRESSES[chainId as keyof typeof CONTRACT_ADDRESSES]) {
-    (CONTRACT_ADDRESSES[chainId as keyof typeof CONTRACT_ADDRESSES] as any)[contractName] = address;
+// 更新合约地址
+export function updateContractAddress(chainId: number, contractName: string, address: string) {
+  if (CONTRACT_ADDRESSES[chainId]) {
+    CONTRACT_ADDRESSES[chainId][contractName] = address;
     console.log(`已更新 ${contractName} 地址，网络 ${chainId}: ${address}`);
   }
 }
 
 // 获取所有已部署的合约地址
 export function getAllContractAddresses(chainId: number) {
-  return CONTRACT_ADDRESSES[chainId as keyof typeof CONTRACT_ADDRESSES] || {};
+  return CONTRACT_ADDRESSES[chainId] || {};
 } 

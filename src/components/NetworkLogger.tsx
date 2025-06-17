@@ -14,7 +14,7 @@ export default function NetworkLogger({ context = 'app' }: NetworkLoggerProps) {
 
   useEffect(() => {
     if (isConnected && chain && address) {
-      const networkInfo = NETWORK_CONFIG[chain.id];
+      const networkInfo = NETWORK_CONFIG[chain.id as keyof typeof NETWORK_CONFIG];
       
       console.log(`🌐 [${context}] Network Connection Status:`, {
         chainId: chain.id,
@@ -61,10 +61,10 @@ export default function NetworkLogger({ context = 'app' }: NetworkLoggerProps) {
       if (chain.id !== expectedChainFromUrl) {
         console.warn(`⚠️ [${context}] Network Mismatch:`, {
           currentChain: chain.id,
-          currentNetwork: NETWORK_CONFIG[chain.id]?.name || 'Unknown',
+          currentNetwork: NETWORK_CONFIG[chain.id as keyof typeof NETWORK_CONFIG]?.name || 'Unknown',
           expectedChain: expectedChainFromUrl,
-          expectedNetwork: NETWORK_CONFIG[expectedChainFromUrl]?.name || 'Unknown',
-          recommendation: `Please switch to ${NETWORK_CONFIG[expectedChainFromUrl]?.name || 'the correct network'}`
+          expectedNetwork: NETWORK_CONFIG[expectedChainFromUrl as keyof typeof NETWORK_CONFIG]?.name || 'Unknown',
+          recommendation: `Please switch to ${NETWORK_CONFIG[expectedChainFromUrl as keyof typeof NETWORK_CONFIG]?.name || 'the correct network'}`
         });
       }
     }

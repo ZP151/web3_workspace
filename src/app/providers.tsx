@@ -5,7 +5,8 @@ import { WagmiConfig } from 'wagmi';
 import { RainbowKitProvider, darkTheme, lightTheme } from '@rainbow-me/rainbowkit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
-import { wagmiConfig, chains } from '@/lib/wagmi';
+// 使用超简化配置，完全避免环境变量问题
+import { wagmiSimpleConfig as wagmiConfig, simpleChains as chains } from '@/lib/wagmi-simple';
 
 // Import RainbowKit styles
 import '@rainbow-me/rainbowkit/styles.css';

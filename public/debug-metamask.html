@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetaMask 交互测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <h1>🦊 MetaMask 交互测试</h1>
+    
+    <button onclick="testMetaMaskConnection()">测试 MetaMask 连接</button>
+    <button onclick="testSimpleTransaction()">测试简单转账</button>
+    <button onclick="testContractCall()">测试合约调用</button>
+    
+    <div id="results"></div>
+
+    <script>
+        function log(message) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = 'result';
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(div);
+            console.log(message);
+        }
+        
+        async function testMetaMaskConnection() {
+            log('🔄 测试 MetaMask 连接...');
+            
+            if (typeof window.ethereum === 'undefined') {
+                log('❌ MetaMask 未安装');
+                return;
+            }
+            
+            try {
+                const accounts = await window.ethereum.request({
+                    method: 'eth_requestAccounts'
+                });
+                log(`✅ 连接成功: ${accounts[0]}`);
+                
+                const chainId = await window.ethereum.request({
+                    method: 'eth_chainId'
+                });
+                log(`✅ 网络: ${parseInt(chainId, 16)}`);
+                
+            } catch (error) {
+                log(`❌ 连接失败: ${error.message}`);
+            }
+        }
+        
+        async function testSimpleTransaction() {
+            log('🔄 测试简单转账（会弹出 MetaMask）...');
+            
+            try {
+                const accounts = await window.ethereum.request({
+                    method: 'eth_requestAccounts'
+                });
+                
+                log('📤 发送交易请求到 MetaMask...');
+                log('⚠️ 请注意 MetaMask 弹窗！');
+                
+                const txHash = await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [{
+                        from: accounts[0],
+                        to: accounts[0],
+                        value: '0x0', // 0 ETH
+                        gas: '0x5208', // 21000
+                        gasPrice: '0x4A817C800' // 20 Gwei
+                    }]
+                });
+                
+                log(`✅ 交易发送成功: ${txHash}`);
+                
+            } catch (error) {
+                if (error.code === 4001) {
+                    log('ℹ️ 用户取消了交易');
+                } else {
+                    log(`❌ 交易失败: ${error.message}`);
+                }
+            }
+        }
+        
+        async function testContractCall() {
+            log('🔄 测试合约存款调用...');
+            
+            try {
+                const accounts = await window.ethereum.request({
+                    method: 'eth_requestAccounts'
+                });
+                
+                const contractAddress = "0xf3dcB0d7497694405D433de5F46C6e77A8Fc467E";
+                const depositAmount = '0x16345785D8A0000'; // 0.1 ETH
+                
+                log('📤 发送存款交易到 MetaMask...');
+                log('⚠️ 请注意 MetaMask 弹窗！');
+                
+                const txHash = await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [{
+                        from: accounts[0],
+                        to: contractAddress,
+                        value: depositAmount,
+                        data: '0xd0e30db0', // deposit() 函数选择器
+                        gas: '0x186A0', // 100000
+                        gasPrice: '0x4A817C800' // 20 Gwei
+                    }]
+                });
+                
+                log(`✅ 存款交易发送成功: ${txHash}`);
+                
+            } catch (error) {
+                if (error.code === 4001) {
+                    log('ℹ️ 用户取消了存款交易');
+                } else {
+                    log(`❌ 存款交易失败: ${error.message}`);
+                }
+            }
+        }
+        
+        // 监听 MetaMask 事件
+        if (typeof window.ethereum !== 'undefined') {
+            window.ethereum.on('accountsChanged', function (accounts) {
+                log(`🔄 账户变更: ${accounts[0] || '无'}`);
+            });
+            
+            window.ethereum.on('chainChanged', function (chainId) {
+                log(`🔄 网络变更: ${parseInt(chainId, 16)}`);
+            });
+        }
+        
+        log('🚀 MetaMask 测试工具已加载');
+    </script>
+</body>
+</html> 

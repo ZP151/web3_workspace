@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>增强版网络连接调试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .disabled {
+            background-color: #6c757d !important;
+            cursor: not-allowed !important;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .progress {
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            padding: 3px;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            background-color: #007bff;
+            height: 20px;
+            border-radius: 8px;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 增强版 Web3 网络连接调试工具</h1>
+    
+    <div id="status"></div>
+    
+    <h2>详细测试步骤</h2>
+    <button onclick="testDetailedTransaction()">🚀 测试详细交易流程</button>
+    <button onclick="testBankDeposit()">💰 测试银行存款</button>
+    <button onclick="clearResults()">🧹 清除结果</button>
+    
+    <div id="results"></div>
+
+    <script>
+        let accounts = [];
+        let chainId;
+        
+        const contractAddresses = {
+            "1337": {
+                "SimpleBank": "0xf3dcB0d7497694405D433de5F46C6e77A8Fc467E",
+                "VotingCore": "0x0ea3dd08Fe63166DdEeFf22745CB774CfAD03337"
+            }
+        };
+        
+        // SimpleBank ABI (简化版，只包含需要的函数)
+        const SimpleBankABI = [
+            "function deposit() payable",
+            "function getBalance(address account) view returns (uint256)",
+            "function minimumDeposit() view returns (uint256)",
+            "function withdraw(uint256 amount)",
+            "function getAccountInfo(address account) view returns (uint256, uint256, uint256)"
+        ];
+        
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(div);
+            console.log(message);
+            
+            // 自动滚动到底部
+            results.scrollTop = results.scrollHeight;
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        // 带超时的Promise包装器
+        function withTimeout(promise, timeoutMs, timeoutMessage) {
+            return Promise.race([
+                promise,
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs)
+                )
+            ]);
+        }
+        
+        // 初始化连接
+        async function initConnection() {
+            if (typeof window.ethereum === 'undefined') {
+                throw new Error('未检测到 MetaMask');
+            }
+            
+            // 请求连接钱包
+            accounts = await window.ethereum.request({
+                method: 'eth_requestAccounts'
+            });
+            
+            if (accounts.length === 0) {
+                throw new Error('没有可用的账户');
+            }
+            
+            // 获取当前网络
+            chainId = await window.ethereum.request({
+                method: 'eth_chainId'
+            });
+            
+            const chainIdDecimal = parseInt(chainId, 16);
+            if (chainIdDecimal !== 1337) {
+                throw new Error(`当前不在 Ganache 网络，当前网络: ${chainIdDecimal}`);
+            }
+            
+            return { accounts, chainId: chainIdDecimal };
+        }
+        
+        async function testDetailedTransaction() {
+            log('🚀 开始详细交易测试...', 'info');
+            
+            try {
+                // 第1步：初始化连接
+                log('第1步：初始化连接...', 'info');
+                const { accounts: connectedAccounts, chainId: currentChainId } = await withTimeout(
+                    initConnection(),
+                    10000,
+                    '连接超时 (10秒)'
+                );
+                log(`✅ 连接成功 - 账户: ${connectedAccounts[0]}, 网络: ${currentChainId}`, 'success');
+                
+                // 第2步：检查余额
+                log('第2步：检查账户余额...', 'info');
+                const balance = await withTimeout(
+                    window.ethereum.request({
+                        method: 'eth_getBalance',
+                        params: [accounts[0], 'latest']
+                    }),
+                    5000,
+                    '获取余额超时'
+                );
+                const balanceInEth = parseInt(balance, 16) / Math.pow(10, 18);
+                log(`✅ 当前余额: ${balanceInEth.toFixed(4)} ETH`, 'success');
+                
+                // 第3步：准备交易参数
+                log('第3步：准备交易参数...', 'info');
+                const txParams = {
+                    from: accounts[0],
+                    to: accounts[0], // 转给自己
+                    value: '0x0', // 0 ETH
+                    gas: '0x5208', // 21000 gas
+                    gasPrice: '0x4A817C800' // 20 Gwei
+                };
+                log(`✅ 交易参数准备完成`, 'success');
+                log(`<pre>${JSON.stringify(txParams, null, 2)}</pre>`, 'info');
+                
+                // 第4步：发送交易（带详细监控）
+                log('第4步：发送交易...', 'info');
+                log('⚠️ 请注意检查 MetaMask 弹窗！', 'warning');
+                
+                let txHash;
+                try {
+                    // 设置较长的超时时间，给用户时间确认
+                    txHash = await withTimeout(
+                        window.ethereum.request({
+                            method: 'eth_sendTransaction',
+                            params: [txParams]
+                        }),
+                        60000, // 60秒超时
+                        '交易发送超时 - 可能是用户取消或MetaMask无响应'
+                    );
+                    log(`✅ 交易发送成功! Hash: ${txHash}`, 'success');
+                } catch (error) {
+                    if (error.message.includes('User denied')) {
+                        log('ℹ️ 用户取消了交易', 'warning');
+                        return;
+                    } else if (error.message.includes('timeout') || error.message.includes('超时')) {
+                        log('⚠️ 交易发送超时 - 请检查 MetaMask 是否有待确认的交易', 'warning');
+                        log('🔧 解决方案: 点击 MetaMask 扩展图标，查看是否有未确认的交易', 'info');
+                        return;
+                    } else {
+                        throw error;
+                    }
+                }
+                
+                // 第5步：等待交易确认
+                log('第5步：等待交易确认...', 'info');
+                let receipt = null;
+                let attempts = 0;
+                const maxAttempts = 30;
+                
+                // 创建进度条
+                const progressDiv = document.createElement('div');
+                progressDiv.className = 'progress';
+                progressDiv.innerHTML = '<div class="progress-bar" style="width: 0%">等待确认...</div>';
+                document.getElementById('results').appendChild(progressDiv);
+                
+                while (!receipt && attempts < maxAttempts) {
+                    try {
+                        receipt = await window.ethereum.request({
+                            method: 'eth_getTransactionReceipt',
+                            params: [txHash]
+                        });
+                        
+                        if (!receipt) {
+                            attempts++;
+                            const progress = (attempts / maxAttempts) * 100;
+                            progressDiv.querySelector('.progress-bar').style.width = `${progress}%`;
+                            progressDiv.querySelector('.progress-bar').textContent = `等待确认... ${attempts}/${maxAttempts}`;
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        }
+                    } catch (error) {
+                        log(`⚠️ 获取交易收据失败 (尝试 ${attempts + 1}): ${error.message}`, 'warning');
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        attempts++;
+                    }
+                }
+                
+                // 移除进度条
+                progressDiv.remove();
+                
+                if (receipt) {
+                    log(`✅ 交易确认成功!`, 'success');
+                    log(`   区块号: ${parseInt(receipt.blockNumber, 16)}`, 'success');
+                    log(`   Gas 使用: ${parseInt(receipt.gasUsed, 16)}`, 'success');
+                    log(`   状态: ${receipt.status === '0x1' ? '成功' : '失败'}`, receipt.status === '0x1' ? 'success' : 'error');
+                    log('🎉 交易流程完全正常！', 'success');
+                } else {
+                    log('⚠️ 交易发送成功但确认超时', 'warning');
+                    log('这可能是正常的，交易可能仍在处理中', 'info');
+                }
+                
+            } catch (error) {
+                log(`❌ 详细交易测试失败: ${error.message}`, 'error');
+                
+                // 提供详细的错误分析
+                if (error.message.includes('User denied')) {
+                    log('🔧 解决方案: 用户取消了交易，这是正常的', 'info');
+                } else if (error.message.includes('insufficient funds')) {
+                    log('🔧 解决方案: 账户余额不足', 'info');
+                } else if (error.message.includes('timeout') || error.message.includes('超时')) {
+                    log('🔧 可能的原因:', 'info');
+                    log('1. MetaMask 弹窗被阻止', 'info');
+                    log('2. MetaMask 扩展无响应', 'info');
+                    log('3. 网络连接问题', 'info');
+                } else {
+                    log('🔧 通用解决方案:', 'info');
+                    log('1. 刷新页面重试', 'info');
+                    log('2. 重启 MetaMask', 'info');
+                    log('3. 检查 Ganache 状态', 'info');
+                }
+            }
+        }
+        
+        async function testBankDeposit() {
+            log('💰 测试银行存款交易...', 'info');
+            
+            try {
+                await initConnection();
+                
+                const bankAddress = contractAddresses["1337"].SimpleBank;
+                const depositAmount = '0x16345785D8A0000'; // 0.1 ETH in wei
+                
+                // 构造存款交易
+                const txParams = {
+                    from: accounts[0],
+                    to: bankAddress,
+                    value: depositAmount,
+                    data: '0xd0e30db0', // deposit() 函数选择器
+                    gas: '0x186A0', // 100000 gas
+                    gasPrice: '0x4A817C800' // 20 Gwei
+                };
+                
+                log('准备发送存款交易...', 'info');
+                log(`存款金额: 0.1 ETH`, 'info');
+                log('⚠️ 请确认 MetaMask 弹窗！', 'warning');
+                
+                const txHash = await withTimeout(
+                    window.ethereum.request({
+                        method: 'eth_sendTransaction',
+                        params: [txParams]
+                    }),
+                    60000,
+                    '存款交易超时'
+                );
+                
+                log(`✅ 存款交易发送成功! Hash: ${txHash}`, 'success');
+                log('🔄 等待交易确认...', 'info');
+                
+                // 等待确认
+                let receipt = null;
+                let attempts = 0;
+                
+                while (!receipt && attempts < 30) {
+                    receipt = await window.ethereum.request({
+                        method: 'eth_getTransactionReceipt',
+                        params: [txHash]
+                    });
+                    
+                    if (!receipt) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        attempts++;
+                    }
+                }
+                
+                if (receipt) {
+                    log(`✅ 存款交易确认成功! 区块: ${parseInt(receipt.blockNumber, 16)}`, 'success');
+                    log('🎉 银行存款功能正常！', 'success');
+                } else {
+                    log('⚠️ 存款交易确认超时', 'warning');
+                }
+                
+            } catch (error) {
+                log(`❌ 银行存款测试失败: ${error.message}`, 'error');
+                
+                if (error.message.includes('User denied')) {
+                    log('ℹ️ 用户取消了存款交易', 'info');
+                } else if (error.message.includes('timeout')) {
+                    log('⚠️ 存款交易超时 - 检查 MetaMask 弹窗', 'warning');
+                }
+            }
+        }
+        
+        // 页面加载时显示初始状态
+        window.addEventListener('load', function() {
+            log('🚀 增强版网络连接调试工具已加载', 'info');
+            log('这个工具提供更详细的交易测试和错误分析', 'info');
+            log('点击按钮开始测试...', 'info');
+        });
+        
+        // 监听 MetaMask 事件
+        if (typeof window.ethereum !== 'undefined') {
+            window.ethereum.on('accountsChanged', function (accounts) {
+                log(`🔄 账户已更改: ${accounts[0] || '无账户'}`, 'info');
+            });
+            
+            window.ethereum.on('chainChanged', function (chainId) {
+                const chainIdDecimal = parseInt(chainId, 16);
+                log(`🔄 网络已更改: ${chainIdDecimal}`, 'info');
+            });
+        }
+    </script>
+</body>
+</html> 

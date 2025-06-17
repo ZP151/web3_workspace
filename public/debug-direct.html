@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>直接测试MetaMask弹窗</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .button {
+            background-color: #ff6b35;
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 15px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .button:hover {
+            background-color: #e55a2b;
+        }
+        .result {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border-left-color: #ffc107;
+            color: #856404;
+        }
+        .success {
+            background-color: #d4edda;
+            border-left-color: #28a745;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔥 强制测试 MetaMask 弹窗</h1>
+    
+    <div class="warning">
+        <strong>⚠️ 重要提示：</strong><br>
+        1. 确保MetaMask扩展已解锁<br>
+        2. 检查浏览器是否阻止了弹窗<br>
+        3. 每次点击后请仔细观察屏幕变化
+    </div>
+    
+    <button class="button" onclick="forceMetaMaskPopup()">🚀 强制触发 MetaMask 弹窗</button>
+    <button class="button" onclick="checkMetaMaskState()">🔍 检查 MetaMask 状态</button>
+    <button class="button" onclick="testMinimalTransaction()">💸 最简单交易测试</button>
+    
+    <div id="results"></div>
+
+    <script>
+        function log(message, type = 'result') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            results.appendChild(div);
+            console.log(message);
+            
+            // 自动滚动到最新消息
+            div.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        async function checkMetaMaskState() {
+            log('🔍 检查 MetaMask 详细状态...', 'result');
+            
+            if (typeof window.ethereum === 'undefined') {
+                log('❌ MetaMask 未检测到', 'error');
+                return;
+            }
+            
+            try {
+                // 检查连接状态
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                log(`📱 当前账户: ${accounts[0] || '未连接'}`, accounts[0] ? 'success' : 'warning');
+                
+                // 检查网络
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                log(`🌐 当前网络: ${parseInt(chainId, 16)} (${chainId})`, 'success');
+                
+                // 检查是否解锁
+                const isUnlocked = await window.ethereum._metamask.isUnlocked();
+                log(`🔓 MetaMask 解锁状态: ${isUnlocked ? '已解锁' : '已锁定'}`, isUnlocked ? 'success' : 'error');
+                
+                // 检查权限
+                const permissions = await window.ethereum.request({
+                    method: 'wallet_getPermissions'
+                });
+                log(`🔑 权限数量: ${permissions.length}`, 'success');
+                
+            } catch (error) {
+                log(`❌ 状态检查失败: ${error.message}`, 'error');
+            }
+        }
+        
+        async function forceMetaMaskPopup() {
+            log('🚀 开始强制触发 MetaMask 弹窗...', 'warning');
+            
+            try {
+                // 首先确保连接
+                log('第1步: 请求账户连接...', 'result');
+                const accounts = await window.ethereum.request({
+                    method: 'eth_requestAccounts'
+                });
+                log(`✅ 账户连接成功: ${accounts[0]}`, 'success');
+                
+                // 添加延迟确保MetaMask准备就绪
+                log('第2步: 等待2秒确保MetaMask准备就绪...', 'result');
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // 发送最简单的交易
+                log('第3步: 发送交易请求...', 'warning');
+                log('🔥 <strong>现在应该弹出 MetaMask 确认窗口！</strong>', 'warning');
+                log('👀 请仔细检查：', 'warning');
+                log('- 屏幕中央是否有弹窗', 'warning');
+                log('- 任务栏是否有闪烁的MetaMask图标', 'warning');
+                log('- 浏览器地址栏是否有弹窗阻止图标', 'warning');
+                
+                const txHash = await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [{
+                        from: accounts[0],
+                        to: accounts[0],
+                        value: '0x1', // 1 wei (极小金额)
+                        gas: '0x5208'
+                    }]
+                });
+                
+                log(`🎉 交易成功发送！Hash: ${txHash}`, 'success');
+                log('✅ MetaMask 弹窗功能正常！', 'success');
+                
+            } catch (error) {
+                if (error.code === 4001) {
+                    log('ℹ️ 用户在MetaMask中取消了交易', 'warning');
+                    log('✅ 这说明MetaMask弹窗是正常的！', 'success');
+                } else if (error.code === -32603) {
+                    log('⚠️ 内部JSON-RPC错误，但这表明请求到达了MetaMask', 'warning');
+                } else {
+                    log(`❌ 错误 (代码: ${error.code}): ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        async function testMinimalTransaction() {
+            log('💸 测试最简单的交易...', 'result');
+            
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                
+                if (accounts.length === 0) {
+                    log('⚠️ 请先连接MetaMask账户', 'warning');
+                    return;
+                }
+                
+                log('📤 发送0 ETH转账给自己...', 'result');
+                log('🔔 <strong>请注意MetaMask弹窗！</strong>', 'warning');
+                
+                // 最简单的0 ETH转账
+                const result = await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [{
+                        from: accounts[0],
+                        to: accounts[0],
+                        value: '0x0'
+                    }]
+                });
+                
+                log(`✅ 最简单交易成功: ${result}`, 'success');
+                
+            } catch (error) {
+                if (error.code === 4001) {
+                    log('✅ 用户取消 - 说明弹窗正常工作！', 'success');
+                } else {
+                    log(`❌ 交易失败: ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        // 页面加载完成后的提示
+        window.addEventListener('load', function() {
+            log('🚀 强制MetaMask弹窗测试工具已加载', 'success');
+            log('📋 测试步骤:', 'result');
+            log('1. 点击"检查 MetaMask 状态"确认基本状态', 'result');
+            log('2. 点击"强制触发 MetaMask 弹窗"进行主要测试', 'result');
+            log('3. 如果仍无弹窗，点击"最简单交易测试"', 'result');
+        });
+    </script>
+</body>
+</html> 
