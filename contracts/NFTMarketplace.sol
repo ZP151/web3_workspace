@@ -8,16 +8,22 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 /**
  * @title PlatformNFT
- * @dev 平台NFT合约
+ * @dev 平台NFT合约，支持铸造和版税管理
  */
 contract PlatformNFT is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
     uint256 private _tokenIdCounter;
     mapping(uint256 => address) public creators;
     mapping(uint256 => uint256) public royalties; // 版税百分比 (basis points)
+    mapping(uint256 => uint256) public likes; // NFT点赞数
+    mapping(uint256 => uint256) public views; // NFT查看数
+    mapping(uint256 => mapping(address => bool)) public hasLiked; // 用户是否已点赞
     
     uint256 public mintFee = 0.001 ether;
     
     event NFTMinted(uint256 indexed tokenId, address indexed creator, string tokenURI);
+    event NFTLiked(uint256 indexed tokenId, address indexed liker, uint256 totalLikes);
+    event NFTUnliked(uint256 indexed tokenId, address indexed unliker, uint256 totalLikes);
+    event NFTViewed(uint256 indexed tokenId, address indexed viewer, uint256 totalViews);
     
     constructor() ERC721("Platform NFT", "PNFT") Ownable(msg.sender) {}
     
@@ -33,9 +39,74 @@ contract PlatformNFT is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
         
         creators[tokenId] = msg.sender;
         royalties[tokenId] = royalty;
+        likes[tokenId] = 0;
+        views[tokenId] = 0;
         
         emit NFTMinted(tokenId, msg.sender, tokenURI);
         return tokenId;
+    }
+    
+    /**
+     * @dev 点赞NFT
+     */
+    function likeNFT(uint256 tokenId) external {
+        require(_ownerOf(tokenId) != address(0), "NFT does not exist");
+        require(!hasLiked[tokenId][msg.sender], "Already liked");
+        
+        hasLiked[tokenId][msg.sender] = true;
+        likes[tokenId]++;
+        
+        emit NFTLiked(tokenId, msg.sender, likes[tokenId]);
+    }
+    
+    /**
+     * @dev 取消点赞NFT
+     */
+    function unlikeNFT(uint256 tokenId) external {
+        require(_ownerOf(tokenId) != address(0), "NFT does not exist");
+        require(hasLiked[tokenId][msg.sender], "Not liked yet");
+        
+        hasLiked[tokenId][msg.sender] = false;
+        likes[tokenId]--;
+        
+        emit NFTUnliked(tokenId, msg.sender, likes[tokenId]);
+    }
+    
+    /**
+     * @dev 记录NFT查看
+     */
+    function viewNFT(uint256 tokenId) external {
+        require(_ownerOf(tokenId) != address(0), "NFT does not exist");
+        
+        views[tokenId]++;
+        
+        emit NFTViewed(tokenId, msg.sender, views[tokenId]);
+    }
+    
+    /**
+     * @dev 获取NFT统计信息
+     */
+    function getNFTStats(uint256 tokenId) external view returns (
+        uint256 _likes,
+        uint256 _views,
+        address creator,
+        uint256 royalty
+    ) {
+        require(_ownerOf(tokenId) != address(0), "NFT does not exist");
+        
+        return (
+            likes[tokenId],
+            views[tokenId],
+            creators[tokenId],
+            royalties[tokenId]
+        );
+    }
+    
+    /**
+     * @dev 检查用户是否已点赞NFT
+     */
+    function hasUserLiked(uint256 tokenId, address user) external view returns (bool) {
+        return hasLiked[tokenId][user];
     }
     
     function getCurrentTokenId() external view returns (uint256) {
@@ -87,7 +158,7 @@ contract PlatformNFT is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
 
 /**
  * @title NFTMarketplace
- * @dev NFT市场合约，支持直销和拍卖
+ * @dev NFT市场合约，支持直销和拍卖，以及价格更新
  */
 contract NFTMarketplace is ReentrancyGuard, Ownable {
     PlatformNFT public nftContract;
@@ -105,6 +176,7 @@ contract NFTMarketplace is ReentrancyGuard, Ownable {
         address highestBidder; // 仅用于拍卖
         uint256 highestBid; // 仅用于拍卖
         uint256 createdAt;
+        uint256 updatedAt; // 价格更新时间
     }
     
     struct Bid {
@@ -113,13 +185,26 @@ contract NFTMarketplace is ReentrancyGuard, Ownable {
         uint256 timestamp;
     }
     
+    struct MarketplaceStats {
+        uint256 totalListings;
+        uint256 totalSales;
+        uint256 totalVolume;
+        uint256 totalNFTs;
+        uint256 activeListings;
+    }
+    
     uint256 private _listingIdCounter;
     mapping(uint256 => Listing) public listings;
     mapping(uint256 => Bid[]) public auctionBids;
     mapping(address => uint256) public pendingWithdrawals;
+    mapping(uint256 => uint256) public tokenToListingId; // tokenId => listingId
     
     uint256 public marketplaceFee = 250; // 2.5% = 250/10000
     address public feeRecipient;
+    
+    // 统计数据
+    uint256 public totalSales;
+    uint256 public totalVolume;
     
     event ItemListed(
         uint256 indexed listingId,
@@ -136,6 +221,13 @@ contract NFTMarketplace is ReentrancyGuard, Ownable {
         address indexed buyer,
         address seller,
         uint256 price
+    );
+    
+    event PriceUpdated(
+        uint256 indexed listingId,
+        uint256 indexed tokenId,
+        uint256 oldPrice,
+        uint256 newPrice
     );
     
     event BidPlaced(
@@ -192,28 +284,87 @@ contract NFTMarketplace is ReentrancyGuard, Ownable {
             endTime: endTime,
             highestBidder: address(0),
             highestBid: 0,
-            createdAt: block.timestamp
+            createdAt: block.timestamp,
+            updatedAt: block.timestamp
         });
+        
+        tokenToListingId[tokenId] = listingId;
         
         emit ItemListed(listingId, tokenId, msg.sender, price, listingType, endTime);
     }
     
+    /**
+     * @dev 更新listing价格
+     */
+    function updatePrice(uint256 listingId, uint256 newPrice) external validListing(listingId) {
+        Listing storage listing = listings[listingId];
+        require(listing.seller == msg.sender, "Not the seller");
+        require(listing.listingType == ListingType.FIXED_PRICE, "Can only update fixed price listings");
+        require(newPrice > 0, "Price must be greater than 0");
+        
+        uint256 oldPrice = listing.price;
+        listing.price = newPrice;
+        listing.updatedAt = block.timestamp;
+        
+        emit PriceUpdated(listingId, listing.tokenId, oldPrice, newPrice);
+    }
+    
     function buyItem(uint256 listingId) external payable nonReentrant validListing(listingId) {
         Listing storage listing = listings[listingId];
-        require(listing.listingType == ListingType.FIXED_PRICE, "Not a fixed price listing");
+        require(listing.listingType == ListingType.FIXED_PRICE, "Item is not for direct sale");
         require(msg.value >= listing.price, "Insufficient payment");
-        require(msg.sender != listing.seller, "Cannot buy own item");
+        require(listing.seller != msg.sender, "Cannot buy own item");
         
-        _completeSale(listingId, msg.sender, listing.price);
+        address seller = listing.seller;
+        uint256 price = listing.price;
+        uint256 tokenId = listing.tokenId;
+        
+        // 标记为已售出
+        listing.status = ListingStatus.SOLD;
+        
+        // 计算费用
+        uint256 fee = (price * marketplaceFee) / 10000;
+        uint256 royalty = 0;
+        
+        // 计算版税
+        address creator = nftContract.creators(tokenId);
+        if (creator != address(0) && creator != seller) {
+            uint256 royaltyRate = nftContract.royalties(tokenId);
+            royalty = (price * royaltyRate) / 10000;
+        }
+        
+        uint256 sellerAmount = price - fee - royalty;
+        
+        // 转移NFT
+        nftContract.safeTransferFrom(seller, msg.sender, tokenId);
+        
+        // 分配资金
+        payable(seller).transfer(sellerAmount);
+        if (fee > 0) {
+            payable(feeRecipient).transfer(fee);
+        }
+        if (royalty > 0 && creator != address(0)) {
+            payable(creator).transfer(royalty);
+        }
+        
+        // 退还多余付款
+        if (msg.value > price) {
+            payable(msg.sender).transfer(msg.value - price);
+        }
+        
+        // 更新统计
+        totalSales++;
+        totalVolume += price;
+        
+        emit ItemSold(listingId, tokenId, msg.sender, seller, price);
     }
     
     function placeBid(uint256 listingId) external payable nonReentrant validListing(listingId) {
         Listing storage listing = listings[listingId];
-        require(listing.listingType == ListingType.AUCTION, "Not an auction");
-        require(block.timestamp <= listing.endTime, "Auction ended");
-        require(msg.sender != listing.seller, "Cannot bid on own item");
+        require(listing.listingType == ListingType.AUCTION, "Item is not an auction");
+        require(block.timestamp <= listing.endTime, "Auction has ended");
         require(msg.value > listing.highestBid, "Bid too low");
-        require(msg.value >= listing.price, "Bid below reserve price");
+        require(listing.seller != msg.sender, "Cannot bid on own item");
         
         // 退还之前的最高出价
         if (listing.highestBidder != address(0)) {
@@ -223,6 +374,7 @@ contract NFTMarketplace is ReentrancyGuard, Ownable {
         listing.highestBidder = msg.sender;
         listing.highestBid = msg.value;
         
+        // 记录出价
         auctionBids[listingId].push(Bid({
             bidder: msg.sender,
             amount: msg.value,
@@ -236,15 +388,54 @@ contract NFTMarketplace is ReentrancyGuard, Ownable {
         Listing storage listing = listings[listingId];
         require(listing.listingType == ListingType.AUCTION, "Not an auction");
         require(block.timestamp > listing.endTime, "Auction still active");
-        require(listing.highestBidder != address(0), "No bids placed");
+        require(
+            msg.sender == listing.seller || msg.sender == listing.highestBidder || msg.sender == owner(),
+            "Not authorized"
+        );
         
-        _completeSale(listingId, listing.highestBidder, listing.highestBid);
-        emit AuctionEnded(listingId, listing.highestBidder, listing.highestBid);
+        listing.status = ListingStatus.SOLD;
+        
+        if (listing.highestBidder != address(0)) {
+            address seller = listing.seller;
+            uint256 price = listing.highestBid;
+            uint256 tokenId = listing.tokenId;
+            
+            // 计算费用和版税
+            uint256 fee = (price * marketplaceFee) / 10000;
+            uint256 royalty = 0;
+            
+            address creator = nftContract.creators(tokenId);
+            if (creator != address(0) && creator != seller) {
+                uint256 royaltyRate = nftContract.royalties(tokenId);
+                royalty = (price * royaltyRate) / 10000;
+            }
+            
+            uint256 sellerAmount = price - fee - royalty;
+            
+            // 转移NFT
+            nftContract.safeTransferFrom(seller, listing.highestBidder, tokenId);
+            
+            // 分配资金
+            payable(seller).transfer(sellerAmount);
+            if (fee > 0) {
+                payable(feeRecipient).transfer(fee);
+            }
+            if (royalty > 0 && creator != address(0)) {
+                payable(creator).transfer(royalty);
+            }
+            
+            // 更新统计
+            totalSales++;
+            totalVolume += price;
+            
+            emit AuctionEnded(listingId, listing.highestBidder, listing.highestBid);
+            emit ItemSold(listingId, tokenId, listing.highestBidder, seller, price);
+        }
     }
     
     function cancelListing(uint256 listingId) external validListing(listingId) {
         Listing storage listing = listings[listingId];
-        require(msg.sender == listing.seller, "Only seller can cancel");
+        require(listing.seller == msg.sender || msg.sender == owner(), "Not authorized");
         
         if (listing.listingType == ListingType.AUCTION && listing.highestBidder != address(0)) {
             // 退还最高出价
@@ -252,50 +443,8 @@ contract NFTMarketplace is ReentrancyGuard, Ownable {
         }
         
         listing.status = ListingStatus.CANCELLED;
+        
         emit ListingCancelled(listingId);
-    }
-    
-    function _completeSale(uint256 listingId, address buyer, uint256 price) internal {
-        Listing storage listing = listings[listingId];
-        
-        // 计算费用
-        uint256 marketplaceFeeAmount = (price * marketplaceFee) / 10000;
-        uint256 royaltyAmount = 0;
-        
-        // 计算版税
-        address creator = nftContract.creators(listing.tokenId);
-        if (creator != address(0) && creator != listing.seller) {
-            uint256 royaltyPercent = nftContract.royalties(listing.tokenId);
-            royaltyAmount = (price * royaltyPercent) / 10000;
-        }
-        
-        uint256 sellerAmount = price - marketplaceFeeAmount - royaltyAmount;
-        
-        // 转移NFT
-        nftContract.safeTransferFrom(listing.seller, buyer, listing.tokenId);
-        
-        // 分配资金
-        if (marketplaceFeeAmount > 0) {
-            (bool success, ) = feeRecipient.call{value: marketplaceFeeAmount}("");
-            require(success, "Fee transfer failed");
-        }
-        
-        if (royaltyAmount > 0) {
-            (bool success, ) = creator.call{value: royaltyAmount}("");
-            require(success, "Royalty transfer failed");
-        }
-        
-        (bool success, ) = listing.seller.call{value: sellerAmount}("");
-        require(success, "Seller payment failed");
-        
-        // 退还多余的ETH
-        if (msg.value > price) {
-            (bool success2, ) = buyer.call{value: msg.value - price}("");
-            require(success2, "Excess refund failed");
-        }
-        
-        listing.status = ListingStatus.SOLD;
-        emit ItemSold(listingId, listing.tokenId, buyer, listing.seller, price);
     }
     
     function withdraw() external nonReentrant {
@@ -303,20 +452,86 @@ contract NFTMarketplace is ReentrancyGuard, Ownable {
         require(amount > 0, "No funds to withdraw");
         
         pendingWithdrawals[msg.sender] = 0;
+        payable(msg.sender).transfer(amount);
+    }
+    
+    /**
+     * @dev 获取市场统计信息
+     */
+    function getMarketplaceStats() external view returns (MarketplaceStats memory) {
+        uint256 activeListings = 0;
+        for (uint256 i = 0; i < _listingIdCounter; i++) {
+            if (listings[i].status == ListingStatus.ACTIVE) {
+                activeListings++;
+            }
+        }
         
-        (bool success, ) = msg.sender.call{value: amount}("");
-        require(success, "Withdrawal failed");
+        return MarketplaceStats({
+            totalListings: _listingIdCounter,
+            totalSales: totalSales,
+            totalVolume: totalVolume,
+            totalNFTs: nftContract.totalSupply(),
+            activeListings: activeListings
+        });
     }
     
-    function getListing(uint256 listingId) external view returns (Listing memory) {
-        return listings[listingId];
+    /**
+     * @dev 获取用户的listing
+     */
+    function getUserListings(address user) external view returns (uint256[] memory) {
+        uint256 count = 0;
+        
+        // 计算用户的listing数量
+        for (uint256 i = 0; i < _listingIdCounter; i++) {
+            if (listings[i].seller == user) {
+                count++;
+            }
+        }
+        
+        uint256[] memory userListings = new uint256[](count);
+        uint256 index = 0;
+        
+        // 填充数组
+        for (uint256 i = 0; i < _listingIdCounter; i++) {
+            if (listings[i].seller == user) {
+                userListings[index] = i;
+                index++;
+            }
+        }
+        
+        return userListings;
     }
     
-    function getAuctionBids(uint256 listingId) external view returns (Bid[] memory) {
-        return auctionBids[listingId];
+    function getListing(uint256 listingId) external view returns (
+        uint256 tokenId,
+        address seller,
+        uint256 price,
+        ListingType listingType,
+        ListingStatus status,
+        uint256 endTime,
+        address highestBidder,
+        uint256 highestBid,
+        uint256 createdAt,
+        uint256 updatedAt
+    ) {
+        require(listingId < _listingIdCounter, "Invalid listing");
+        
+        Listing storage listing = listings[listingId];
+        return (
+            listing.tokenId,
+            listing.seller,
+            listing.price,
+            listing.listingType,
+            listing.status,
+            listing.endTime,
+            listing.highestBidder,
+            listing.highestBid,
+            listing.createdAt,
+            listing.updatedAt
+        );
     }
     
-    function getCurrentListingId() external view returns (uint256) {
+    function getListingCount() external view returns (uint256) {
         return _listingIdCounter;
     }
     
@@ -328,5 +543,9 @@ contract NFTMarketplace is ReentrancyGuard, Ownable {
     function setFeeRecipient(address _feeRecipient) external onlyOwner {
         require(_feeRecipient != address(0), "Invalid address");
         feeRecipient = _feeRecipient;
+    }
+    
+    function emergencyWithdraw() external onlyOwner {
+        payable(owner()).transfer(address(this).balance);
     }
 } 

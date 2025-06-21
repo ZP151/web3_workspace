@@ -719,11 +719,11 @@ export default function BankingPage() {
     const totalOwed = parseFloat(loan.amount) + accruedInterest;
 
     toast.success(
-      `贷款 #${loanId + 1} 利息计算:\n` +
-      `本金: ${parseFloat(loan.amount).toFixed(4)} ETH\n` +
-      `已产生利息: ${accruedInterest.toFixed(6)} ETH\n` +
-      `总欠款: ${totalOwed.toFixed(6)} ETH\n` +
-      `年利率: ${loan.interestRate}%`,
+      `Loans #${loanId + 1} Interest calculation.\n` +
+      `Principal: ${parseFloat(loan.amount).toFixed(4)} ETH\n` +
+      `Interest: ${accruedInterest.toFixed(6)} ETH\n` +
+      `Total owed: ${totalOwed.toFixed(6)} ETH\n` +
+      `Annual interest rate: ${loan.interestRate}%`,
       { duration: 8000 }
     );
   };
@@ -733,13 +733,13 @@ export default function BankingPage() {
     console.log('🔍 开始还款流程...', loanId);
     
     if (!isConnected) {
-      toast.error('请先连接钱包');
+      toast.error('Please connect your wallet first');
       return;
     }
 
     const loan = processedLoans[loanId];
     if (!loan || !loan.isActive) {
-      toast.error('找不到活跃贷款信息');
+      toast.error('Can\'t find active loan information');
       return;
     }
 
@@ -753,17 +753,17 @@ export default function BankingPage() {
 
     // 检查余额
     if (!ethBalance || parseFloat(formatEther(ethBalance.value)) < totalRepayment) {
-      toast.error(`余额不足。需要 ${totalRepayment.toFixed(6)} ETH，当前余额 ${ethBalance ? formatEther(ethBalance.value) : '0'} ETH`);
+      toast.error(`Insufficient balance. Need ${totalRepayment.toFixed(6)} ETH, current balance ${ethBalance ? formatEther(ethBalance.value) : '0'} ETH`);
       return;
     }
 
     // 确认还款
     const confirmed = confirm(
-      `确认还款贷款 #${loanId + 1}?\n\n` +
-      `本金: ${parseFloat(loan.amount).toFixed(4)} ETH\n` +
-      `利息: ${accruedInterest.toFixed(6)} ETH\n` +
-      `总还款: ${totalRepayment.toFixed(6)} ETH\n\n` +
-      `还款后将返还抵押品 ${parseFloat(loan.collateral).toFixed(4)} ETH`
+      `Confirm repayment of loan #${loanId + 1}?\n\n` +
+      `Principal: ${parseFloat(loan.amount).toFixed(4)} ETH\n` +
+      `Interest: ${accruedInterest.toFixed(6)} ETH\n` +
+      `Total repayment: ${totalRepayment.toFixed(6)} ETH\n\n` +
+      `After repayment, the collateral will be returned ${parseFloat(loan.collateral).toFixed(4)} ETH`
     );
 
     if (!confirmed) {
@@ -771,8 +771,8 @@ export default function BankingPage() {
     }
 
     // 这里应该调用智能合约的repayLoan函数
-    console.log('📤 正在发送还款交易到智能合约...');
-    toast.success(`贷款 #${loanId + 1} 还款成功！抵押品已返还 - Smart contract integration coming soon`);
+    console.log('📤 Sending repayment transaction to smart contract...');
+    toast.success(`Loan #${loanId + 1} repayment successful! Collateral returned - Smart contract integration coming soon`);
     
     // 添加交易记录
     addTransaction('repay', totalRepayment.toFixed(6), 'mock_tx_hash_' + Date.now());
@@ -782,7 +782,7 @@ export default function BankingPage() {
   const handleViewStakeDetails = (stakeId: number) => {
     const stake = processedStakes[stakeId];
     if (!stake) {
-      toast.error('找不到该质押信息');
+      toast.error('Can\'t find stake information');
       return;
     }
 
@@ -791,14 +791,14 @@ export default function BankingPage() {
     const lockProgress = Math.min(100, ((Date.now() / 1000 - stake.startTime) / stake.lockPeriod) * 100);
 
     const details = 
-      `质押详情 #${stakeId + 1}\n\n` +
-      `质押金额: ${parseFloat(stake.amount).toFixed(4)} ETH\n` +
-      `年化收益率: ${stake.rewardRate}%\n` +
-      `开始时间: ${new Date(stake.startTime * 1000).toLocaleString()}\n` +
-      `锁定期: ${stake.lockPeriod / (24 * 60 * 60)} 天\n` +
-      `解锁进度: ${lockProgress.toFixed(1)}%\n` +
-      `预估奖励: ${estimatedReward.toFixed(6)} ETH\n` +
-      `状态: ${!stake.isActive ? '已提取' : lockTime.isUnlocked ? '可提取' : `锁定中 (${lockTime.days}天${lockTime.hours}小时)`}`;
+      `Stake details #${stakeId + 1}\n\n` +
+      `Stake amount: ${parseFloat(stake.amount).toFixed(4)} ETH\n` +
+      `Annualized return rate: ${stake.rewardRate}%\n` +
+      `Start time: ${new Date(stake.startTime * 1000).toLocaleString()}\n` +
+      `Lock period: ${stake.lockPeriod / (24 * 60 * 60)} days\n` +
+      `Unlock progress: ${lockProgress.toFixed(1)}%\n` +
+      `Estimated reward: ${estimatedReward.toFixed(6)} ETH\n` +
+      `Status: ${!stake.isActive ? 'Unlocked' : lockTime.isUnlocked ? 'Unlocked' : `Locked (${lockTime.days} days ${lockTime.hours} hours)`}`;
 
     toast.success(details, { duration: 10000 });
   };

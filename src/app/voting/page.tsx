@@ -1,384 +1,599 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useAccount, useNetwork, useContractRead, useContractWrite, usePrepareContractWrite } from 'wagmi';
-import { parseEther } from 'viem';
+import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useAccount, useNetwork, useContractRead, useContractWrite, useWaitForTransaction } from 'wagmi';
+import { parseEther, formatEther } from 'viem';
 import { Button } from '@/components/ui/button';
-import { 
-  ArrowLeft, Vote, Clock, CheckCircle, XCircle, Users, Plus, Tag, BarChart3, 
-  Settings, DollarSign, Code, Heart, Filter
-} from 'lucide-react';
+import { Plus, History, Home, ArrowLeft, Vote, DollarSign, Users, Clock, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
-import toast from 'react-hot-toast';
+import VotingStats from './components/VotingStats';
+import CreateProposalForm from './components/CreateProposalForm';
+import ProposalCard from './components/ProposalCard';
 import { getContractAddress, getContractABI } from '@/config/contracts';
-import NetworkStatus from '@/components/NetworkStatus';
-
-// Types for enhanced proposal system
-type ProposalType = 'simple' | 'multiple' | 'weighted';
-type ProposalCategory = 'governance' | 'finance' | 'technical' | 'community';
-
-interface Proposal {
-  id: number;
-  title: string;
-  description: string;
-  voteCount: number;
-  deadline: number;
-  executed: boolean;
-  minVotes: number;
-  hasVoted?: boolean;
-  isActive: boolean;
-  proposalType: ProposalType;
-  category: ProposalCategory;
-}
-
-// Category and type configurations
-const CATEGORY_CONFIG = {
-  governance: {
-    label: 'Governance',
-    color: 'blue',
-    icon: Settings,
-    bg: 'bg-blue-100',
-    text: 'text-blue-800',
-    description: 'Governance decisions'
-  },
-  finance: {
-    label: 'Finance',
-    color: 'green',
-    icon: DollarSign,
-    bg: 'bg-green-100',
-    text: 'text-green-800',
-    description: 'Financial management'
-  },
-  technical: {
-    label: 'Technical',
-    color: 'purple',
-    icon: Code,
-    bg: 'bg-purple-100',
-    text: 'text-purple-800',
-    description: 'Technical upgrades'
-  },
-  community: {
-    label: 'Community',
-    color: 'orange',
-    icon: Heart,
-    bg: 'bg-orange-100',
-    text: 'text-orange-800',
-    description: 'Community activities'
-  }
-};
-
-const VOTING_TYPE_CONFIG = {
-  simple: {
-    label: 'Simple (Yes/No)',
-    icon: CheckCircle,
-    description: 'Simple yes/no voting'
-  },
-  multiple: {
-    label: 'Multiple Choice',
-    icon: BarChart3,
-    description: 'Multiple option voting'
-  },
-  weighted: {
-    label: 'Weighted Voting',
-    icon: Tag,
-    description: 'Weighted voting system'
-  }
-};
+import { FormData, Proposal } from './components/types';
 
 export default function VotingPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { address, isConnected } = useAccount();
   const { chain } = useNetwork();
-  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'create' | 'history'>('history');
+  const [isVoting, setIsVoting] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [proposals, setProposals] = useState<Proposal[]>([]);
-  const [filteredProposals, setFilteredProposals] = useState<Proposal[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<ProposalCategory | 'all'>('all');
-  const [newProposal, setNewProposal] = useState({
-    title: '',
-    description: '',
-    durationHours: 24,
-    minVotes: 100,
-    proposalType: 'simple' as ProposalType,
-    category: 'governance' as ProposalCategory,
+  const [loading, setLoading] = useState(false);
+  const [selectedVote, setSelectedVote] = useState<{proposalId: number, optionId: number} | null>(null);
+  const [formData, setFormData] = useState<FormData | null>(null);
+
+  // Get contract info
+  const contractAddress = chain?.id ? getContractAddress(chain.id, 'VotingCore') : null;
+  const contractABI = getContractABI('VotingCore');
+  const isContractAvailable = !!contractAddress;
+
+  // Get contract statistics
+  const { data: stats, refetch: refetchStats } = useContractRead({
+    address: contractAddress as `0x${string}`,
+    abi: contractABI,
+    functionName: 'getStats',
+    enabled: !!contractAddress,
   });
 
-  // Get contract address and ABI
-  const contractAddress = chain?.id ? getContractAddress(chain.id, 'VotingCore') : undefined;
-  const contractABI = getContractABI('VotingCore');
+  // Get user voting power
+  const { data: userVotingPower, refetch: refetchVotingPower } = useContractRead({
+    address: contractAddress as `0x${string}`,
+    abi: contractABI,
+    functionName: 'votingPower',
+    args: [address],
+    enabled: !!contractAddress && !!address,
+  });
 
-  // Read proposal count
+  // Get proposal count
   const { data: proposalCount, refetch: refetchProposalCount } = useContractRead({
     address: contractAddress as `0x${string}`,
     abi: contractABI,
     functionName: 'getProposalCount',
-    enabled: !!contractAddress && isConnected,
+    enabled: !!contractAddress,
   });
 
-  // Prepare create proposal transaction
-  const { config: createProposalConfig } = usePrepareContractWrite({
+  // Get user's total votes cast
+  const { data: userTotalVotes } = useContractRead({
+    address: contractAddress as `0x${string}`,
+    abi: contractABI,
+    functionName: 'userVoteCount',
+    args: [address],
+    enabled: !!contractAddress && !!address,
+  });
+
+  // Vote transaction
+  const { writeAsync: vote, data: voteData } = useContractWrite({
+    address: contractAddress as `0x${string}`,
+    abi: contractABI,
+    functionName: 'vote',
+    onSuccess: (data) => {
+      console.log('🗳️ Vote transaction sent:', data);
+    },
+    onError: (error) => {
+      console.error('🚨 Vote transaction failed:', error);
+    }
+  });
+
+  // Weighted vote transaction
+  const { writeAsync: voteWithWeight, data: weightedVoteData } = useContractWrite({
+    address: contractAddress as `0x${string}`,
+    abi: contractABI,
+    functionName: 'voteWithWeight',
+    onSuccess: (data) => {
+      console.log('🗳️ Weighted vote transaction sent:', data);
+    },
+    onError: (error) => {
+      console.error('🚨 Weighted vote transaction failed:', error);
+    }
+  });
+
+  const { isLoading: isVotingTransaction } = useWaitForTransaction({
+    hash: voteData?.hash,
+    onSuccess: () => {
+      setSelectedVote(null);
+      setIsVoting(false);
+      // Refetch data after successful vote
+      refetchStats();
+      refetchProposalCount();
+      refetchVotingPower();
+      loadProposalsFromContract();
+      alert('Vote successful!');
+    },
+    onError: (error) => {
+      console.error('Vote transaction failed:', error);
+      setSelectedVote(null);
+      setIsVoting(false);
+      alert('Vote failed: ' + ((error as Error).message || 'Unknown error'));
+    }
+  });
+
+  // Debug: Log formData content
+  useEffect(() => {
+    if (formData) {
+      console.log('🔍 FormData Debug:', {
+        title: formData.title,
+        titleType: typeof formData.title,
+        titleLength: formData.title?.length,
+        description: formData.description,
+        descriptionType: typeof formData.description,
+        descriptionLength: formData.description?.length,
+        duration: formData.duration,
+        durationType: typeof formData.duration,
+        minVotes: formData.minVotes,
+        minVotesType: typeof formData.minVotes,
+        proposalType: formData.proposalType,
+        proposalTypeType: typeof formData.proposalType,
+        category: formData.category,
+        categoryType: typeof formData.category,
+        options: formData.options,
+        optionsType: typeof formData.options,
+        rawFormData: formData
+      });
+    }
+  }, [formData]);
+
+  // Direct contract write without prepare
+  const { write: createProposal, data: createData, error: writeError, isLoading: isWriteLoading } = useContractWrite({
     address: contractAddress as `0x${string}`,
     abi: contractABI,
     functionName: 'createProposal',
-    args: [newProposal.description, newProposal.durationHours, newProposal.minVotes],
-    value: parseEther('0.001'), // 支付创建提案费用
-    enabled: !!contractAddress && isConnected && !!newProposal.title && !!newProposal.description,
-  });
-
-  const { write: createProposal, isLoading: isCreatingProposal } = useContractWrite({
-    ...createProposalConfig,
+    value: stats ? (stats as any)[4] : parseEther('0.01'),
     onSuccess: (data) => {
-      toast.success('Proposal created successfully!');
-      
-      // Add the new proposal to localStorage immediately
-      const newProposalData: Proposal = {
-        id: proposals.length,
-        title: newProposal.title,
-        description: newProposal.description,
-        voteCount: 0,
-        deadline: Date.now() + (newProposal.durationHours * 60 * 60 * 1000),
-        executed: false,
-        minVotes: newProposal.minVotes,
-        hasVoted: false,
-        isActive: true,
-        proposalType: newProposal.proposalType,
-        category: newProposal.category,
-      };
-      
-      const updatedProposals = [...proposals, newProposalData];
-      setProposals(updatedProposals);
-      saveProposals(updatedProposals);
-      
-      // Reset form
-      setNewProposal({
-        title: '',
-        description: '',
-        durationHours: 24,
-        minVotes: 100,
-        proposalType: 'simple',
-        category: 'governance',
-      });
-      
-      refetchProposalCount();
-      loadProposals();
+      console.log('🎉 Transaction sent successfully:', data);
     },
     onError: (error) => {
-      console.error('Failed to create proposal:', error);
-      toast.error('Failed to create proposal');
-    },
+      console.error('🚨 Transaction failed:', error);
+    }
   });
 
-  // localStorage key for proposals
-  const getProposalKey = () => {
-    return `voting_proposals_${address}_${chain?.id}`;
-  };
+  // Debug contract write status
+  useEffect(() => {
+    console.log('📋 Contract Write Debug:', {
+      formData: !!formData,
+      contractAddress,
+      chainId: chain?.id,
+      createProposal: !!createProposal,
+      writeError: writeError?.message,
+      isWriteLoading,
+      stats: stats ? 'loaded' : 'not loaded',
+      proposalFee: stats ? formatEther((stats as any)[4]) : 'unknown'
+    });
+  }, [formData, contractAddress, chain?.id, createProposal, writeError, isWriteLoading, stats]);
 
-  // Load proposals from localStorage
-  const loadStoredProposals = () => {
-    if (!address || !chain?.id) return [];
-    
-    try {
-      const key = getProposalKey();
-      const stored = localStorage.getItem(key);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch (error) {
-      console.error('Error loading proposals:', error);
+  const { isLoading: isCreatingTransaction } = useWaitForTransaction({
+    hash: createData?.hash,
+    onSuccess: () => {
+      setFormData(null);
+      setIsCreating(false);
+      setActiveTab('history');
+      // Refetch data after successful creation
+      refetchStats();
+      refetchProposalCount();
+      loadProposalsFromContract();
+      alert('Proposal created successfully!');
+    },
+    onError: (error) => {
+      console.error('Create proposal transaction failed:', error);
+      setFormData(null);
+      setIsCreating(false);
+      alert('Proposal creation failed: ' + ((error as Error).message || 'Unknown error'));
     }
-    return [];
-  };
+  });
 
-  // Save proposals to localStorage
-  const saveProposals = (proposalsToSave: Proposal[]) => {
-    if (!address || !chain?.id) return;
-    
-    try {
-      const key = getProposalKey();
-      localStorage.setItem(key, JSON.stringify(proposalsToSave));
-    } catch (error) {
-      console.error('Error saving proposals:', error);
+  // Mock proposal data for development when contract not available
+  const mockProposals: Proposal[] = [
+    {
+      id: 0,
+      title: "Increase Platform Trading Fee to 0.1%",
+      description: "To maintain platform operations and development, we propose increasing the trading fee from 0.05% to 0.1%. This will help us provide better services and security.",
+      voteCount: 156,
+      deadline: Math.floor(Date.now() / 1000) + 86400 * 7,
+      executed: false,
+      minVotes: 100,
+      proposalType: 0,
+      category: 1,
+      creator: "0x1234567890123456789012345678901234567890",
+      createdAt: Math.floor(Date.now() / 1000) - 86400 * 2,
+      hasVoted: false
+    },
+    {
+      id: 1,
+      title: "Choose New Liquidity Mining Reward Token",
+      description: "We need to select a new token for liquidity mining rewards. Please choose the most suitable token from the following options.",
+      voteCount: 89,
+      deadline: Math.floor(Date.now() / 1000) + 86400 * 5,
+      executed: false,
+      minVotes: 50,
+      proposalType: 1,
+      category: 1,
+      creator: "0x2345678901234567890123456789012345678901",
+      createdAt: Math.floor(Date.now() / 1000) - 86400 * 1,
+      options: ["USDC", "DAI", "WETH", "Custom Token"],
+      optionVotes: [25, 18, 32, 14],
+      hasVoted: false
     }
-  };
+  ];
 
-  // Load all proposal data
-  function loadProposals() {
-    if (!contractAddress || !proposalCount || !isConnected) return;
-
-    setLoading(true);
-    setTimeout(async () => {
+  // Load proposals from contract
+  const loadProposalsFromContract = async () => {
+    if (!contractAddress || !proposalCount) {
+      // Fallback to mock data
+      setLoading(true);
       try {
-        const proposalsData: Proposal[] = [];
-        const count = Number(proposalCount);
-        const storedProposals = loadStoredProposals();
-
-        // First, try to load proposals from the contract
-        for (let i = 0; i < count; i++) {
-          try {
-            // In a real implementation, you would call the contract to get proposal data
-            // For now, we'll use stored data if available, otherwise create sample data
-            const storedProposal = storedProposals.find((p: Proposal) => p.id === i);
-            
-            if (storedProposal) {
-              proposalsData.push(storedProposal);
-            } else {
-              // Generate sample proposal if not found in storage
-              const sampleProposals = [
-                { category: 'governance', type: 'simple', title: 'Protocol Governance Update' },
-                { category: 'finance', type: 'multiple', title: 'Treasury Fund Allocation' },
-                { category: 'technical', type: 'weighted', title: 'Smart Contract Upgrade v2.0' },
-                { category: 'community', type: 'simple', title: 'Community Event Proposal' },
-              ];
-              
-              const sample = sampleProposals[i % sampleProposals.length];
-              const newProposal: Proposal = {
-                id: i,
-                title: `${sample.title} #${i + 1}`,
-                description: `This is a detailed description for ${sample.title}. This proposal aims to improve the platform through various enhancements and community-driven improvements.`,
-                voteCount: Math.floor(Math.random() * 200),
-                deadline: Date.now() + 86400000 * (i + 1), // Expires in 1-5 days
-                executed: false,
-                minVotes: 100,
-                hasVoted: Math.random() > 0.5,
-                isActive: true,
-                proposalType: sample.type as ProposalType,
-                category: sample.category as ProposalCategory,
-              };
-              proposalsData.push(newProposal);
-            }
-          } catch (error) {
-            console.error(`Failed to load proposal ${i}:`, error);
-          }
-        }
-
-        // If we have any stored proposals that aren't in the contract yet, add them
-        const extraStoredProposals = storedProposals.filter((p: Proposal) => p.id >= count);
-        proposalsData.push(...extraStoredProposals);
-
-        // Save the updated proposals back to localStorage
-        saveProposals(proposalsData);
-        
-        setProposals(proposalsData);
-        setFilteredProposals(proposalsData);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setProposals(mockProposals);
       } catch (error) {
         console.error('Failed to load proposals:', error);
-        toast.error('Failed to load proposals');
       } finally {
         setLoading(false);
       }
-    }, 100);
-  }
-
-  // Filter proposals by category
-  useEffect(() => {
-    if (selectedCategory === 'all') {
-      setFilteredProposals(proposals);
-    } else {
-      setFilteredProposals(proposals.filter(p => p.category === selectedCategory));
-    }
-  }, [proposals, selectedCategory]);
-
-  // Vote function
-  const handleVote = async (proposalId: number) => {
-    if (!isConnected || !contractAddress) {
-      toast.error('Please connect your wallet first');
       return;
     }
-
+    
     setLoading(true);
     try {
-      // This needs to call the smart contract's vote function
-      // Temporarily using mock voting, should actually use useContractWrite
-      setProposals(prev => prev.map(p => 
-        p.id === proposalId 
-          ? { ...p, voteCount: p.voteCount + 1, hasVoted: true }
-          : p
-      ));
+      const count = Number(proposalCount);
+      const loadedProposals: Proposal[] = [];
       
-      toast.success('Vote successful!');
+      // 使用ethers直接调用合约来获取真实数据
+      for (let i = 0; i < Math.min(count, 10); i++) {
+        try {
+          // 直接使用合约地址和ABI调用
+          const { createPublicClient, http } = await import('viem');
+          const { ganache } = await import('@/lib/wagmi');
+          
+          const client = createPublicClient({
+            chain: ganache,
+            transport: http('http://127.0.0.1:7545')
+          });
+          
+          // 调用getProposal函数
+          const proposalData = await client.readContract({
+            address: contractAddress as `0x${string}`,
+            abi: contractABI,
+            functionName: 'getProposal',
+            args: [BigInt(i)]
+          }) as any[];
+          
+          console.log(`📄 原始提案数据 ${i}:`, proposalData);
+          
+          // 解析合约返回的数据（按照实际合约返回的顺序）
+          const [
+            title,
+            description, 
+            voteCount,
+            deadline,
+            executed,
+            minVotes,
+            proposalType,
+            category,
+            creator,
+            createdAt
+          ] = proposalData;
+          
+          // 检查用户是否已投票
+          let hasVoted = false;
+          if (address) {
+            try {
+                             const hasVotedResult = await client.readContract({
+                 address: contractAddress as `0x${string}`,
+                 abi: contractABI,
+                 functionName: 'hasVoted',
+                 args: [BigInt(i), address]
+               });
+               hasVoted = Boolean(hasVotedResult);
+            } catch (error) {
+              console.warn(`无法检查投票状态 ${i}:`, error);
+            }
+          }
+          
+          // 如果是多选提案，获取选项
+          let options: string[] | undefined;
+          let optionVotes: number[] | undefined;
+          
+          if (proposalType === 1) {
+            try {
+              const optionsData = await client.readContract({
+                address: contractAddress as `0x${string}`,
+                abi: contractABI,
+                functionName: 'getProposalOptions',
+                args: [BigInt(i)]
+              }) as [string[], bigint[]];
+              
+              options = optionsData[0];
+              optionVotes = optionsData[1].map(v => Number(v));
+            } catch (error) {
+              console.warn(`无法获取选项 ${i}:`, error);
+              options = [];
+              optionVotes = [];
+            }
+          }
+          
+          const proposal: Proposal = {
+            id: i,
+            title: title || `提案 ${i + 1}`,
+            description: description || `提案 ${i + 1} 的描述`,
+            voteCount: Number(voteCount || 0),
+            deadline: Number(deadline || 0),
+            executed: Boolean(executed),
+            minVotes: Number(minVotes || 0),
+            proposalType: Number(proposalType || 0),
+            category: Number(category || 0),
+            creator: creator || "0x0000000000000000000000000000000000000000",
+            createdAt: Number(createdAt || 0),
+            hasVoted,
+            options,
+            optionVotes
+          };
+          
+          console.log(`✅ 解析后的提案 ${i}:`, proposal);
+          loadedProposals.push(proposal);
+          
+        } catch (error) {
+          console.error(`Failed to load proposal ${i}:`, error);
+          // 添加错误占位符
+          loadedProposals.push({
+            id: i,
+            title: `提案 ${i + 1} (加载失败)`,
+            description: `无法从合约加载提案 ${i + 1} 的详细信息。错误: ${error}`,
+            voteCount: 0,
+            deadline: Math.floor(Date.now() / 1000) + 86400,
+            executed: false,
+            minVotes: 1,
+            proposalType: 0,
+            category: 0,
+            creator: "0x0000000000000000000000000000000000000000",
+            createdAt: Math.floor(Date.now() / 1000),
+            hasVoted: false
+          });
+        }
+      }
+      
+      setProposals(loadedProposals.reverse()); // Show newest first
     } catch (error) {
-      console.error('Vote failed:', error);
-      toast.error('Vote failed');
+      console.error('Failed to load proposals from contract:', error);
+      // Fallback to mock data
+      setProposals(mockProposals);
     } finally {
       setLoading(false);
     }
   };
 
-  // Create proposal function
-  const handleCreateProposal = async () => {
+  // Load proposals (use contract if available, otherwise mock)
+  const loadProposals = async () => {
+    if (isContractAvailable) {
+      await loadProposalsFromContract();
+    } else {
+      setLoading(true);
+      try {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setProposals(mockProposals);
+      } catch (error) {
+        console.error('Failed to load proposals:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  // Handle voting with real contract calls
+  const handleVote = async (proposalId: number, optionId = 0, voteWeight = 1) => {
     if (!isConnected) {
-      toast.error('Please connect your wallet first');
+      alert('Please connect your wallet first');
       return;
     }
 
-    if (!newProposal.title.trim()) {
-      toast.error('Please enter proposal title');
+    if (!isContractAvailable) {
+      // Fallback to simulation
+      setIsVoting(true);
+      try {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        setProposals(prev => prev.map(p => 
+          p.id === proposalId 
+            ? { 
+                ...p, 
+                voteCount: p.voteCount + 1,
+                hasVoted: true,
+                optionVotes: p.optionVotes ? p.optionVotes.map((votes, i) => 
+                  i === optionId ? votes + 1 : votes
+                ) : undefined
+              }
+            : p
+        ));
+        
+        alert('Vote successful! (Simulated)');
+      } catch (error) {
+        console.error('Voting failed:', error);
+        alert('Voting failed, please try again');
+      } finally {
+        setIsVoting(false);
+      }
       return;
     }
 
-    if (!newProposal.description.trim()) {
-      toast.error('Please enter proposal description');
+    // Real contract call
+    setIsVoting(true);
+    setSelectedVote({ proposalId, optionId });
+    
+    try {
+      const baseFee = stats ? (stats as any)[3] : parseEther('0.001');
+      
+      // 检查是否是权重投票
+      const proposal = proposals.find(p => p.id === proposalId);
+      const isWeightedVote = proposal?.proposalType === 2;
+      
+      if (isWeightedVote && voteWeight > 1) {
+        // 权重投票费用按权重倍数计算
+        const votingFee = parseEther((parseFloat(formatEther(baseFee)) * voteWeight).toString());
+        
+        console.log('🗳️ Weighted voting with params:', {
+          proposalId: BigInt(proposalId),
+          optionId: BigInt(optionId),
+          voteWeight: BigInt(voteWeight),
+          value: votingFee
+        });
+        
+        await voteWithWeight({
+          args: [BigInt(proposalId), BigInt(optionId), BigInt(voteWeight)],
+          value: votingFee
+        });
+      } else {
+        // 普通投票
+        console.log('🗳️ Regular voting with params:', {
+          proposalId: BigInt(proposalId),
+          optionId: BigInt(optionId),
+          value: baseFee
+        });
+        
+        await vote({
+          args: [BigInt(proposalId), BigInt(optionId)],
+          value: baseFee
+        });
+      }
+      
+    } catch (error) {
+      console.error('Voting failed:', error);
+      setIsVoting(false);
+      setSelectedVote(null);
+      alert('Vote failed: ' + ((error as Error).message || 'Unknown error'));
+    }
+  };
+
+  // Handle proposal creation with real contract calls
+  const handleCreateProposal = async (data: FormData) => {
+    console.log('🚀 HandleCreateProposal called:', {
+      isConnected,
+      isContractAvailable,
+      contractAddress,
+      chainId: chain?.id,
+      data
+    });
+
+    if (!isConnected) {
+      alert('Please connect your wallet first');
       return;
     }
 
-    if (!createProposal) {
-      toast.error('Unable to create proposal, please check network connection');
+    if (!isContractAvailable) {
+      console.log('⚠️ Contract not available, using simulation mode');
+      // Fallback to simulation
+      setIsCreating(true);
+      try {
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        const newProposal: Proposal = {
+          id: proposals.length,
+          title: data.title,
+          description: data.description,
+          voteCount: 0,
+          deadline: Math.floor(Date.now() / 1000) + Number(data.duration) * 3600,
+          executed: false,
+          minVotes: Number(data.minVotes),
+          proposalType: data.proposalType,
+          category: data.category,
+          creator: address || "0x0000000000000000000000000000000000000000",
+          createdAt: Math.floor(Date.now() / 1000),
+          options: data.proposalType === 1 ? data.options.filter(opt => opt.trim() !== '') : undefined,
+          optionVotes: data.proposalType === 1 ? new Array(data.options.filter(opt => opt.trim() !== '').length).fill(0) : undefined,
+          hasVoted: false
+        };
+        
+        setProposals(prev => [newProposal, ...prev]);
+        setActiveTab('history');
+        alert('Proposal created successfully! (Simulated)');
+      } catch (error) {
+        console.error('Failed to create proposal:', error);
+        alert('Failed to create proposal, please try again');
+      } finally {
+        setIsCreating(false);
+      }
       return;
     }
 
-    createProposal();
+    // Real contract call
+    console.log('🔥 Starting real contract call');
+    setIsCreating(true);
+    setFormData(data);
+    
+    // Wait a bit for prepare to complete
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    console.log('💰 Contract call state:', {
+      createProposal: !!createProposal,
+      isWriteLoading,
+      writeError: writeError?.message
+    });
+    
+    try {
+      if (createProposal) {
+        console.log('✨ Calling createProposal with args:', {
+          title: data.title,
+          description: data.description,
+          duration: data.duration,
+          minVotes: data.minVotes,
+          proposalType: data.proposalType,
+          category: data.category,
+          options: data.proposalType === 1 ? data.options.filter(opt => opt.trim() !== '') : []
+        });
+        
+        createProposal({
+          args: [
+            data.title,
+            data.description,
+            BigInt(data.duration),
+            BigInt(data.minVotes),
+            data.proposalType,
+            data.category,
+            data.proposalType === 1 ? data.options.filter(opt => opt.trim() !== '') : []
+          ]
+        });
+      } else {
+        console.error('❌ createProposal function not available');
+        alert('Transaction preparation failed. Please try again.');
+        setIsCreating(false);
+        setFormData(null);
+      }
+    } catch (error) {
+      console.error('Creating proposal failed:', error);
+      setIsCreating(false);
+      setFormData(null);
+      alert('Creating proposal failed: ' + ((error as Error).message || 'Unknown error'));
+    }
   };
 
-  // Format time
-  const formatTimeRemaining = (deadline: number) => {
-    const now = Date.now();
-    const timeLeft = deadline - now;
-    
-    if (timeLeft <= 0) return 'Expired';
-    
-    const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-    
-    if (days > 0) return `${days}d ${hours}h`;
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    return `${minutes}m`;
-  };
-
-  const isDeadlinePassed = (deadline: number) => {
-    return deadline < Date.now();
-  };
-
-  // Component for rendering category badge
-  const CategoryBadge = ({ category }: { category: ProposalCategory }) => {
-    const config = CATEGORY_CONFIG[category];
-    const Icon = config.icon;
-    
-    return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
-        <Icon className="h-3 w-3 mr-1" />
-        {config.label}
-      </span>
-    );
-  };
-
-  // Component for rendering voting type badge
-  const VotingTypeBadge = ({ type }: { type: ProposalType }) => {
-    const config = VOTING_TYPE_CONFIG[type];
-    const Icon = config.icon;
-    
-    return (
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-        <Icon className="h-3 w-3 mr-1" />
-        {config.label}
-      </span>
-    );
-  };
-
-  // When component loads or proposal count changes, reload proposals
   useEffect(() => {
-    if (proposalCount && contractAddress && isConnected) {
-      loadProposals();
-    }
-  }, [proposalCount, contractAddress, isConnected]);
+    loadProposals();
+  }, [contractAddress, proposalCount]);
+
+  // Auto-refresh data every 30 seconds when contract is available
+  useEffect(() => {
+    if (!isConnected || !contractAddress) return;
+
+    const interval = setInterval(() => {
+      refetchStats();
+      refetchVotingPower();
+      refetchProposalCount();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [isConnected, contractAddress, refetchStats, refetchVotingPower, refetchProposalCount]);
+
+  // Default stats if contract not available
+  const defaultStats: readonly [bigint, bigint, bigint, bigint, bigint] = [BigInt(0), BigInt(0), BigInt(0), parseEther('0.001'), parseEther('0.01')] as const;
+  
+  // Safe stats conversion
+  const safeStats: readonly [bigint, bigint, bigint, bigint, bigint] = Array.isArray(stats) && stats.length >= 5 
+    ? (stats as unknown) as readonly [bigint, bigint, bigint, bigint, bigint]
+    : defaultStats;
+  
+  const safeUserVotingPower = typeof userVotingPower === 'bigint' 
+    ? userVotingPower 
+    : BigInt(0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -390,16 +605,54 @@ export default function VotingPage() {
               <ArrowLeft className="h-5 w-5 mr-2" />
               Back to Home
             </Link>
-            <h1 className="text-xl font-bold text-gray-900">Decentralized Voting Governance</h1>
-            <div className="w-24"></div>
+            <h1 className="text-xl font-bold text-gray-900">Voting Governance</h1>
+            <div className="flex items-center space-x-2">
+              <div className="text-sm text-gray-500">
+                Auto-refresh: 30s
+              </div>
+              <button
+                onClick={() => {
+                  refetchStats();
+                  refetchVotingPower();
+                  refetchProposalCount();
+                  loadProposals();
+                }}
+                className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+                title="Refresh data"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Network Status */}
-        <NetworkStatus />
-        
+        {/* Voting Information */}
+        {isConnected && contractAddress && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Your Voting Information</h3>
+                <p className="text-gray-600">Address: {address?.slice(0, 6)}...{address?.slice(-4)}</p>
+                <p className="text-gray-600">Network: {chain?.name || 'Unknown'} (ID: {chain?.id})</p>
+                <p className="text-gray-600">Contract: {contractAddress?.slice(0, 6)}...{contractAddress?.slice(-4)}</p>
+                <div className="mt-2 flex items-center">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                  <span className="text-sm text-blue-600">Connected to Voting Contract</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-blue-600">{formatEther(safeUserVotingPower)} ETH</div>
+                <div className="text-gray-600">Voting Power</div>
+                <div className="text-sm text-gray-500 mt-1">
+                  Total Votes Cast: {userTotalVotes ? Number(userTotalVotes) : 0}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {!isConnected ? (
           <div className="text-center py-12">
             <Vote className="mx-auto h-16 w-16 text-gray-400 mb-4" />
@@ -411,265 +664,94 @@ export default function VotingPage() {
           </div>
         ) : !contractAddress ? (
           <div className="text-center py-12">
-            <XCircle className="mx-auto h-16 w-16 text-red-400 mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Unsupported Network</h2>
-            <p className="text-gray-600 mb-6">Please switch to a supported network (Hardhat Local Network)</p>
+            <Users className="mx-auto h-16 w-16 text-orange-400 mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Contract Not Deployed</h2>
+            <p className="text-gray-600 mb-6">Voting contract is not deployed on this network. Operating in simulation mode.</p>
           </div>
         ) : (
           <>
-            {/* Header with Filter */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Governance Proposals</h2>
-                <p className="text-gray-600">Participate in decentralized decision making</p>
-              </div>
-              
-              {/* Category Filter */}
-              <div className="mt-4 sm:mt-0">
-                <div className="flex items-center space-x-2">
-                  <Filter className="h-4 w-4 text-gray-500" />
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value as ProposalCategory | 'all')}
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="all">All Categories</option>
-                    {Object.entries(CATEGORY_CONFIG).map(([key, config]) => (
-                      <option key={key} value={key}>{config.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+            {/* Tab Navigation */}
+            <div className="flex space-x-1 mb-8 bg-gray-100 p-1 rounded-lg">
+              <button
+                onClick={() => setActiveTab('history')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                  activeTab === 'history'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                <History className="h-4 w-4" />
+                Proposal History
+              </button>
+              <button
+                onClick={() => setActiveTab('create')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                  activeTab === 'create'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+                disabled={!isConnected}
+              >
+                <Plus className="h-4 w-4" />
+                Create Proposal
+              </button>
             </div>
 
-            {/* User Info */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Your Voting Information</h3>
-                  <p className="text-gray-600">Address: {address?.slice(0, 6)}...{address?.slice(-4)}</p>
-                  <p className="text-gray-600">Network: {chain?.name} (ID: {chain?.id})</p>
-                  <p className="text-gray-600">Contract: {contractAddress?.slice(0, 6)}...{contractAddress?.slice(-4)}</p>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-blue-600">{Number(proposalCount || 0)}</div>
-                  <div className="text-gray-600">Total Proposals</div>
-                </div>
+            {/* Contract availability warning */}
+            {!isContractAvailable && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                <p className="text-yellow-800">⚠️ Voting contract not deployed on this network. Using simulation mode.</p>
               </div>
-            </div>
+            )}
 
-            {/* Create New Proposal */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-                <Plus className="h-5 w-5 mr-2" />
-                Create New Proposal
-              </h3>
-              <div className="grid grid-cols-1 gap-6">
-                {/* Title and Description */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Proposal Title</label>
-                    <input
-                      type="text"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter proposal title..."
-                      value={newProposal.title}
-                      onChange={(e) => setNewProposal({ ...newProposal, title: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                    <select
-                      value={newProposal.category}
-                      onChange={(e) => setNewProposal({ ...newProposal, category: e.target.value as ProposalCategory })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      {Object.entries(CATEGORY_CONFIG).map(([key, config]) => (
-                        <option key={key} value={key}>{config.label} - {config.description}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+            {/* Statistics */}
+            <VotingStats 
+              stats={safeStats} 
+              userVotingPower={safeUserVotingPower} 
+            />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Proposal Description</label>
-                  <textarea
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter detailed proposal description..."
-                    value={newProposal.description}
-                    onChange={(e) => setNewProposal({ ...newProposal, description: e.target.value })}
-                  />
-                </div>
-
-                {/* Voting Type and Settings */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Voting Type</label>
-                    <select
-                      value={newProposal.proposalType}
-                      onChange={(e) => setNewProposal({ ...newProposal, proposalType: e.target.value as ProposalType })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      {Object.entries(VOTING_TYPE_CONFIG).map(([key, config]) => (
-                        <option key={key} value={key}>{config.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Duration (hours)</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="168"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={newProposal.durationHours}
-                      onChange={(e) => setNewProposal({ ...newProposal, durationHours: parseInt(e.target.value) || 24 })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Minimum Votes</label>
-                    <input
-                      type="number"
-                      min="1"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={newProposal.minVotes}
-                      onChange={(e) => setNewProposal({ ...newProposal, minVotes: parseInt(e.target.value) || 100 })}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <div className="flex items-center text-sm text-blue-700">
-                      <div className="flex-shrink-0 w-4 h-4 mr-2">💰</div>
-                      <div>
-                        <strong>创建费用：</strong> 0.001 ETH
-                        <br />
-                        <span className="text-blue-600">费用用于防止垃圾提案，支持平台运营</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <Button
-                    onClick={handleCreateProposal}
-                    disabled={isCreatingProposal || !newProposal.title.trim() || !newProposal.description.trim()}
-                    className="w-full"
-                  >
-                    {isCreatingProposal ? 'Creating...' : 'Create Proposal (0.001 ETH)'}
-                  </Button>
-                </div>
-              </div>
-            </div>
+            {/* Create Proposal Form */}
+            <CreateProposalForm
+              show={activeTab === 'create'}
+              onClose={() => setActiveTab('history')}
+              onSubmit={handleCreateProposal}
+              isCreating={isCreating || isCreatingTransaction}
+              creationFee={stats ? (stats as any)[4] : parseEther('0.01')}
+            />
 
             {/* Proposal List */}
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {selectedCategory === 'all' ? 'All Proposals' : `${CATEGORY_CONFIG[selectedCategory as ProposalCategory]?.label} Proposals`}
-                </h3>
-                <span className="text-sm text-gray-500">
-                  {filteredProposals.length} proposal(s)
-                </span>
-              </div>
-              
-              {loading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="text-gray-600 mt-4">Loading proposals...</p>
-                </div>
-              ) : filteredProposals.length === 0 ? (
-                <div className="text-center py-8">
-                  <Vote className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <p className="text-gray-600">
-                    {selectedCategory === 'all' ? 'No proposals yet' : `No ${CATEGORY_CONFIG[selectedCategory as ProposalCategory]?.label.toLowerCase()} proposals yet`}
-                  </p>
-                </div>
-              ) : (
-                <div className="grid gap-6">
-                  {filteredProposals.map((proposal) => (
-                    <div key={proposal.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-3">
-                            <CategoryBadge category={proposal.category} />
-                            <VotingTypeBadge type={proposal.proposalType} />
-                          </div>
-                          <h4 className="text-xl font-semibold text-gray-900 mb-2">
-                            {proposal.title}
-                          </h4>
-                          <p className="text-gray-600 mb-4">{proposal.description}</p>
-                          
-                          <div className="flex items-center space-x-6 text-sm text-gray-500">
-                            <div className="flex items-center">
-                              <Users className="h-4 w-4 mr-1" />
-                              {proposal.voteCount} votes
-                            </div>
-                            <div className="flex items-center">
-                              <Clock className="h-4 w-4 mr-1" />
-                              {formatTimeRemaining(proposal.deadline)}
-                            </div>
-                            <div className="flex items-center">
-                              <Tag className="h-4 w-4 mr-1" />
-                              Requires {proposal.minVotes} votes
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="ml-6 text-right">
-                          <div className="flex items-center space-x-2 mb-4">
-                            {proposal.executed ? (
-                              <div className="flex items-center text-green-600">
-                                <CheckCircle className="h-5 w-5 mr-1" />
-                                Executed
-                              </div>
-                            ) : isDeadlinePassed(proposal.deadline) ? (
-                              <div className="flex items-center text-red-600">
-                                <XCircle className="h-5 w-5 mr-1" />
-                                Expired
-                              </div>
-                            ) : (
-                              <div className="flex items-center text-blue-600">
-                                <Clock className="h-5 w-5 mr-1" />
-                                Active
-                              </div>
-                            )}
-                          </div>
-                          
-                          <Button
-                            onClick={() => handleVote(proposal.id)}
-                            disabled={
-                              loading || 
-                              proposal.hasVoted || 
-                              proposal.executed || 
-                              isDeadlinePassed(proposal.deadline)
-                            }
-                            variant={proposal.hasVoted ? "secondary" : "default"}
-                            size="sm"
-                          >
-                            {proposal.hasVoted ? 'Voted' : 'Vote'}
-                          </Button>
-                        </div>
+            {activeTab === 'history' && (
+              <>
+                {loading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading proposals...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {proposals.length === 0 ? (
+                      <div className="text-center py-12">
+                        <p className="text-gray-500 text-lg">No proposals yet</p>
+                        <p className="text-gray-400 mt-2">
+                          {isConnected ? 'Create your first proposal!' : 'Please connect your wallet to view proposals'}
+                        </p>
                       </div>
-                      
-                      {/* Vote Progress Bar */}
-                      <div className="mt-4">
-                        <div className="flex justify-between text-sm text-gray-600 mb-1">
-                          <span>Progress</span>
-                          <span>{proposal.voteCount} / {proposal.minVotes}</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-blue-600 h-2 rounded-full transition-all" 
-                            style={{ width: `${Math.min(100, (proposal.voteCount / proposal.minVotes) * 100)}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                    ) : (
+                      proposals.map((proposal) => (
+                        <ProposalCard
+                          key={proposal.id}
+                          proposal={proposal}
+                          onVote={handleVote}
+                          isVoting={isVoting || isVotingTransaction}
+                          isConnected={isConnected}
+                          userVotingPower={Number(safeUserVotingPower)}
+                        />
+                      ))
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </>
         )}
       </div>

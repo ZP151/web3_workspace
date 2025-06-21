@@ -1,5 +1,5 @@
 import React from 'react'
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
@@ -12,7 +12,11 @@ export const metadata: Metadata = {
   description: 'Modern Web3 DApp Platform with Voting and Banking Systems',
   keywords: ['Web3', 'DApp', 'Ethereum', 'Voting', 'Banking', 'DeFi'],
   authors: [{ name: 'Web3 DApp Platform Team' }],
-  viewport: 'width=device-width, initial-scale=1',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 }
 
 export default function RootLayout({

@@ -26,6 +26,18 @@ interface TokenForm {
   symbol: string;
   totalSupply: string;
   decimals: number;
+  description: string;
+  website: string;
+  maxSupply: string;
+  mintable: boolean;
+  burnable: boolean;
+  pausable: boolean;
+  initialDistribution: {
+    owner: string;
+    team: string;
+    public: string;
+    liquidity: string;
+  };
 }
 
 export default function TokenFactoryPage() {
@@ -38,8 +50,23 @@ export default function TokenFactoryPage() {
     symbol: '',
     totalSupply: '1000000',
     decimals: 18,
+    description: '',
+    website: '',
+    maxSupply: '10000000',
+    mintable: false,
+    burnable: false,
+    pausable: false,
+    initialDistribution: {
+      owner: '50',
+      team: '20',
+      public: '20',
+      liquidity: '10',
+    },
   });
   const [activeView, setActiveView] = useState<'create' | 'manage' | 'explore'>('create');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'name' | 'supply'>('newest');
+  const [filterBy, setFilterBy] = useState<'all' | 'my-tokens' | 'mintable' | 'burnable'>('all');
 
   // Get contract address and ABI
   const contractAddress = chain?.id ? getContractAddress(chain.id, 'TokenFactory') : undefined;
@@ -105,6 +132,18 @@ export default function TokenFactoryPage() {
         symbol: '',
         totalSupply: '1000000',
         decimals: 18,
+        description: '',
+        website: '',
+        maxSupply: '10000000',
+        mintable: false,
+        burnable: false,
+        pausable: false,
+        initialDistribution: {
+          owner: '50',
+          team: '20',
+          public: '20',
+          liquidity: '10',
+        },
       });
       
       refetchTokenCount();
@@ -314,8 +353,9 @@ export default function TokenFactoryPage() {
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Create New Token</h3>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* 基本信息 */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Token Name</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Token Name *</label>
                         <input
                           type="text"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -326,7 +366,7 @@ export default function TokenFactoryPage() {
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Token Symbol</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Token Symbol *</label>
                         <input
                           type="text"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -337,7 +377,7 @@ export default function TokenFactoryPage() {
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Total Supply</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Total Supply *</label>
                         <input
                           type="number"
                           min="1"
@@ -345,6 +385,18 @@ export default function TokenFactoryPage() {
                           placeholder="1000000"
                           value={newToken.totalSupply}
                           onChange={(e) => setNewToken({ ...newToken, totalSupply: e.target.value })}
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Max Supply</label>
+                        <input
+                          type="number"
+                          min="1"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          placeholder="10000000"
+                          value={newToken.maxSupply}
+                          onChange={(e) => setNewToken({ ...newToken, maxSupply: e.target.value })}
                         />
                       </div>
                       
@@ -360,6 +412,158 @@ export default function TokenFactoryPage() {
                           <option value={8}>8 (Bitcoin Style)</option>
                           <option value={0}>0 (No Decimals)</option>
                         </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Website URL</label>
+                        <input
+                          type="url"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          placeholder="https://example.com"
+                          value={newToken.website}
+                          onChange={(e) => setNewToken({ ...newToken, website: e.target.value })}
+                        />
+                      </div>
+                      
+                      {/* 描述信息 */}
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                        <textarea
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          placeholder="Describe your token's purpose and utility..."
+                          value={newToken.description}
+                          onChange={(e) => setNewToken({ ...newToken, description: e.target.value })}
+                        />
+                      </div>
+                      
+                      {/* Token特性 */}
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-3">Token Features</label>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="flex items-center">
+                            <input
+                              type="checkbox"
+                              id="mintable"
+                              checked={newToken.mintable}
+                              onChange={(e) => setNewToken({ ...newToken, mintable: e.target.checked })}
+                              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                            />
+                            <label htmlFor="mintable" className="ml-2 text-sm text-gray-700">
+                              Mintable (可增发)
+                            </label>
+                          </div>
+                          
+                          <div className="flex items-center">
+                            <input
+                              type="checkbox"
+                              id="burnable"
+                              checked={newToken.burnable}
+                              onChange={(e) => setNewToken({ ...newToken, burnable: e.target.checked })}
+                              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                            />
+                            <label htmlFor="burnable" className="ml-2 text-sm text-gray-700">
+                              Burnable (可销毁)
+                            </label>
+                          </div>
+                          
+                          <div className="flex items-center">
+                            <input
+                              type="checkbox"
+                              id="pausable"
+                              checked={newToken.pausable}
+                              onChange={(e) => setNewToken({ ...newToken, pausable: e.target.checked })}
+                              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                            />
+                            <label htmlFor="pausable" className="ml-2 text-sm text-gray-700">
+                              Pausable (可暂停)
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* 初始分配 */}
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-3">Initial Distribution (%)</label>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1">Owner</label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
+                              value={newToken.initialDistribution.owner}
+                              onChange={(e) => setNewToken({ 
+                                ...newToken, 
+                                initialDistribution: { 
+                                  ...newToken.initialDistribution, 
+                                  owner: e.target.value 
+                                }
+                              })}
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1">Team</label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
+                              value={newToken.initialDistribution.team}
+                              onChange={(e) => setNewToken({ 
+                                ...newToken, 
+                                initialDistribution: { 
+                                  ...newToken.initialDistribution, 
+                                  team: e.target.value 
+                                }
+                              })}
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1">Public</label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
+                              value={newToken.initialDistribution.public}
+                              onChange={(e) => setNewToken({ 
+                                ...newToken, 
+                                initialDistribution: { 
+                                  ...newToken.initialDistribution, 
+                                  public: e.target.value 
+                                }
+                              })}
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1">Liquidity</label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
+                              value={newToken.initialDistribution.liquidity}
+                              onChange={(e) => setNewToken({ 
+                                ...newToken, 
+                                initialDistribution: { 
+                                  ...newToken.initialDistribution, 
+                                  liquidity: e.target.value 
+                                }
+                              })}
+                            />
+                          </div>
+                        </div>
+                        <div className="mt-2 text-xs text-gray-500">
+                          Total: {
+                            Object.values(newToken.initialDistribution)
+                              .reduce((sum, val) => sum + parseFloat(val || '0'), 0)
+                          }% (应该等于100%)
+                        </div>
                       </div>
                     </div>
 
@@ -408,9 +612,9 @@ export default function TokenFactoryPage() {
                       </Button>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {createdTokens.map((token) => (
-                        <div key={token.id} className="border border-gray-200 rounded-lg p-4">
+                        <div key={token.id} className="bg-gray-50 rounded-lg border border-gray-200 p-4">
                           <div className="flex items-center justify-between mb-3">
                             <div>
                               <h4 className="font-semibold text-gray-900">{token.name}</h4>
@@ -424,35 +628,59 @@ export default function TokenFactoryPage() {
                             </div>
                           </div>
                           
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-gray-600">Address:</span>
-                              <div className="flex items-center">
-                                <span className="font-mono">{token.address.slice(0, 6)}...{token.address.slice(-4)}</span>
-                                <button
-                                  onClick={() => copyToClipboard(token.address)}
-                                  className="ml-1 text-gray-400 hover:text-gray-600"
-                                >
-                                  <Copy className="h-3 w-3" />
-                                </button>
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-gray-600">Created:</span>
-                              <span>{new Date(token.timestamp).toLocaleDateString()}</span>
+                          <div className="mb-3">
+                            <p className="text-xs text-gray-500 mb-1">合约地址:</p>
+                            <div className="flex items-center justify-between bg-white rounded px-2 py-1">
+                              <span className="text-xs font-mono text-gray-700">
+                                {token.address.slice(0, 8)}...{token.address.slice(-6)}
+                              </span>
+                              <button
+                                onClick={() => copyToClipboard(token.address)}
+                                className="p-1 hover:bg-gray-100 rounded"
+                              >
+                                <Copy className="h-3 w-3 text-gray-500" />
+                              </button>
                             </div>
                           </div>
                           
-                          <div className="mt-4 flex space-x-2">
-                            <Button variant="outline" size="sm" className="flex-1">
-                              <Eye className="h-4 w-4 mr-1" />
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                toast.success(
+                                  <div className="space-y-2">
+                                    <div className="font-semibold">{token.name} ({token.symbol})</div>
+                                    <div className="text-sm space-y-1">
+                                      <div>总供应量: {formatSupply(token.totalSupply)}</div>
+                                      <div>精度: {token.decimals}</div>
+                                      <div>创建者: {token.creator.slice(0, 6)}...{token.creator.slice(-4)}</div>
+                                      <div>交易哈希: {token.txHash.slice(0, 10)}...</div>
+                                    </div>
+                                  </div>,
+                                  { duration: 5000 }
+                                );
+                              }}
+                              className="flex-1"
+                            >
+                              <Eye className="h-3 w-3 mr-1" />
                               View
                             </Button>
-                            <Button variant="outline" size="sm" className="flex-1">
-                              <ExternalLink className="h-4 w-4 mr-1" />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => window.open(`https://etherscan.io/address/${token.address}`, '_blank')}
+                              className="flex-1"
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
                               Explorer
                             </Button>
+                          </div>
+                          
+                          <div className="mt-3 pt-3 border-t border-gray-200">
+                            <p className="text-xs text-gray-500">
+                              创建于: {new Date(token.timestamp).toLocaleDateString()}
+                            </p>
                           </div>
                         </div>
                       ))}
@@ -464,14 +692,155 @@ export default function TokenFactoryPage() {
 
             {/* Explore Tab */}
             {activeView === 'explore' && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Explore All Tokens</h3>
-                <div className="text-center py-8">
-                  <TrendingUp className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <p className="text-gray-600">Token explorer coming soon...</p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    This will show all tokens created on the platform by all users
-                  </p>
+              <div className="space-y-6">
+                {/* Filters */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="flex items-center space-x-4">
+                      <input
+                        type="text"
+                        placeholder="搜索代币名称或符号..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                      <select
+                        value={filterBy}
+                        onChange={(e) => setFilterBy(e.target.value as any)}
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      >
+                        <option value="all">所有代币</option>
+                        <option value="my-tokens">我的代币</option>
+                        <option value="mintable">可增发</option>
+                        <option value="burnable">可销毁</option>
+                      </select>
+                    </div>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as any)}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="newest">最新创建</option>
+                      <option value="oldest">最早创建</option>
+                      <option value="name">按名称</option>
+                      <option value="supply">按供应量</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Token Grid */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-6">
+                    探索代币 ({createdTokens.length} 个代币)
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {createdTokens
+                      .filter(token => {
+                        if (searchQuery) {
+                          return token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                 token.symbol.toLowerCase().includes(searchQuery.toLowerCase());
+                        }
+                        return true;
+                      })
+                      .filter(token => {
+                        if (filterBy === 'my-tokens') {
+                          return token.creator.toLowerCase() === address?.toLowerCase();
+                        }
+                        return true;
+                      })
+                      .sort((a, b) => {
+                        switch (sortBy) {
+                          case 'newest':
+                            return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+                          case 'oldest':
+                            return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+                          case 'name':
+                            return a.name.localeCompare(b.name);
+                          case 'supply':
+                            return parseFloat(b.totalSupply) - parseFloat(a.totalSupply);
+                          default:
+                            return 0;
+                        }
+                      })
+                      .map((token) => (
+                        <div key={token.id} className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border border-purple-200 p-6 hover:shadow-lg transition-shadow">
+                          <div className="flex items-center justify-between mb-4">
+                            <div>
+                              <h4 className="font-bold text-lg text-gray-900">{token.name}</h4>
+                              <p className="text-purple-600 font-medium">{token.symbol}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-bold text-gray-900">
+                                {formatSupply(token.totalSupply)}
+                              </p>
+                              <p className="text-xs text-gray-500">总供应量</p>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2 mb-4">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">精度:</span>
+                              <span className="font-medium">{token.decimals}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">创建者:</span>
+                              <span className="font-mono text-xs">
+                                {token.creator.slice(0, 6)}...{token.creator.slice(-4)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">创建时间:</span>
+                              <span className="text-xs">
+                                {new Date(token.timestamp).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex space-x-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => copyToClipboard(token.address)}
+                                className="flex-1"
+                              >
+                                <Copy className="h-3 w-3 mr-1" />
+                                复制地址
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => window.open(`https://etherscan.io/address/${token.address}`, '_blank')}
+                                className="flex-1"
+                              >
+                                <ExternalLink className="h-3 w-3 mr-1" />
+                                浏览器
+                              </Button>
+                            </div>
+                            
+                            {token.creator.toLowerCase() === address?.toLowerCase() && (
+                              <div className="pt-2 border-t border-purple-200">
+                                <p className="text-xs text-purple-600 font-medium">你是此代币的创建者</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                  
+                  {createdTokens.length === 0 && (
+                    <div className="text-center py-12">
+                      <Coins className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">还没有代币</h3>
+                      <p className="text-gray-600 mb-6">成为第一个创建代币的人</p>
+                      <Button 
+                        onClick={() => setActiveView('create')}
+                      >
+                        创建代币
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
