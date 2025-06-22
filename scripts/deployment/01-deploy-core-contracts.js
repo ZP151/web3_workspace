@@ -29,17 +29,28 @@ async function deployCoreContracts() {
     console.log("   📊 Current proposal count:", proposalCount.toString());
 
     // 2. Deploy EnhancedBank contract
-    console.log("\n🏦 Deploying EnhancedBank contract...");
+    console.log("\n🏦 Deploying EnhancedBank v2 contract...");
     const EnhancedBank = await ethers.getContractFactory("EnhancedBank");
-    const enhancedBank = await EnhancedBank.deploy();
+    const enhancedBank = await EnhancedBank.deploy({
+        gasLimit: 6000000 // 足够的gas限制
+    });
     await enhancedBank.waitForDeployment();
     const enhancedBankAddress = await enhancedBank.getAddress();
     deployedContracts.EnhancedBank = enhancedBankAddress;
-    console.log("✅ EnhancedBank deployed successfully:", enhancedBankAddress);
+    console.log("✅ EnhancedBank v2 deployed successfully:", enhancedBankAddress);
 
-    // Verify EnhancedBank
+    // Verify EnhancedBank v2 features
     const minDeposit = await enhancedBank.minimumDeposit();
     console.log("   💰 Minimum deposit:", ethers.formatEther(minDeposit), "ETH");
+    
+    // Test new v2 features
+    try {
+        const activePools = await enhancedBank.getActivePools();
+        console.log("   🏊 Active pools count:", activePools.length);
+        console.log("   ✅ New v2 features verified");
+    } catch (error) {
+        console.log("   ⚠️  v2 features test failed:", error.message);
+    }
 
     // 3. Deploy TokenFactory contract
     console.log("\n🏭 Deploying TokenFactory contract...");

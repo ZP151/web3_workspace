@@ -128,6 +128,20 @@ export function getContractAddress(chainId: number, contractName: string) {
   const addresses = CONTRACT_ADDRESSES[chainId];
   if (!addresses) {
     console.warn(`不支持的网络 Chain ID: ${chainId}`);
+    
+    // 回退：尝试从顶级地址读取（新格式兼容性）
+    if (dynamicAddresses[contractName] || dynamicAddresses[contractName.toLowerCase()]) {
+      const fallbackAddress = dynamicAddresses[contractName] || dynamicAddresses[contractName.toLowerCase()];
+      console.log(`从顶级地址获取 ${contractName}:`, fallbackAddress);
+      return fallbackAddress;
+    }
+    
+    // 特殊处理 EnhancedBank
+    if (contractName === 'EnhancedBank' && dynamicAddresses.enhancedBank) {
+      console.log(`使用 enhancedBank 地址:`, dynamicAddresses.enhancedBank);
+      return dynamicAddresses.enhancedBank;
+    }
+    
     return null;
   }
   
@@ -145,6 +159,19 @@ export function getContractAddress(chainId: number, contractName: string) {
   
   const address = addresses[contractName];
   if (!address) {
+    // 回退：尝试从顶级地址读取
+    if (dynamicAddresses[contractName] || dynamicAddresses[contractName.toLowerCase()]) {
+      const fallbackAddress = dynamicAddresses[contractName] || dynamicAddresses[contractName.toLowerCase()];
+      console.log(`从顶级地址获取 ${contractName}:`, fallbackAddress);
+      return fallbackAddress;
+    }
+    
+    // 特殊处理 EnhancedBank
+    if (contractName === 'EnhancedBank' && dynamicAddresses.enhancedBank) {
+      console.log(`使用 enhancedBank 地址:`, dynamicAddresses.enhancedBank);
+      return dynamicAddresses.enhancedBank;
+    }
+    
     console.warn(`合约 ${contractName} 在网络 ${chainId} 上未部署`);
     return null;
   }

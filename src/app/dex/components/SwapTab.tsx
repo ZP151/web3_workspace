@@ -91,11 +91,11 @@ export default function SwapTab({
               </div>
               <div className="flex justify-between text-xs text-gray-500">
                 <span>
-                  余额: {getTokenBalance(swapData.tokenIn)} {swapData.tokenIn}
+                  Balance: {getTokenBalance(swapData.tokenIn)} {swapData.tokenIn}
                 </span>
                 {swapData.amountIn && needsApproval(swapData.tokenIn as 'WETH' | 'USDC' | 'DAI', swapData.amountIn) && (
                   <span className="text-orange-600">
-                    需要授权 (当前授权: {getTokenAllowance(swapData.tokenIn)})
+                    Need Approval (Current Approval: {getTokenAllowance(swapData.tokenIn)})
                   </span>
                 )}
               </div>
@@ -129,7 +129,7 @@ export default function SwapTab({
                 {swapData.amountIn && parseFloat(swapData.amountIn) > 0 && !swapData.amountOut ? (
                   <div className="flex items-center space-x-2">
                     <RefreshCw className="h-4 w-4 animate-spin text-blue-500" />
-                    <span className="text-gray-500 text-sm">计算中...</span>
+                    <span className="text-gray-500 text-sm">Calculating...</span>
                   </div>
                 ) : (
                   <span className="w-full">{swapData.amountOut || '0.0'}</span>

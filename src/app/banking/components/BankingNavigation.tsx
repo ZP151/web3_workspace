@@ -1,5 +1,5 @@
 import React from 'react';
-import { DollarSign, TrendingUp, Send, CreditCard, Shield, Calculator } from 'lucide-react';
+import { DollarSign, TrendingUp, Send, CreditCard, Shield, Users } from 'lucide-react';
 
 interface BankingNavigationProps {
   activeView: string;
@@ -13,14 +13,11 @@ export const BankingNavigation: React.FC<BankingNavigationProps> = ({
   const tabs = [
     { id: 'overview', name: 'Overview', icon: DollarSign },
     { id: 'deposit-withdraw', name: 'Deposit & Withdraw', icon: TrendingUp },
-    { id: 'transfer', name: 'Transfer', icon: Send },
-    { id: 'social', name: 'Social Transfer', icon: Send },
-    { id: 'savings', name: 'Savings Goals', icon: TrendingUp },
-    { id: 'flash', name: 'Flash Loan', icon: CreditCard },
-    { id: 'community', name: 'Community Pools', icon: Shield },
+    { id: 'transfers', name: 'Transfers', icon: Send },
     { id: 'loans', name: 'Loans', icon: CreditCard },
+    { id: 'savings', name: 'Savings Goals', icon: TrendingUp },
+    { id: 'community', name: 'Community Pools', icon: Users },
     { id: 'staking', name: 'Staking', icon: Shield },
-    { id: 'calculator', name: 'Calculator', icon: Calculator },
   ];
 
   return (

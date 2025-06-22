@@ -6,6 +6,7 @@ const path = require("path");
 const { deployCoreContracts } = require("./deployment/01-deploy-core-contracts");
 const { deployTestTokens } = require("./deployment/02-deploy-tokens");
 const { deployDeFiContracts } = require("./deployment/03-deploy-defi-contracts");
+const { initializeContracts } = require("./deployment/04-initialize-contracts");
 
 async function main() {
   console.log("🚀 Starting Complete Deployment");
@@ -66,6 +67,11 @@ async function main() {
     const defiContracts = await deployDeFiContracts(testTokens);
     allContracts = { ...allContracts, ...defiContracts };
     deploymentStats.totalDeployments += Object.keys(defiContracts).length;
+
+    // Stage 4: Initialize Contracts
+    console.log("\n" + "=".repeat(60));
+    const initializedContracts = await initializeContracts(allContracts);
+    allContracts = { ...allContracts, ...initializedContracts };
 
     // Update address file
     console.log("\n📝 Updating address configuration file...");

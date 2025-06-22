@@ -14,14 +14,12 @@ import {
   BankingInfoCard,
   OverviewTab,
   DepositWithdrawTab,
-  TransferTab,
-  LoanTab,
+  TransfersTab,
+  LoansTab,
   StakingTab,
-  CalculatorTab,
-  SocialTransferTab,
   SavingsGoalsTab,
-  FlashLoanTab,
   CommunityPoolsTab,
+  CalculatorTab,
 } from './components';
 
 // 导入hooks
@@ -197,7 +195,7 @@ export default function BankingPage() {
             <div className="flex items-center">
               <Link href="/" className="flex items-center text-gray-600 hover:text-gray-900">
                 <ArrowLeft className="h-5 w-5 mr-2" />
-                Back to Dashboard
+                Back to Home
               </Link>
             </div>
             <div className="flex items-center space-x-2 text-sm text-gray-500">
@@ -256,25 +254,26 @@ export default function BankingPage() {
           />
         )}
 
-        {activeView === 'transfer' && (
-                      <TransferTab
-              bankBalance={bankBalance}
-              onTransferInternal={handleTransferInternal}
-              onTransferExternal={handleTransferExternal}
-              onBatchTransfer={handleBatchTransfer}
-              onUserToUserTransfer={handleUserToUserTransfer}
-              onBatchUserTransfer={handleBatchUserTransfer}
-              isTransferring={isTransferring}
-            />
+        {activeView === 'transfers' && (
+          <TransfersTab
+            address={address || ''}
+            bankBalance={bankBalance}
+            onTransferInternal={handleTransferInternal}
+            onTransferExternal={handleTransferExternal}
+            onBatchTransfer={handleBatchTransfer}
+            onUserToUserTransfer={handleUserToUserTransfer}
+            onBatchUserTransfer={handleBatchUserTransfer}
+            onSocialTransfer={handleSocialTransfer}
+            isLoading={isWeb3Loading || isTransferring}
+          />
         )}
 
         {activeView === 'loans' && (
-          <LoanTab
-            contractAddress={contractAddress as `0x${string}` | undefined}
-            contractABI={contractABI}
-            userLoans={userLoans as any[] || []}
-            refetchUserLoans={refetchUserLoans}
-            interestRate={interestRate}
+          <LoansTab
+            address={address || ''}
+            onTakeFlashLoan={handleTakeFlashLoan}
+            onRepayFlashLoan={handleRepayFlashLoan}
+            isLoading={isWeb3Loading}
           />
         )}
 
@@ -287,30 +286,14 @@ export default function BankingPage() {
           />
         )}
 
-        {activeView === 'social' && (
-          <SocialTransferTab
-            address={address || ''}
-            balance={ethBalance ? formatEther(ethBalance.value) : '0'}
-            onSocialTransfer={handleSocialTransfer}
-            isLoading={isWeb3Loading}
-          />
-        )}
-
         {activeView === 'savings' && (
           <SavingsGoalsTab
             address={address || ''}
             bankBalance={bankBalance}
+            contractAddress={contractAddress as `0x${string}` | undefined}
+            contractABI={contractABI}
             onCreateSavingsGoal={handleCreateSavingsGoal}
             onContributeToGoal={handleContributeToGoal}
-            isLoading={isWeb3Loading}
-          />
-        )}
-
-        {activeView === 'flash' && (
-          <FlashLoanTab
-            address={address || ''}
-            onTakeFlashLoan={handleTakeFlashLoan}
-            onRepayFlashLoan={handleRepayFlashLoan}
             isLoading={isWeb3Loading}
           />
         )}
@@ -318,16 +301,14 @@ export default function BankingPage() {
         {activeView === 'community' && (
           <CommunityPoolsTab
             address={address || ''}
+            contractAddress={contractAddress as `0x${string}` | undefined}
+            contractABI={contractABI}
             onContributeToPool={handleContributeToPool}
             isLoading={isWeb3Loading}
           />
         )}
 
-        {activeView === 'calculator' && (
-          <CalculatorTab
-            interestRate={interestRate}
-          />
-        )}
+
       </div>
     </div>
   );

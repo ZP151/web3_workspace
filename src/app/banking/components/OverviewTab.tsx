@@ -1,5 +1,5 @@
-import React from 'react';
-import { DollarSign, TrendingUp, Wallet, Award, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { DollarSign, TrendingUp, Wallet, Award, AlertCircle, Calculator } from 'lucide-react';
 import { formatEther } from 'viem';
 
 interface OverviewTabProps {
@@ -27,6 +27,17 @@ export default function OverviewTab({
   interestRate,
   interestCalc,
 }: OverviewTabProps) {
+  const [calcAmount, setCalcAmount] = useState('1.0');
+  const [calcPeriod, setCalcPeriod] = useState(365);
+
+  const calculateProjection = () => {
+    const amount = parseFloat(calcAmount) || 0;
+    const rate = (interestRate ? Number(interestRate) : 5) / 100;
+    const daily = (amount * rate) / 365;
+    const result = daily * calcPeriod;
+    return result;
+  };
+
   return (
     <>
       {/* Account Overview */}
@@ -132,6 +143,54 @@ export default function OverviewTab({
               Pending Interest: {parseFloat(pendingInterest).toFixed(6)} ETH (will be added on next transaction)
             </span>
           </div>
+        </div>
+      </div>
+
+      {/* Interest Calculator */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <Calculator className="h-5 w-5 mr-2 text-blue-600" />
+          Interest Calculator
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Amount (ETH)
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              value={calcAmount}
+              onChange={(e) => setCalcAmount(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="1.0"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Time Period (Days)
+            </label>
+            <select
+              value={calcPeriod}
+              onChange={(e) => setCalcPeriod(Number(e.target.value))}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value={7}>1 Week</option>
+              <option value={30}>1 Month</option>
+              <option value={90}>3 Months</option>
+              <option value={180}>6 Months</option>
+              <option value={365}>1 Year</option>
+            </select>
+          </div>
+          <div className="text-center p-4 bg-blue-50 rounded-lg">
+            <p className="text-sm text-gray-600">Projected Interest</p>
+            <p className="text-xl font-bold text-blue-600">
+              {calculateProjection().toFixed(6)} ETH
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 text-sm text-gray-500">
+          * Based on current interest rate of {interestRate ? Number(interestRate) : 5}% APY
         </div>
       </div>
     </>

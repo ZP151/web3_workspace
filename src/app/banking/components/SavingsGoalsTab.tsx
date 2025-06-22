@@ -1,12 +1,24 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useContractRead } from 'wagmi';
+
+interface SavingsGoal {
+  name: string;
+  targetAmount: bigint;
+  currentAmount: bigint;
+  deadline: bigint;
+  rewardRate: number;
+  isAchieved: boolean;
+}
 
 interface SavingsGoalsTabProps {
   address: string;
   bankBalance: string;
+  contractAddress?: `0x${string}`;
+  contractABI?: any;
   onCreateSavingsGoal: (name: string, targetAmount: string, durationDays: number) => Promise<void>;
   onContributeToGoal: (goalId: number, amount: string) => Promise<void>;
   isLoading: boolean;
@@ -15,6 +27,8 @@ interface SavingsGoalsTabProps {
 export default function SavingsGoalsTab({
   address,
   bankBalance,
+  contractAddress,
+  contractABI,
   onCreateSavingsGoal,
   onContributeToGoal,
   isLoading
@@ -28,18 +42,79 @@ export default function SavingsGoalsTab({
   const [goalContribution, setGoalContribution] = useState('');
   const [selectedGoalId, setSelectedGoalId] = useState(0);
 
+  // 获取用户的储蓄目标
+  const { data: userGoals, refetch: refetchGoals } = useContractRead({
+    address: contractAddress,
+    abi: contractABI,
+    functionName: 'getUserSavingsGoals',
+    args: [address],
+    enabled: !!contractAddress && !!address,
+    watch: true,
+  });
+
+  const savingsGoals = userGoals as SavingsGoal[] || [];
+
+  // 格式化ETH显示
+  const formatEther = (wei: bigint) => {
+    return (Number(wei) / 1e18).toFixed(4);
+  };
+
+  // 计算进度百分比
+  const calculateProgress = (current: bigint, target: bigint) => {
+    if (target === BigInt(0)) return 0;
+    return Math.min(100, Number(current * BigInt(100) / target));
+  };
+
+  // 计算剩余天数
+  const calculateDaysRemaining = (deadline: bigint) => {
+    const now = Math.floor(Date.now() / 1000);
+    const deadlineSeconds = Number(deadline);
+    const remainingSeconds = deadlineSeconds - now;
+    return Math.max(0, Math.ceil(remainingSeconds / (24 * 60 * 60)));
+  };
+
   const handleCreateGoal = async () => {
     if (!goalName || !goalTarget) return;
     await onCreateSavingsGoal(goalName, goalTarget, goalDuration);
     setGoalName('');
     setGoalTarget('');
     setGoalDuration(30);
+    
+    // 强制刷新目标列表
+    const refreshGoals = async () => {
+      console.log('Refreshing savings goals...');
+      await refetchGoals();
+      console.log('Savings goals refreshed');
+    };
+    
+    // 立即刷新
+    await refreshGoals();
+    
+    // 3秒后再刷新一次
+    setTimeout(async () => {
+      await refreshGoals();
+    }, 3000);
   };
 
   const handleGoalContribution = async () => {
     if (!goalContribution) return;
     await onContributeToGoal(selectedGoalId, goalContribution);
     setGoalContribution('');
+    
+    // 强制刷新目标列表
+    const refreshGoals = async () => {
+      console.log('Refreshing savings goals after contribution...');
+      await refetchGoals();
+      console.log('Savings goals refreshed after contribution');
+    };
+    
+    // 立即刷新
+    await refreshGoals();
+    
+    // 3秒后再刷新一次
+    setTimeout(async () => {
+      await refreshGoals();
+    }, 3000);
   };
 
   return (
@@ -119,14 +194,24 @@ export default function SavingsGoalsTab({
               value={selectedGoalId}
               onChange={(e) => setSelectedGoalId(Number(e.target.value))}
               className="w-full p-3 border rounded-lg"
+              disabled={savingsGoals.length === 0}
             >
-              <option value={0}>Goal #1 (Car Fund)</option>
-              <option value={1}>Goal #2 (Travel Savings)</option>
-              <option value={2}>Goal #3 (Education Fund)</option>
+              {savingsGoals.length === 0 ? (
+                <option value={-1}>No goals created yet</option>
+              ) : (
+                savingsGoals.map((goal, index) => (
+                  <option key={index} value={index}>
+                    Goal #{index + 1} ({goal.name})
+                  </option>
+                ))
+              )}
             </select>
-            <div className="text-xs text-gray-500 mt-1">
-              Progress: 0.5 ETH / 2.0 ETH (25%)
-            </div>
+            {savingsGoals.length > 0 && selectedGoalId < savingsGoals.length && (
+              <div className="text-xs text-gray-500 mt-1">
+                Progress: {formatEther(savingsGoals[selectedGoalId].currentAmount)} ETH / {formatEther(savingsGoals[selectedGoalId].targetAmount)} ETH 
+                ({calculateProgress(savingsGoals[selectedGoalId].currentAmount, savingsGoals[selectedGoalId].targetAmount)}%)
+              </div>
+            )}
           </div>
 
           <div>
@@ -146,7 +231,7 @@ export default function SavingsGoalsTab({
 
           <Button
             onClick={handleGoalContribution}
-            disabled={!goalContribution || isLoading}
+            disabled={!goalContribution || isLoading || savingsGoals.length === 0}
             className="w-full"
           >
             Contribute to Goal
@@ -161,20 +246,48 @@ export default function SavingsGoalsTab({
       {/* 目标状态展示 */}
       <div className="mt-6 pt-6 border-t">
         <h4 className="font-medium mb-4">My Savings Goals</h4>
-        <div className="grid gap-4">
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-medium">Car Fund</span>
-              <span className="text-sm text-gray-500">25%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-              <div className="bg-green-600 h-2 rounded-full" style={{width: '25%'}}></div>
-            </div>
-            <div className="text-sm text-gray-600">
-              0.5 ETH / 2.0 ETH • Remaining 15 days • Reward rate 2.5%
-            </div>
+        {savingsGoals.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <div className="text-4xl mb-2">🎯</div>
+            <p>No savings goals yet. Create your first goal above!</p>
           </div>
-        </div>
+        ) : (
+          <div className="grid gap-4">
+            {savingsGoals.map((goal, index) => {
+              const progress = calculateProgress(goal.currentAmount, goal.targetAmount);
+              const daysRemaining = calculateDaysRemaining(goal.deadline);
+              
+              return (
+                <div key={index} className={`p-4 rounded-lg ${goal.isAchieved ? 'bg-green-50 border border-green-200' : 'bg-gray-50'}`}>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium">{goal.name}</span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-500">{progress.toFixed(1)}%</span>
+                      {goal.isAchieved && <span className="text-green-600">✓ Achieved</span>}
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                    <div 
+                      className={`h-2 rounded-full ${goal.isAchieved ? 'bg-green-600' : 'bg-blue-600'}`}
+                      style={{width: `${Math.min(100, progress)}%`}}
+                    ></div>
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {formatEther(goal.currentAmount)} ETH / {formatEther(goal.targetAmount)} ETH
+                    {!goal.isAchieved && (
+                      <>
+                        {' • '}
+                        {daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Deadline passed'}
+                        {' • '}
+                        Reward rate {goal.rewardRate}%
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* 功能说明 */}

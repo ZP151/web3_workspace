@@ -120,17 +120,23 @@ export default function DepositWithdrawTab({
           </div>
           {parseFloat(pendingInterest) > 0 && (
             <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-yellow-800">
-                  Pending Interest: {parseFloat(pendingInterest).toFixed(6)} ETH
-                </span>
-                <Button
-                  onClick={onClaimInterest}
-                  size="sm"
-                  className="bg-yellow-600 hover:bg-yellow-700"
-                >
-                  Claim
-                </Button>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-yellow-800 font-medium">
+                    💰 Accrued Interest: {parseFloat(pendingInterest).toFixed(6)} ETH
+                  </span>
+                  <Button
+                    onClick={onClaimInterest}
+                    size="sm"
+                    className="bg-yellow-600 hover:bg-yellow-700"
+                  >
+                    Claim Interest
+                  </Button>
+                </div>
+                <p className="text-xs text-yellow-700">
+                  Interest is calculated based on your balance and time since last transaction.
+                  Claiming will add this amount to your balance.
+                </p>
               </div>
             </div>
           )}

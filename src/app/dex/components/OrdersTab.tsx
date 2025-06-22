@@ -31,34 +31,34 @@ export default function OrdersTab({
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900 flex items-center">
           <Coins className="h-5 w-5 mr-2" />
-          限价订单
+          Limit Order
         </h3>
         <Button variant="outline" size="sm" onClick={() => refetchUserOrders()}>
           <RefreshCw className="h-4 w-4 mr-2" />
-          刷新
+          refresh (computer window)
         </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 创建限价订单 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">创建限价订单</h4>
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">Create Limit Order</h4>
           
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">订单类型</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Order Type</label>
                 <select
                   value={limitOrderData.orderType}
                   onChange={(e) => setLimitOrderData(prev => ({ ...prev, orderType: Number(e.target.value) }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value={0}>买入 (BUY)</option>
-                  <option value={1}>卖出 (SELL)</option>
+                  <option value={0}>Buy</option>
+                  <option value={1}>Sell</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">代币</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Token</label>
                 <select
                   value={limitOrderData.tokenIn}
                   onChange={(e) => {
@@ -78,7 +78,7 @@ export default function OrdersTab({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">数量</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Amount</label>
                 <input
                   type="number"
                   step="0.000001"
@@ -90,7 +90,7 @@ export default function OrdersTab({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">价格</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Price</label>
                 <input
                   type="number"
                   step="0.000001"
@@ -105,7 +105,7 @@ export default function OrdersTab({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">最小输出</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Minimum Output</label>
                 <input
                   type="number"
                   step="0.000001"
@@ -117,17 +117,17 @@ export default function OrdersTab({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">过期时间 (小时)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Expiration Time (hours)</label>
                 <select
                   value={limitOrderData.expirationHours}
                   onChange={(e) => setLimitOrderData(prev => ({ ...prev, expirationHours: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="1">1 小时</option>
-                  <option value="6">6 小时</option>
-                  <option value="24">24 小时</option>
-                  <option value="72">3 天</option>
-                  <option value="168">7 天</option>
+                  <option value="1">1 hour</option>
+                  <option value="6">6 hours</option>
+                  <option value="24">24 hours</option>
+                  <option value="72">3 days</option>
+                  <option value="168">7 days</option>
                 </select>
               </div>
             </div>
@@ -137,20 +137,20 @@ export default function OrdersTab({
               disabled={isCreatingOrder || !limitOrderData.amountIn || !limitOrderData.pricePerToken}
               className="w-full"
             >
-              {isCreatingOrder ? '创建中...' : '创建限价订单'}
+              {isCreatingOrder ? 'Creating...' : 'Create Limit Order'}
             </Button>
           </div>
         </div>
 
         {/* 我的订单 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">我的订单</h4>
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">My Orders</h4>
           
           <div className="space-y-3">
             {userOrders.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <Coins className="mx-auto h-12 w-12 text-gray-400 mb-2" />
-                <p>暂无订单</p>
+                <p>No orders yet</p>
               </div>
             ) : (
               userOrders.map((order, index) => (
@@ -160,7 +160,7 @@ export default function OrdersTab({
                       <span className={`inline-block px-2 py-1 text-xs rounded ${
                         order.orderType === 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}>
-                        {order.orderType === 0 ? '买入' : '卖出'}
+                        {order.orderType === 0 ? 'Buy' : 'Sell'}
                       </span>
                       <span className="ml-2 text-sm font-medium">
                         {order.tokenIn} → {order.tokenOut}
@@ -172,13 +172,13 @@ export default function OrdersTab({
                       onClick={() => handleCancelOrder(order.id)}
                       disabled={isCancellingOrder}
                     >
-                      取消
+                      Cancel
                     </Button>
                   </div>
                   <div className="text-sm text-gray-600 space-y-1">
-                    <div>数量: {order.amountIn} {order.tokenIn}</div>
-                    <div>价格: {order.pricePerToken}</div>
-                    <div>状态: {order.status === 0 ? '活跃' : order.status === 1 ? '已完成' : '已取消'}</div>
+                    <div>Amount: {order.amountIn} {order.tokenIn}</div>
+                    <div>Price: {order.pricePerToken}</div>
+                    <div>Status: {order.status === 0 ? 'Active' : order.status === 1 ? 'Completed' : 'Cancelled'}</div>
                   </div>
                 </div>
               ))

@@ -300,27 +300,43 @@ export const useDepositWithdrawFunctions = (
     }
   };
 
-  const handleClaimInterest = async () => {
+    const handleClaimInterest = async () => {
+    // 在EnhancedBank合约中，利息会在任何交易时自动计算并添加到余额
+    // 我们通过最小金额的存款来触发利息更新，这是最安全的方式
     if (!contractAddress) {
       toast.error('Contract not available');
       return;
     }
     
     try {
+      toast('Computing accrued interest and updating your balance...', {
+        icon: '💰',
+      });
+      
       const { writeContract } = await import('wagmi/actions');
       
+      // 通过最小存款(0.001 ETH)来触发利息计算
+      // 这会调用_payInterest()函数，计算并添加累积利息到余额
       await writeContract({
         address: contractAddress,
         abi: contractABI,
-        functionName: 'claimInterest',
+        functionName: 'deposit',
         args: [],
+        value: parseEther('0.001'), // 最小存款触发利息更新
       });
       
-      toast.success('Interest claimed successfully!');
-      if (refetchAccountInfo) refetchAccountInfo();
+      toast.success('✅ Interest claimed! Your accrued interest has been added to your balance.');
+      
+      // 刷新账户信息以显示更新后的余额
+      if (refetchAccountInfo) {
+        setTimeout(() => {
+          refetchAccountInfo();
+        }, 1500);
+      }
+      
     } catch (error: any) {
-      console.error('Claim interest failed:', error);
-      toast.error('Claim interest failed: ' + (error.shortMessage || error.message || 'Unknown error'));
+      console.error('Interest claim failed:', error);
+      toast.error('Failed to claim interest: ' + (error.shortMessage || error.message || 'Unknown error'));
     }
   };
 

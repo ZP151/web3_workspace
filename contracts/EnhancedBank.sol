@@ -394,6 +394,53 @@ contract EnhancedBank is ReentrancyGuard, Ownable, Pausable {
     }
     
     /**
+     * @dev 手动领取存款利息
+     */
+    function claimInterest() 
+        external 
+        whenNotPaused 
+        nonReentrant 
+    {
+        Account storage account = accounts[msg.sender];
+        require(account.balance > 0, "No balance to earn interest");
+        require(account.lastDepositTime > 0, "No deposit history");
+        
+        uint256 timeElapsed = block.timestamp - account.lastDepositTime;
+        require(timeElapsed > 0, "No interest to claim yet");
+        
+        uint256 interest = (account.balance * DEPOSIT_INTEREST_RATE * timeElapsed) / 
+                          (100 * SECONDS_PER_YEAR);
+        
+        require(interest > 0, "No interest earned");
+        
+        // 更新账户
+        account.balance += interest;
+        totalBankBalance += interest;
+        account.lastDepositTime = block.timestamp;
+        
+        emit InterestPaid(msg.sender, interest);
+    }
+    
+    /**
+     * @dev 计算当前可领取的利息
+     */
+    function calculateCurrentInterest(address _account) 
+        external 
+        view 
+        returns (uint256) 
+    {
+        Account storage account = accounts[_account];
+        
+        if (account.balance == 0 || account.lastDepositTime == 0) {
+            return 0;
+        }
+        
+        uint256 timeElapsed = block.timestamp - account.lastDepositTime;
+        return (account.balance * DEPOSIT_INTEREST_RATE * timeElapsed) / 
+               (100 * SECONDS_PER_YEAR);
+    }
+    
+    /**
      * @dev 获取用户贷款信息
      */
     function getUserLoans(address _user) 
@@ -934,6 +981,64 @@ contract EnhancedBank is ReentrancyGuard, Ownable, Pausable {
      */
     function getUserPoolContribution(uint256 _poolId, address _user) external view returns (uint256) {
         return communityPools[_poolId].contributions[_user];
+    }
+    
+    /**
+     * @dev 获取所有活跃的社区池ID列表
+     */
+    function getActivePools() external view returns (uint256[] memory) {
+        uint256[] memory tempPools = new uint256[](nextPoolId - 1);
+        uint256 activeCount = 0;
+        
+        for (uint256 i = 1; i < nextPoolId; i++) {
+            if (communityPools[i].isActive) {
+                tempPools[activeCount] = i;
+                activeCount++;
+            }
+        }
+        
+        // 创建正确大小的数组
+        uint256[] memory activePools = new uint256[](activeCount);
+        for (uint256 i = 0; i < activeCount; i++) {
+            activePools[i] = tempPools[i];
+        }
+        
+        return activePools;
+    }
+    
+    /**
+     * @dev 批量获取多个池的信息
+     */
+    function getMultiplePoolsInfo(uint256[] calldata _poolIds) external view returns (
+        string[] memory names,
+        uint256[] memory totalAmounts,
+        uint256[] memory participantCounts,
+        uint256[] memory rewardRates,
+        bool[] memory isActives
+    ) {
+        uint256 length = _poolIds.length;
+        names = new string[](length);
+        totalAmounts = new uint256[](length);
+        participantCounts = new uint256[](length);
+        rewardRates = new uint256[](length);
+        isActives = new bool[](length);
+        
+        for (uint256 i = 0; i < length; i++) {
+            uint256 poolId = _poolIds[i];
+            CommunityPool storage pool = communityPools[poolId];
+            names[i] = pool.name;
+            totalAmounts[i] = pool.totalAmount;
+            participantCounts[i] = pool.participantCount;
+            rewardRates[i] = pool.rewardRate;
+            isActives[i] = pool.isActive;
+        }
+    }
+    
+    /**
+     * @dev 获取用户参与的所有池ID
+     */
+    function getUserParticipatingPools(address _user) external view returns (uint256[] memory) {
+        return userPoolParticipation[_user];
     }
     
     // 新增事件
