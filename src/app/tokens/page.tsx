@@ -450,7 +450,7 @@ export default function TokenFactoryPage() {
                               className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                             />
                             <label htmlFor="mintable" className="ml-2 text-sm text-gray-700">
-                              Mintable (可增发)
+                              Mintable
                             </label>
                           </div>
                           
@@ -463,7 +463,7 @@ export default function TokenFactoryPage() {
                               className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                             />
                             <label htmlFor="burnable" className="ml-2 text-sm text-gray-700">
-                              Burnable (可销毁)
+                              Burnable
                             </label>
                           </div>
                           
@@ -476,7 +476,7 @@ export default function TokenFactoryPage() {
                               className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                             />
                             <label htmlFor="pausable" className="ml-2 text-sm text-gray-700">
-                              Pausable (可暂停)
+                              Pausable
                             </label>
                           </div>
                         </div>
@@ -562,7 +562,7 @@ export default function TokenFactoryPage() {
                           Total: {
                             Object.values(newToken.initialDistribution)
                               .reduce((sum, val) => sum + parseFloat(val || '0'), 0)
-                          }% (应该等于100%)
+                          }% (should equal 100%)
                         </div>
                       </div>
                     </div>
@@ -629,7 +629,7 @@ export default function TokenFactoryPage() {
                           </div>
                           
                           <div className="mb-3">
-                            <p className="text-xs text-gray-500 mb-1">合约地址:</p>
+                            <p className="text-xs text-gray-500 mb-1">Contract Address:</p>
                             <div className="flex items-center justify-between bg-white rounded px-2 py-1">
                               <span className="text-xs font-mono text-gray-700">
                                 {token.address.slice(0, 8)}...{token.address.slice(-6)}
@@ -652,10 +652,10 @@ export default function TokenFactoryPage() {
                                   <div className="space-y-2">
                                     <div className="font-semibold">{token.name} ({token.symbol})</div>
                                     <div className="text-sm space-y-1">
-                                      <div>总供应量: {formatSupply(token.totalSupply)}</div>
-                                      <div>精度: {token.decimals}</div>
-                                      <div>创建者: {token.creator.slice(0, 6)}...{token.creator.slice(-4)}</div>
-                                      <div>交易哈希: {token.txHash.slice(0, 10)}...</div>
+                                      <div>Total Supply: {formatSupply(token.totalSupply)}</div>
+                                      <div>Decimals: {token.decimals}</div>
+                                      <div>Creator: {token.creator.slice(0, 6)}...{token.creator.slice(-4)}</div>
+                                      <div>Transaction Hash: {token.txHash.slice(0, 10)}...</div>
                                     </div>
                                   </div>,
                                   { duration: 5000 }
@@ -679,7 +679,7 @@ export default function TokenFactoryPage() {
                           
                           <div className="mt-3 pt-3 border-t border-gray-200">
                             <p className="text-xs text-gray-500">
-                              创建于: {new Date(token.timestamp).toLocaleDateString()}
+                              Created at: {new Date(token.timestamp).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
@@ -699,7 +699,7 @@ export default function TokenFactoryPage() {
                     <div className="flex items-center space-x-4">
                       <input
                         type="text"
-                        placeholder="搜索代币名称或符号..."
+                        placeholder="Search by token name or symbol..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -709,10 +709,10 @@ export default function TokenFactoryPage() {
                         onChange={(e) => setFilterBy(e.target.value as any)}
                         className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                       >
-                        <option value="all">所有代币</option>
-                        <option value="my-tokens">我的代币</option>
-                        <option value="mintable">可增发</option>
-                        <option value="burnable">可销毁</option>
+                        <option value="all">All Tokens</option>
+                        <option value="my-tokens">My Tokens</option>
+                        <option value="mintable">Mintable</option>
+                        <option value="burnable">Burnable</option>
                       </select>
                     </div>
                     <select
@@ -720,10 +720,10 @@ export default function TokenFactoryPage() {
                       onChange={(e) => setSortBy(e.target.value as any)}
                       className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                     >
-                      <option value="newest">最新创建</option>
-                      <option value="oldest">最早创建</option>
-                      <option value="name">按名称</option>
-                      <option value="supply">按供应量</option>
+                      <option value="newest">Newest</option>
+                      <option value="oldest">Oldest</option>
+                      <option value="name">By Name</option>
+                      <option value="supply">By Supply</option>
                     </select>
                   </div>
                 </div>
@@ -731,7 +731,7 @@ export default function TokenFactoryPage() {
                 {/* Token Grid */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-6">
-                    探索代币 ({createdTokens.length} 个代币)
+                    Explore Tokens ({createdTokens.length} tokens)
                   </h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -774,23 +774,23 @@ export default function TokenFactoryPage() {
                               <p className="text-sm font-bold text-gray-900">
                                 {formatSupply(token.totalSupply)}
                               </p>
-                              <p className="text-xs text-gray-500">总供应量</p>
+                              <p className="text-xs text-gray-500">Total Supply</p>
                             </div>
                           </div>
                           
                           <div className="space-y-2 mb-4">
                             <div className="flex justify-between text-sm">
-                              <span className="text-gray-600">精度:</span>
+                              <span className="text-gray-600">Decimals:</span>
                               <span className="font-medium">{token.decimals}</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                              <span className="text-gray-600">创建者:</span>
+                              <span className="text-gray-600">Creator:</span>
                               <span className="font-mono text-xs">
                                 {token.creator.slice(0, 6)}...{token.creator.slice(-4)}
                               </span>
                             </div>
                             <div className="flex justify-between text-sm">
-                              <span className="text-gray-600">创建时间:</span>
+                              <span className="text-gray-600">Created at:</span>
                               <span className="text-xs">
                                 {new Date(token.timestamp).toLocaleDateString()}
                               </span>
@@ -806,7 +806,7 @@ export default function TokenFactoryPage() {
                                 className="flex-1"
                               >
                                 <Copy className="h-3 w-3 mr-1" />
-                                复制地址
+                                Copy Address
                               </Button>
                               <Button
                                 size="sm"
@@ -815,13 +815,13 @@ export default function TokenFactoryPage() {
                                 className="flex-1"
                               >
                                 <ExternalLink className="h-3 w-3 mr-1" />
-                                浏览器
+                                Explorer
                               </Button>
                             </div>
                             
                             {token.creator.toLowerCase() === address?.toLowerCase() && (
                               <div className="pt-2 border-t border-purple-200">
-                                <p className="text-xs text-purple-600 font-medium">你是此代币的创建者</p>
+                                <p className="text-xs text-purple-600 font-medium">You are the creator of this token</p>
                               </div>
                             )}
                           </div>
@@ -832,12 +832,12 @@ export default function TokenFactoryPage() {
                   {createdTokens.length === 0 && (
                     <div className="text-center py-12">
                       <Coins className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">还没有代币</h3>
-                      <p className="text-gray-600 mb-6">成为第一个创建代币的人</p>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No tokens yet</h3>
+                      <p className="text-gray-600 mb-6">Be the first to create a token</p>
                       <Button 
                         onClick={() => setActiveView('create')}
                       >
-                        创建代币
+                        Create Token
                       </Button>
                     </div>
                   )}

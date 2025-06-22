@@ -34,9 +34,51 @@ contract EnhancedBank is ReentrancyGuard, Ownable, Pausable {
         bool isActive;
     }
     
+    struct SocialTransfer {
+        address from;
+        address to;
+        uint256 amount;
+        string message;
+        uint256 timestamp;
+        bool isPublic;
+    }
+    
+    struct SavingsGoal {
+        string name;
+        uint256 targetAmount;
+        uint256 currentAmount;
+        uint256 deadline;
+        uint256 rewardRate; // 达成目标的奖励利率
+        bool isActive;
+        bool isAchieved;
+    }
+    
+    struct FlashLoan {
+        address borrower;
+        uint256 amount;
+        uint256 fee;
+        uint256 timestamp;
+        bool isActive;
+    }
+    
+    struct CommunityPool {
+        string name;
+        uint256 totalAmount;
+        uint256 participantCount;
+        uint256 rewardRate;
+        bool isActive;
+        mapping(address => uint256) contributions;
+        mapping(address => uint256) lastContributionTime;
+    }
+    
     mapping(address => Account) public accounts;
     mapping(address => Loan[]) public userLoans;
     mapping(address => Stake[]) public userStakes;
+    mapping(address => SocialTransfer[]) public userSocialTransfers;
+    mapping(address => SavingsGoal[]) public userSavingsGoals;
+    mapping(address => FlashLoan) public activeFlashLoans;
+    mapping(uint256 => CommunityPool) public communityPools;
+    mapping(address => uint256[]) public userPoolParticipation;
     
     uint256 public totalBankBalance;
     uint256 public totalLoanAmount;
@@ -53,6 +95,10 @@ contract EnhancedBank is ReentrancyGuard, Ownable, Pausable {
     uint256 public minimumLoan = 0.1 ether;
     uint256 public minimumStake = 0.1 ether;
     
+    uint256 public nextPoolId = 1;
+    uint256 public constant FLASH_LOAN_FEE = 5; // 0.05% 闪电贷手续费
+    uint256 public constant COMMUNITY_REWARD_RATE = 800; // 8% 社区池奖励率
+    
     event Deposit(address indexed account, uint256 amount, uint256 newBalance);
     event Withdrawal(address indexed account, uint256 amount, uint256 newBalance);
     event InterestPaid(address indexed account, uint256 interest);
@@ -60,6 +106,16 @@ contract EnhancedBank is ReentrancyGuard, Ownable, Pausable {
     event LoanRepaid(address indexed borrower, uint256 loanId, uint256 amount);
     event StakeCreated(address indexed staker, uint256 stakeId, uint256 amount);
     event StakeWithdrawn(address indexed staker, uint256 stakeId, uint256 amount, uint256 reward);
+    event Transfer(address indexed from, address indexed to, uint256 amount, string transferType);
+    event ExternalTransfer(address indexed from, address indexed to, uint256 amount);
+    event UserToUserTransfer(address indexed from, address indexed to, uint256 amount);
+    event SocialTransferSent(address indexed from, address indexed to, uint256 amount, string message, bool isPublic);
+    event SavingsGoalCreated(address indexed user, uint256 goalId, string name, uint256 targetAmount);
+    event SavingsGoalAchieved(address indexed user, uint256 goalId, uint256 rewardAmount);
+    event FlashLoanTaken(address indexed borrower, uint256 amount, uint256 fee);
+    event FlashLoanRepaid(address indexed borrower, uint256 amount, uint256 fee);
+    event CommunityPoolCreated(uint256 indexed poolId, string name, uint256 rewardRate);
+    event CommunityPoolContribution(uint256 indexed poolId, address indexed contributor, uint256 amount);
     
     modifier validAmount(uint256 _amount) {
         require(_amount > 0, "Amount must be greater than 0");
@@ -436,4 +492,450 @@ contract EnhancedBank is ReentrancyGuard, Ownable, Pausable {
     receive() external payable {
         // 允许向合约发送以太币
     }
+    
+    /**
+     * @dev 内部账户转账 - 将银行余额转给其他用户的银行账户
+     */
+    function transferInternal(address _to, uint256 _amount) 
+        external 
+        whenNotPaused 
+        validAmount(_amount) 
+        sufficientBalance(_amount) 
+        nonReentrant 
+    {
+        require(_to != address(0), "Invalid recipient");
+        require(_to != msg.sender, "Cannot transfer to yourself");
+        
+        // 先计算并支付利息给双方
+        _payInterest(msg.sender);
+        _payInterest(_to);
+        
+        Account storage fromAccount = accounts[msg.sender];
+        Account storage toAccount = accounts[_to];
+        
+        fromAccount.balance -= _amount;
+        toAccount.balance += _amount;
+        
+        emit Transfer(msg.sender, _to, _amount, "internal");
+    }
+    
+    /**
+     * @dev 外部转账 - 将银行余额直接转到外部地址
+     */
+    function transferExternal(address payable _to, uint256 _amount) 
+        external 
+        whenNotPaused 
+        validAmount(_amount) 
+        sufficientBalance(_amount) 
+        nonReentrant 
+    {
+        require(_to != address(0), "Invalid recipient");
+        require(_to != msg.sender, "Cannot transfer to yourself");
+        
+        // 先计算并支付利息
+        _payInterest(msg.sender);
+        
+        Account storage account = accounts[msg.sender];
+        account.balance -= _amount;
+        account.totalWithdrawn += _amount;
+        
+        totalBankBalance -= _amount;
+        
+        // 转账给接收者
+        (bool success, ) = _to.call{value: _amount}("");
+        require(success, "External transfer failed");
+        
+        emit ExternalTransfer(msg.sender, _to, _amount);
+    }
+    
+    /**
+     * @dev 批量转账 - 一次性转账给多个地址
+     */
+    function batchTransfer(address[] calldata _recipients, uint256[] calldata _amounts, bool _internal) 
+        external 
+        whenNotPaused 
+        nonReentrant 
+    {
+        require(_recipients.length == _amounts.length, "Arrays length mismatch");
+        require(_recipients.length > 0 && _recipients.length <= 50, "Invalid recipients count");
+        
+        uint256 totalAmount = 0;
+        for (uint256 i = 0; i < _amounts.length; i++) {
+            require(_amounts[i] > 0, "Invalid amount");
+            totalAmount += _amounts[i];
+        }
+        
+        require(accounts[msg.sender].balance >= totalAmount, "Insufficient total balance");
+        
+        // 先计算并支付利息
+        _payInterest(msg.sender);
+        
+        for (uint256 i = 0; i < _recipients.length; i++) {
+            address recipient = _recipients[i];
+            uint256 amount = _amounts[i];
+            
+            require(recipient != address(0), "Invalid recipient");
+            require(recipient != msg.sender, "Cannot transfer to yourself");
+            
+            if (_internal) {
+                // 内部转账
+                _payInterest(recipient);
+                accounts[msg.sender].balance -= amount;
+                accounts[recipient].balance += amount;
+                emit Transfer(msg.sender, recipient, amount, "batch_internal");
+            } else {
+                // 外部转账
+                accounts[msg.sender].balance -= amount;
+                accounts[msg.sender].totalWithdrawn += amount;
+                totalBankBalance -= amount;
+                
+                (bool success, ) = payable(recipient).call{value: amount}("");
+                require(success, "Batch external transfer failed");
+                emit ExternalTransfer(msg.sender, recipient, amount);
+            }
+        }
+    }
+    
+    /**
+     * @dev 用户到用户转账 - 使用钱包余额，通过合约记录转账
+     */
+    function userToUserTransfer(address payable _to) 
+        external 
+        payable
+        whenNotPaused 
+        validAmount(msg.value) 
+        nonReentrant 
+    {
+        require(_to != address(0), "Invalid recipient");
+        require(_to != msg.sender, "Cannot transfer to yourself");
+        
+        // 直接转账给接收者
+        (bool success, ) = _to.call{value: msg.value}("");
+        require(success, "User transfer failed");
+        
+        // 记录转账事件用于统计和追踪
+        emit UserToUserTransfer(msg.sender, _to, msg.value);
+    }
+    
+    /**
+     * @dev 批量用户转账 - 使用钱包余额，批量转给多个用户
+     */
+    function batchUserTransfer(address[] calldata _recipients, uint256[] calldata _amounts) 
+        external 
+        payable
+        whenNotPaused 
+        nonReentrant 
+    {
+        require(_recipients.length == _amounts.length, "Arrays length mismatch");
+        require(_recipients.length > 0 && _recipients.length <= 50, "Invalid recipients count");
+        
+        uint256 totalAmount = 0;
+        for (uint256 i = 0; i < _amounts.length; i++) {
+            require(_amounts[i] > 0, "Invalid amount");
+            totalAmount += _amounts[i];
+        }
+        
+        require(msg.value >= totalAmount, "Insufficient payment amount");
+        
+        // 执行所有转账
+        for (uint256 i = 0; i < _recipients.length; i++) {
+            address payable recipient = payable(_recipients[i]);
+            uint256 amount = _amounts[i];
+            
+            require(recipient != address(0), "Invalid recipient");
+            require(recipient != msg.sender, "Cannot transfer to yourself");
+            
+            (bool success, ) = recipient.call{value: amount}("");
+            require(success, "Batch user transfer failed");
+            
+            emit UserToUserTransfer(msg.sender, recipient, amount);
+        }
+        
+        // 退还多余的金额
+        uint256 refund = msg.value - totalAmount;
+        if (refund > 0) {
+            (bool refundSuccess, ) = msg.sender.call{value: refund}("");
+            require(refundSuccess, "Refund failed");
+        }
+    }
+    
+    // ===========================================
+    // Web3 创新功能实现
+    // ===========================================
+    
+    /**
+     * @dev 社交转账 - 带消息和公开选项的转账
+     */
+    function socialTransfer(address payable _to, string calldata _message, bool _isPublic) 
+        external 
+        payable
+        whenNotPaused 
+        validAmount(msg.value) 
+        nonReentrant 
+    {
+        require(_to != address(0), "Invalid recipient");
+        require(_to != msg.sender, "Cannot transfer to yourself");
+        require(bytes(_message).length <= 280, "Message too long"); // Twitter风格限制
+        
+        // 执行转账
+        (bool success, ) = _to.call{value: msg.value}("");
+        require(success, "Social transfer failed");
+        
+        // 记录社交转账
+        SocialTransfer memory newTransfer = SocialTransfer({
+            from: msg.sender,
+            to: _to,
+            amount: msg.value,
+            message: _message,
+            timestamp: block.timestamp,
+            isPublic: _isPublic
+        });
+        
+        userSocialTransfers[msg.sender].push(newTransfer);
+        userSocialTransfers[_to].push(newTransfer);
+        
+        emit SocialTransferSent(msg.sender, _to, msg.value, _message, _isPublic);
+    }
+    
+    /**
+     * @dev 创建储蓄目标
+     */
+    function createSavingsGoal(
+        string calldata _name,
+        uint256 _targetAmount,
+        uint256 _durationDays
+    ) external {
+        require(_targetAmount >= 0.1 ether, "Target amount too small");
+        require(_durationDays >= 7 && _durationDays <= 365, "Invalid duration");
+        require(bytes(_name).length > 0 && bytes(_name).length <= 50, "Invalid goal name");
+        
+        uint256 deadline = block.timestamp + (_durationDays * 1 days);
+        uint256 rewardRate = _calculateGoalRewardRate(_durationDays, _targetAmount);
+        
+        SavingsGoal memory newGoal = SavingsGoal({
+            name: _name,
+            targetAmount: _targetAmount,
+            currentAmount: 0,
+            deadline: deadline,
+            rewardRate: rewardRate,
+            isActive: true,
+            isAchieved: false
+        });
+        
+        userSavingsGoals[msg.sender].push(newGoal);
+        uint256 goalId = userSavingsGoals[msg.sender].length - 1;
+        
+        emit SavingsGoalCreated(msg.sender, goalId, _name, _targetAmount);
+    }
+    
+    /**
+     * @dev 向储蓄目标存款
+     */
+    function contributeToSavingsGoal(uint256 _goalId) 
+        external 
+        payable 
+        whenNotPaused 
+        validAmount(msg.value) 
+        nonReentrant 
+    {
+        require(_goalId < userSavingsGoals[msg.sender].length, "Invalid goal ID");
+        
+        SavingsGoal storage goal = userSavingsGoals[msg.sender][_goalId];
+        require(goal.isActive, "Goal is not active");
+        require(block.timestamp <= goal.deadline, "Goal deadline passed");
+        require(!goal.isAchieved, "Goal already achieved");
+        
+        // 存入银行账户
+        _payInterest(msg.sender);
+        Account storage account = accounts[msg.sender];
+        account.balance += msg.value;
+        account.totalDeposited += msg.value;
+        totalBankBalance += msg.value;
+        
+        // 更新目标进度
+        goal.currentAmount += msg.value;
+        
+        // 检查是否达成目标
+        if (goal.currentAmount >= goal.targetAmount) {
+            goal.isAchieved = true;
+            uint256 rewardAmount = (goal.targetAmount * goal.rewardRate) / 10000;
+            account.balance += rewardAmount;
+            totalBankBalance += rewardAmount;
+            
+            emit SavingsGoalAchieved(msg.sender, _goalId, rewardAmount);
+        }
+        
+        emit Deposit(msg.sender, msg.value, account.balance);
+    }
+    
+    /**
+     * @dev 闪电贷 - DeFi特色功能
+     */
+    function takeFlashLoan(uint256 _amount) 
+        external 
+        whenNotPaused 
+        nonReentrant 
+    {
+        require(_amount > 0 && _amount <= address(this).balance / 2, "Invalid loan amount");
+        require(!activeFlashLoans[msg.sender].isActive, "Active flash loan exists");
+        
+        uint256 fee = (_amount * FLASH_LOAN_FEE) / 10000;
+        
+        // 记录闪电贷
+        activeFlashLoans[msg.sender] = FlashLoan({
+            borrower: msg.sender,
+            amount: _amount,
+            fee: fee,
+            timestamp: block.timestamp,
+            isActive: true
+        });
+        
+        // 发放贷款
+        (bool success, ) = msg.sender.call{value: _amount}("");
+        require(success, "Flash loan transfer failed");
+        
+        emit FlashLoanTaken(msg.sender, _amount, fee);
+    }
+    
+    /**
+     * @dev 偿还闪电贷
+     */
+    function repayFlashLoan() 
+        external 
+        payable 
+        whenNotPaused 
+        nonReentrant 
+    {
+        FlashLoan storage loan = activeFlashLoans[msg.sender];
+        require(loan.isActive, "No active flash loan");
+        require(block.timestamp <= loan.timestamp + 1 hours, "Flash loan expired");
+        
+        uint256 totalRepayment = loan.amount + loan.fee;
+        require(msg.value >= totalRepayment, "Insufficient repayment");
+        
+        // 清除贷款记录
+        loan.isActive = false;
+        
+        // 退还多余资金
+        if (msg.value > totalRepayment) {
+            (bool success, ) = msg.sender.call{value: msg.value - totalRepayment}("");
+            require(success, "Refund failed");
+        }
+        
+        emit FlashLoanRepaid(msg.sender, loan.amount, loan.fee);
+    }
+    
+    /**
+     * @dev 创建社区储蓄池
+     */
+    function createCommunityPool(string calldata _name) external onlyOwner {
+        require(bytes(_name).length > 0 && bytes(_name).length <= 50, "Invalid pool name");
+        
+        uint256 poolId = nextPoolId++;
+        CommunityPool storage pool = communityPools[poolId];
+        pool.name = _name;
+        pool.totalAmount = 0;
+        pool.participantCount = 0;
+        pool.rewardRate = COMMUNITY_REWARD_RATE;
+        pool.isActive = true;
+        
+        emit CommunityPoolCreated(poolId, _name, COMMUNITY_REWARD_RATE);
+    }
+    
+    /**
+     * @dev 向社区池贡献
+     */
+    function contributeToPool(uint256 _poolId) 
+        external 
+        payable 
+        whenNotPaused 
+        validAmount(msg.value) 
+        nonReentrant 
+    {
+        require(communityPools[_poolId].isActive, "Pool not active");
+        
+        CommunityPool storage pool = communityPools[_poolId];
+        
+        // 首次参与
+        if (pool.contributions[msg.sender] == 0) {
+            pool.participantCount++;
+            userPoolParticipation[msg.sender].push(_poolId);
+        }
+        
+        pool.contributions[msg.sender] += msg.value;
+        pool.lastContributionTime[msg.sender] = block.timestamp;
+        pool.totalAmount += msg.value;
+        
+        emit CommunityPoolContribution(_poolId, msg.sender, msg.value);
+    }
+    
+    /**
+     * @dev 跨链转账支持（概念实现）
+     */
+    function initiateCrossChainTransfer(
+        address _to,
+        uint256 _amount,
+        uint256 _targetChainId
+    ) external payable whenNotPaused validAmount(msg.value) nonReentrant {
+        require(_to != address(0), "Invalid recipient");
+        require(_targetChainId != block.chainid, "Same chain transfer");
+        require(msg.value == _amount, "Amount mismatch");
+        
+        // 简化的跨链转账逻辑
+        // 实际实现需要集成LayerZero、Chainlink CCIP等协议
+        
+        emit CrossChainTransferInitiated(msg.sender, _to, _amount, _targetChainId);
+    }
+    
+    // ===========================================
+    // 辅助函数
+    // ===========================================
+    
+    /**
+     * @dev 计算储蓄目标奖励利率
+     */
+    function _calculateGoalRewardRate(uint256 _days, uint256 _amount) internal pure returns (uint256) {
+        uint256 baseRate = 200; // 2%
+        uint256 timeBonus = (_days / 30) * 50; // 每月额外0.5%
+        uint256 amountBonus = (_amount / 1 ether) * 10; // 每ETH额外0.1%
+        return baseRate + timeBonus + amountBonus;
+    }
+    
+    /**
+     * @dev 获取用户社交转账记录
+     */
+    function getUserSocialTransfers(address _user) external view returns (SocialTransfer[] memory) {
+        return userSocialTransfers[_user];
+    }
+    
+    /**
+     * @dev 获取用户储蓄目标
+     */
+    function getUserSavingsGoals(address _user) external view returns (SavingsGoal[] memory) {
+        return userSavingsGoals[_user];
+    }
+    
+    /**
+     * @dev 获取社区池信息
+     */
+    function getPoolInfo(uint256 _poolId) external view returns (
+        string memory name,
+        uint256 totalAmount,
+        uint256 participantCount,
+        uint256 rewardRate,
+        bool isActive
+    ) {
+        CommunityPool storage pool = communityPools[_poolId];
+        return (pool.name, pool.totalAmount, pool.participantCount, pool.rewardRate, pool.isActive);
+    }
+    
+    /**
+     * @dev 获取用户在池中的贡献
+     */
+    function getUserPoolContribution(uint256 _poolId, address _user) external view returns (uint256) {
+        return communityPools[_poolId].contributions[_user];
+    }
+    
+    // 新增事件
+    event CrossChainTransferInitiated(address indexed from, address indexed to, uint256 amount, uint256 targetChainId);
 } 

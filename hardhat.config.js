@@ -42,7 +42,8 @@ module.exports = {
       url: "http://127.0.0.1:7545",
       chainId: 1337,
       gasPrice: 20000000000,
-      gas: 6000000
+      gas: 15000000,
+      blockGasLimit: 15000000
     },
     
     // 测试网络
