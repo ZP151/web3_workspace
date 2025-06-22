@@ -134,12 +134,12 @@ export default function ProposalCard({ proposal, onVote, isVoting, isConnected, 
         {/* Weighted vote options */}
         {proposal.proposalType === 2 && (
           <div className="mb-4">
-            <h4 className="font-medium mb-3">权重投票</h4>
+            <h4 className="font-medium mb-3">weighted vote</h4>
             
             {/* 投票选项 */}
             {proposal.options && proposal.options.length > 0 ? (
               <div className="space-y-3 mb-4">
-                <div className="text-sm font-medium text-gray-700">选择投票选项:</div>
+                <div className="text-sm font-medium text-gray-700">Select a polling option:</div>
                 {proposal.options.map((option, index) => (
                   <div key={index} className="flex items-center gap-3">
                     <input
@@ -164,7 +164,7 @@ export default function ProposalCard({ proposal, onVote, isVoting, isConnected, 
               </div>
             ) : (
               <div className="mb-4">
-                <div className="text-sm font-medium text-gray-700 mb-2">投票选项:</div>
+                <div className="text-sm font-medium text-gray-700 mb-2">Polling options:</div>
                 <div className="flex items-center gap-3">
                   <input
                     type="radio"
