@@ -1,0 +1,15 @@
+{
+  "network": "ganache",
+  "timestamp": "2025-06-23T06:12:12.973Z",
+  "contracts": {
+    "EnhancedBank": {
+      "address": "0xCEFb6deE5ee1817D2B1ba1c9735329d7a3916200",
+      "version": "v4 - Fixed Full Repayment Logic"
+    }
+  },
+  "fixes": [
+    "修复全额还款逻辑：本金和利息都要还清才标记为已还清",
+    "允许微量利息误差（≤0.000001 ETH）避免精度问题",
+    "保持部分还款功能完整性"
+  ]
+}

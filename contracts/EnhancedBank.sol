@@ -19,11 +19,13 @@ contract EnhancedBank is ReentrancyGuard, Ownable, Pausable {
     }
     
     struct Loan {
-        uint256 amount;
-        uint256 collateral;
-        uint256 startTime;
-        uint256 interestRate; // 年利率，基点表示 (8.5% = 850)
-        bool isActive;
+        uint256 amount;          // 原始贷款金额
+        uint256 collateral;      // 抵押品金额
+        uint256 startTime;       // 贷款开始时间
+        uint256 interestRate;    // 年利率，基点表示 (8.5% = 850)
+        uint256 paidAmount;      // 已还款金额（本金）
+        uint256 paidInterest;    // 已还利息
+        bool isActive;           // 是否活跃
     }
     
     struct Stake {
@@ -104,6 +106,7 @@ contract EnhancedBank is ReentrancyGuard, Ownable, Pausable {
     event InterestPaid(address indexed account, uint256 interest);
     event LoanCreated(address indexed borrower, uint256 loanId, uint256 amount, uint256 collateral);
     event LoanRepaid(address indexed borrower, uint256 loanId, uint256 amount);
+    event LoanPartiallyRepaid(address indexed borrower, uint256 loanId, uint256 principalPaid, uint256 interestPaid, uint256 remainingPrincipal);
     event StakeCreated(address indexed staker, uint256 stakeId, uint256 amount);
     event StakeWithdrawn(address indexed staker, uint256 stakeId, uint256 amount, uint256 reward);
     event Transfer(address indexed from, address indexed to, uint256 amount, string transferType);
@@ -229,6 +232,8 @@ contract EnhancedBank is ReentrancyGuard, Ownable, Pausable {
             collateral: msg.value,
             startTime: block.timestamp,
             interestRate: LOAN_INTEREST_RATE,
+            paidAmount: 0,
+            paidInterest: 0,
             isActive: true
         });
         
@@ -245,7 +250,7 @@ contract EnhancedBank is ReentrancyGuard, Ownable, Pausable {
     }
     
     /**
-     * @dev 偿还贷款
+     * @dev 偿还贷款 - 支持部分还款
      */
     function repayLoan(uint256 _loanId) 
         external 
@@ -254,32 +259,68 @@ contract EnhancedBank is ReentrancyGuard, Ownable, Pausable {
         nonReentrant 
     {
         require(_loanId < userLoans[msg.sender].length, "Invalid loan ID");
+        require(msg.value > 0, "Repayment amount must be greater than 0");
         
         Loan storage loan = userLoans[msg.sender][_loanId];
         require(loan.isActive, "Loan is not active");
         
-        uint256 interest = calculateLoanInterest(msg.sender, _loanId);
-        uint256 totalRepayment = loan.amount + interest;
+        // 计算当前累计利息
+        uint256 totalAccruedInterest = calculateLoanInterest(msg.sender, _loanId);
+        uint256 unpaidInterest = totalAccruedInterest - loan.paidInterest;
+        uint256 remainingPrincipal = loan.amount - loan.paidAmount;
+        uint256 totalOwed = remainingPrincipal + unpaidInterest;
         
-        require(msg.value >= totalRepayment, "Insufficient repayment amount");
+        require(msg.value <= totalOwed + 0.01 ether, "Repayment amount too large"); // 允许少量超额支付
         
-        // 标记贷款为已偿还
-        loan.isActive = false;
-        totalLoanAmount -= loan.amount;
+        uint256 paymentRemaining = msg.value;
+        uint256 interestPaid = 0;
+        uint256 principalPaid = 0;
         
-        // 退还抵押品
-        uint256 collateralToReturn = loan.collateral;
-        
-        // 退还多余的还款
-        uint256 excessPayment = msg.value - totalRepayment;
-        uint256 totalRefund = collateralToReturn + excessPayment;
-        
-        if (totalRefund > 0) {
-            (bool success, ) = msg.sender.call{value: totalRefund}("");
-            require(success, "Refund transfer failed");
+        // 首先偿还利息
+        if (unpaidInterest > 0 && paymentRemaining > 0) {
+            interestPaid = paymentRemaining >= unpaidInterest ? unpaidInterest : paymentRemaining;
+            loan.paidInterest += interestPaid;
+            paymentRemaining -= interestPaid;
         }
         
-        emit LoanRepaid(msg.sender, _loanId, totalRepayment);
+        // 然后偿还本金
+        if (paymentRemaining > 0 && remainingPrincipal > 0) {
+            principalPaid = paymentRemaining >= remainingPrincipal ? remainingPrincipal : paymentRemaining;
+            loan.paidAmount += principalPaid;
+            totalLoanAmount -= principalPaid;
+            paymentRemaining -= principalPaid;
+        }
+        
+        // 检查贷款是否完全还清（本金和利息都要还清，允许微量误差）
+        uint256 newRemainingPrincipal = loan.amount - loan.paidAmount;
+        uint256 newTotalAccruedInterest = calculateLoanInterest(msg.sender, _loanId);
+        uint256 newUnpaidInterest = newTotalAccruedInterest - loan.paidInterest;
+        
+        // 容忍微量误差：本金≤0.000001 ETH 且 利息≤0.000001 ETH
+        uint256 tolerance = 0.000001 ether;
+        
+        if (newRemainingPrincipal <= tolerance && newUnpaidInterest <= tolerance) {
+            // 贷款完全还清（允许微量本金和利息误差）
+            loan.isActive = false;
+            
+            // 退还抵押品和多余付款
+            uint256 totalRefund = loan.collateral + paymentRemaining;
+            if (totalRefund > 0) {
+                (bool success, ) = msg.sender.call{value: totalRefund}("");
+                require(success, "Refund transfer failed");
+            }
+            
+            emit LoanRepaid(msg.sender, _loanId, loan.amount);
+        } else {
+            // 部分还款
+            if (paymentRemaining > 0) {
+                // 退还多余付款
+                (bool success, ) = msg.sender.call{value: paymentRemaining}("");
+                require(success, "Refund transfer failed");
+            }
+            
+            emit LoanPartiallyRepaid(msg.sender, _loanId, principalPaid, interestPaid, newRemainingPrincipal);
+        }
     }
     
     /**
@@ -449,6 +490,39 @@ contract EnhancedBank is ReentrancyGuard, Ownable, Pausable {
         returns (Loan[] memory) 
     {
         return userLoans[_user];
+    }
+    
+    /**
+     * @dev 获取贷款的当前状态
+     */
+    function getLoanStatus(address _borrower, uint256 _loanId) 
+        external 
+        view 
+        returns (
+            uint256 originalAmount,
+            uint256 remainingPrincipal,
+            uint256 totalInterestAccrued,
+            uint256 unpaidInterest,
+            uint256 totalOwed,
+            bool isActive
+        ) 
+    {
+        require(_loanId < userLoans[_borrower].length, "Invalid loan ID");
+        
+        Loan storage loan = userLoans[_borrower][_loanId];
+        uint256 totalAccruedInterest = calculateLoanInterest(_borrower, _loanId);
+        uint256 unpaidInterestAmount = totalAccruedInterest - loan.paidInterest;
+        uint256 remainingPrincipalAmount = loan.amount - loan.paidAmount;
+        uint256 totalOwedAmount = remainingPrincipalAmount + unpaidInterestAmount;
+        
+        return (
+            loan.amount,
+            remainingPrincipalAmount,
+            totalAccruedInterest,
+            unpaidInterestAmount,
+            totalOwedAmount,
+            loan.isActive
+        );
     }
     
     /**

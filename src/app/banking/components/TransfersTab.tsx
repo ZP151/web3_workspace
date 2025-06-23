@@ -8,6 +8,7 @@ import { parseEther, isAddress } from 'viem';
 import { useBalance, useSendTransaction } from 'wagmi';
 import { toast } from 'react-hot-toast';
 import { useEffect } from 'react';
+import { getNetworkAccounts } from '@/utils/web3';
 
 interface TransfersTabProps {
   address: string;
@@ -26,18 +27,15 @@ interface Recipient {
   amount: string;
 }
 
-// Ganache默认地址 - 备用地址
+// 使用用户当前实际的Ganache测试地址
 const GANACHE_DEFAULT_ADDRESSES = [
-  '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
-  '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65',
-  '0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc',
-  '0x976EA74026E726554dB657fA54763abd0C3a0aa9',
-  '0x14dC79964da2C08b23698B3D3cc7Ca32193d9955',
-  '0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f',
-  '0xa0Ee7A142d267C1f36714E4a8F75612F20a79720',
-  '0xBcd4042DE499D14e55001CcbB24a551F3b954096',
-  '0x71bE63f3384f5fb98995898A86B02Fb2426c5788',
-  '0xFABB0ac9d68B0B445fB7357272Ff202C5651694a'
+  '0x8742BF796efE417CF777d04866eD47654F913EB7',
+  '0x2cE2Adb7cef953843a9594d94D7A22Fe49e4d151',
+  '0x24baD0F00Ee583575A25CDED282C6527c823564C',
+  '0xfA940a1b896f08114610731BbC7b0f3d96ceaea6',
+  '0x64E8Af94d630CbAfB41cB6B17485EE0042c052c4',
+  '0x8968C41bdCb3cf46018EdaD49cae7ba7f3515833',
+  '0x127c52dF397D280afc94403F715746849ea2ABcF'
 ];
 
 export default function TransfersTab({
@@ -67,74 +65,22 @@ export default function TransfersTab({
   // 动态获取网络中的其他账户
   useEffect(() => {
     const fetchNetworkAddresses = async () => {
-      console.log('Fetching addresses for current user:', address);
-      
-      let availableAddresses: string[] = [];
+      if (!address) return;
       
       try {
-        // 对于本地Ganache网络，我们需要获取所有可用的账户
-        if (typeof window !== 'undefined' && window.ethereum) {
-          try {
-            // 首先尝试获取当前网络信息
-            const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-            console.log('Current chain ID:', chainId);
-            
-            // 尝试获取所有可用账户（包括未连接的）
-            let accounts: string[] = [];
-            
-            // 方法1: 如果是本地网络(1337)，直接使用硬编码地址
-            if (chainId === '0x539' || chainId === '0x7a69') { // 1337 或 31337
-              console.log('Detected local network, using predefined addresses');
-              accounts = GANACHE_DEFAULT_ADDRESSES;
-            } else {
-              // 方法2: 对于其他网络，请求账户权限
-              try {
-                accounts = await window.ethereum.request({ 
-                  method: 'eth_requestAccounts' 
-                });
-                console.log('Retrieved accounts from provider:', accounts);
-              } catch (requestError) {
-                console.log('Request accounts failed, trying eth_accounts:', requestError);
-                accounts = await window.ethereum.request({ method: 'eth_accounts' });
-              }
-            }
-            
-            // 过滤掉当前用户地址
-            if (accounts && accounts.length > 0) {
-              availableAddresses = accounts.filter((acc: string) => 
-                acc.toLowerCase() !== address?.toLowerCase()
-              );
-              console.log('Filtered available addresses:', availableAddresses);
-            }
-            
-          } catch (providerError) {
-            console.log('Provider request failed:', providerError);
-          }
-        }
-        
-        // 备用方案：使用默认地址
-        if (availableAddresses.length === 0) {
-          console.log('No addresses from provider, using defaults');
-          availableAddresses = GANACHE_DEFAULT_ADDRESSES.filter(addr => 
-            addr.toLowerCase() !== address?.toLowerCase()
-          );
-        }
-        
+        const addresses = await getNetworkAccounts(address, 9);
+        setNetworkAddresses(addresses);
       } catch (error) {
-        console.log('Address fetching error:', error);
-        // 最终备用方案
-        availableAddresses = GANACHE_DEFAULT_ADDRESSES.filter(addr => 
-          addr.toLowerCase() !== address?.toLowerCase()
-        );
+        console.error('获取网络地址失败:', error);
+        // 使用备用地址
+        const fallbackAddresses = GANACHE_DEFAULT_ADDRESSES
+          .filter(addr => addr.toLowerCase() !== address?.toLowerCase())
+          .slice(0, 9);
+        setNetworkAddresses(fallbackAddresses);
       }
-      
-      console.log('Final available addresses:', availableAddresses);
-      setNetworkAddresses(availableAddresses.slice(0, 9));
     };
 
-    if (address) {
-      fetchNetworkAddresses();
-    }
+    fetchNetworkAddresses();
   }, [address]);
 
   const subTabs = [

@@ -10,6 +10,5 @@ export { default as StakingTab } from './StakingTab';
 
 // Legacy components (for backward compatibility)
 export { default as SocialTransferTab } from './SocialTransferTab';
-export { default as LoanTab } from './LoanTab';
 export { default as FlashLoanTab } from './FlashLoanTab';
 export { default as CalculatorTab } from './CalculatorTab'; 

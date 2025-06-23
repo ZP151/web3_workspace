@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { getNetworkAccounts } from '@/utils/web3';
 
 interface SocialTransferTabProps {
   address: string;
@@ -21,14 +22,44 @@ export default function SocialTransferTab({
   const [amount, setAmount] = useState('');
   const [message, setMessage] = useState('');
   const [isPublic, setIsPublic] = useState(false);
+  const [networkAddresses, setNetworkAddresses] = useState<string[]>([]);
 
-  const ganacheTestAddresses = [
-    '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-    '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
-    '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
-    '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65',
-    '0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc'
+  // 备用地址（如果无法动态获取）
+  const fallbackAddresses = [
+    '0x8742BF796efE417CF777d04866eD47654F913EB7',
+    '0x2cE2Adb7cef953843a9594d94D7A22Fe49e4d151',
+    '0x24baD0F00Ee583575A25CDED282C6527c823564C',
+    '0xfA940a1b896f08114610731BbC7b0f3d96ceaea6',
+    '0x64E8Af94d630CbAfB41cB6B17485EE0042c052c4',
+    '0x8968C41bdCb3cf46018EdaD49cae7ba7f3515833',
+    '0x127c52dF397D280afc94403F715746849ea2ABcF'
   ];
+
+  // 动态获取网络地址
+  useEffect(() => {
+    const fetchAddresses = async () => {
+      if (!address) return;
+      
+      try {
+        const addresses = await getNetworkAccounts(address, 7);
+        setNetworkAddresses(addresses);
+      } catch (error) {
+        console.error('获取网络地址失败:', error);
+        // 使用备用地址
+        const filteredFallback = fallbackAddresses
+          .filter(addr => addr.toLowerCase() !== address?.toLowerCase())
+          .slice(0, 7);
+        setNetworkAddresses(filteredFallback);
+      }
+    };
+
+    fetchAddresses();
+  }, [address]);
+
+  // 使用动态获取的地址或备用地址
+  const availableAddresses = networkAddresses.length > 0 
+    ? networkAddresses 
+    : fallbackAddresses.filter(addr => addr.toLowerCase() !== address?.toLowerCase()).slice(0, 7);
 
   const handleSocialTransfer = async () => {
     if (!to || !amount) return;
@@ -58,14 +89,17 @@ export default function SocialTransferTab({
               className="w-full p-3 border rounded-lg"
             />
             <div className="flex flex-wrap gap-2">
-              <span className="text-xs text-gray-500">Quick select Ganache test addresses:</span>
-              {ganacheTestAddresses.map((addr, index) => (
+              <span className="text-xs text-gray-500">
+                Quick select {networkAddresses.length > 0 ? 'network' : 'test'} addresses:
+              </span>
+              {availableAddresses.map((addr: string, index: number) => (
                 <button
                   key={addr}
                   onClick={() => setTo(addr)}
                   className="text-xs bg-blue-100 hover:bg-blue-200 px-2 py-1 rounded"
+                  title={addr}
                 >
-                  User{index + 2}
+                  {networkAddresses.length > 0 ? `Account ${index + 2}` : `User${index + 2}`}
                 </button>
               ))}
             </div>

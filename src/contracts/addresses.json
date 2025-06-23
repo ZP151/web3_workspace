@@ -1,7 +1,7 @@
 {
   "1337": {
     "VotingCore": "0x2D35cc12DE19429D2e4Bbc51Bf5c2871e2f371b3",
-    "EnhancedBank": "0x087B8713d609a022eBE23349C5b9799c1610f10D",
+    "EnhancedBank": "0xFb7CEEc207c917e99644680612a50425bCF4BC0b",
     "TokenFactory": "0x2171CcfCe22Ce30ff6652A7699edCBFFb5d91f4D",
     "USDC": "0x11f2A56F506B099cfc9dEB9E99C250a8c43e7554",
     "DAI": "0x2bad7A29DaB113Ef250C006830F9D0374E7C1e83",
@@ -15,5 +15,8 @@
     "deployedAt": "2025-06-22T18:30:19.122Z",
     "deployer": "0x8742Bf796efE417CF777d04866eD47654F913EB7",
     "totalContracts": 9
+  },
+  "31337": {
+    "EnhancedBank": "0x5FbDB2315678afecb367f032d93F642f64180aa3"
   }
 }

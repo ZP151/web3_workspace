@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getContractAddress, getContractABI, getAllContractAddresses, getNetworkInfo } from '@/config/contracts';
+import DebugAccountsPage from './debug-accounts';
 
 interface ContractStatus {
   name: string;
@@ -336,6 +337,11 @@ export default function SystemStatusPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Debug Tools */}
+        <div className="mt-8">
+          <DebugAccountsPage />
         </div>
       </div>
     </div>

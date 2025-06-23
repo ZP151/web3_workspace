@@ -6,6 +6,7 @@ interface BankingInfoCardProps {
   chain?: any;
   contractAddress?: string;
   bankBalance: string;
+  totalBankFunds?: string;
   isConnected: boolean;
   onRefresh: () => void;
 }
@@ -15,6 +16,7 @@ export default function BankingInfoCard({
   chain, 
   contractAddress, 
   bankBalance, 
+  totalBankFunds,
   isConnected,
   onRefresh 
 }: BankingInfoCardProps) {
@@ -35,7 +37,13 @@ export default function BankingInfoCard({
         </div>
         <div className="text-right">
           <div className="text-2xl font-bold text-green-600">{bankBalance} ETH</div>
-          <div className="text-gray-600">Bank Balance</div>
+          <div className="text-gray-600">Your Bank Deposit</div>
+          {totalBankFunds && (
+            <>
+              <div className="text-lg font-semibold text-blue-600 mt-2">{totalBankFunds} ETH</div>
+              <div className="text-gray-600 text-sm">Total Bank Funds</div>
+            </>
+          )}
           <div className="text-sm text-gray-500 mt-1">
             Auto-retry enabled for failed transactions
           </div>

@@ -65,6 +65,15 @@ export default function BankingPage() {
     watch: true,
   });
 
+  // 读取银行合约总余额
+  const { data: contractBalance, refetch: refetchContractBalance } = useContractRead({
+    address: contractAddress as `0x${string}`,
+    abi: contractABI,
+    functionName: 'getContractBalance',
+    enabled: !!contractAddress,
+    watch: true,
+  });
+
   const { data: interestRate } = useContractRead({
     address: contractAddress as `0x${string}`,
     abi: contractABI,
@@ -118,10 +127,17 @@ export default function BankingPage() {
     handleSocialTransfer,
     handleCreateSavingsGoal,
     handleContributeToGoal,
+    handleRequestLoan,
     handleTakeFlashLoan,
     handleRepayFlashLoan,
+    handleRepayLoan,
+    handleFullRepayment,
     handleContributeToPool,
     handleInitiateCrossChain,
+    getFlashLoanStatus,
+    getUserLoans,
+    getLoanRepaymentAmount,
+    getLoanStatus,
   } = useWeb3BankingFeatures(contractAddress as `0x${string}`, contractABI, refetchAccountInfo);
 
   // 解析账户信息
@@ -130,6 +146,9 @@ export default function BankingPage() {
   const totalDeposited = accountInfo ? formatEther(accountInfo[2] as bigint) : '0';
   const totalWithdrawn = accountInfo ? formatEther(accountInfo[3] as bigint) : '0';
   const pendingInterest = accountInfo ? formatEther(accountInfo[4] as bigint) : '0';
+  
+  // 解析银行合约余额
+  const totalBankFunds = contractBalance ? formatEther(contractBalance as unknown as bigint) : '0';
 
   // 计算利息
   const interestCalc = calculateInterest(bankBalance, interestRate);
@@ -145,13 +164,81 @@ export default function BankingPage() {
     handleClaimInterest,
   } = useDepositWithdrawFunctions(contractAddress as `0x${string}`, contractABI, refetchAccountInfo);
 
+  // 手动刷新函数
+  const handleManualRefresh = () => {
+    refetchAccountInfo();
+    refetchContractBalance();
+    console.log('🔄 Manual refresh triggered');
+  };
+
+  // 包装还款函数，确保还款后立即刷新
+  const handleRepayLoanWithRefresh = async (loanId: number, amount: string) => {
+    console.log(`💰 Starting repayment for loan #${loanId} with amount: ${amount} ETH`);
+    
+    try {
+      await handleRepayLoan(loanId, amount);
+      
+      // 还款成功后立即刷新多次，确保数据同步
+      console.log('🔄 Triggering immediate refresh after repayment');
+      handleManualRefresh();
+      
+      // 等待1秒后再次刷新
+      setTimeout(() => {
+        console.log('🔄 Second refresh after 1 second');
+        handleManualRefresh();
+      }, 1000);
+      
+      // 等待3秒后最后一次刷新
+      setTimeout(() => {
+        console.log('🔄 Final refresh after 3 seconds');
+        handleManualRefresh();
+      }, 3000);
+      
+    } catch (error) {
+      console.error('❌ Repayment failed:', error);
+      // 即使失败也刷新一下，以防状态有变化
+      handleManualRefresh();
+    }
+  };
+
+  // 包装智能全额还款函数，确保还款后立即刷新
+  const handleFullRepaymentWithRefresh = async (loanId: number) => {
+    console.log(`🔧 Starting intelligent full repayment for loan #${loanId}`);
+    
+    try {
+      await handleFullRepayment(loanId);
+      
+      // 还款成功后立即刷新多次，确保数据同步
+      console.log('🔄 Triggering immediate refresh after full repayment');
+      handleManualRefresh();
+      
+      // 等待1秒后再次刷新
+      setTimeout(() => {
+        console.log('🔄 Second refresh after 1 second');
+        handleManualRefresh();
+      }, 1000);
+      
+      // 等待3秒后最后一次刷新
+      setTimeout(() => {
+        console.log('🔄 Final refresh after 3 seconds');
+        handleManualRefresh();
+      }, 3000);
+      
+    } catch (error) {
+      console.error('❌ Full repayment failed:', error);
+      // 即使失败也刷新一下，以防状态有变化
+      handleManualRefresh();
+    }
+  };
+
   // 自动刷新
   useEffect(() => {
     if (!isConnected || !contractAddress) return;
 
     const interval = setInterval(() => {
       refetchAccountInfo();
-    }, 10000); // 10 seconds
+      refetchContractBalance();
+    }, 5000); // 减少到5秒以便更快看到更新
 
     return () => clearInterval(interval);
   }, [isConnected, contractAddress, refetchAccountInfo]);
@@ -199,8 +286,8 @@ export default function BankingPage() {
               </Link>
             </div>
             <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              Auto refresh: 10s
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              Auto refresh: 5s
             </div>
           </div>
         </div>
@@ -213,8 +300,9 @@ export default function BankingPage() {
           chain={chain}
           contractAddress={contractAddress || undefined}
           bankBalance={bankBalance}
+          totalBankFunds={totalBankFunds}
           isConnected={isConnected}
-          onRefresh={refetchAccountInfo}
+          onRefresh={handleManualRefresh}
         />
 
         {/* Navigation Tabs */}
@@ -271,8 +359,15 @@ export default function BankingPage() {
         {activeView === 'loans' && (
           <LoansTab
             address={address || ''}
+            onRequestLoan={handleRequestLoan}
             onTakeFlashLoan={handleTakeFlashLoan}
             onRepayFlashLoan={handleRepayFlashLoan}
+            onRepayLoan={handleRepayLoanWithRefresh}
+            onFullRepayment={handleFullRepaymentWithRefresh}
+            getFlashLoanStatus={getFlashLoanStatus}
+            getUserLoans={getUserLoans}
+            getLoanRepaymentAmount={getLoanRepaymentAmount}
+            getLoanStatus={getLoanStatus}
             isLoading={isWeb3Loading}
           />
         )}
