@@ -51,9 +51,11 @@ export default function NFTPage() {
     mintNFT,
     buyNFT,
     listForSale,
+    cancelListing,
     likeNFT,
     updateNFTViews,
     loadNFTsFromBlockchain,
+    forceRefresh,
     isMinting,
     isLoadingFromContract,
     contractAddress,
@@ -177,7 +179,10 @@ export default function NFTPage() {
             onViewDetails={handleViewDetails}
             onLike={likeNFT}
             onListForSale={handleListForSale}
+            onCancelListing={cancelListing}
             onViewChange={setActiveView}
+            onRefresh={forceRefresh}
+            isLoading={isLoadingFromContract}
           />
         );
       case 'analytics':

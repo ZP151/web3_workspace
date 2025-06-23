@@ -15,6 +15,7 @@ export interface NFT {
   creator: string;
   category: string;
   isListed: boolean;
+  listingType?: 'FIXED_PRICE' | 'AUCTION';
   likes: number;
   views: number;
   rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary';

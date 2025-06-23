@@ -268,17 +268,29 @@ export default function DEXPage() {
   // 初始化池子数据
   useEffect(() => {
     if (poolInfo) {
-      const [reserveA, reserveB, totalSupply] = poolInfo as unknown as [bigint, bigint, bigint];
+      // poolInfo是PoolInfo结构体，包含完整的池信息
+      const poolData = poolInfo as unknown as {
+        poolId: string;
+        tokenA: string;
+        tokenB: string;
+        reserveA: bigint;
+        reserveB: bigint;
+        totalLiquidity: bigint;
+        apy: bigint;
+        dailyVolume: bigint;
+        totalFees: bigint;
+      };
+
       const mockPool: LiquidityPool = {
         id: '1',
         poolId: wethUsdcPoolId,
         tokenA: 'WETH',
         tokenB: 'USDC',
-        reserveA: formatEther(reserveA),
-        reserveB: formatEther(reserveB),
-        totalSupply: formatEther(totalSupply),
-        userLiquidity: userLiquidityInfo ? formatEther(userLiquidityInfo as unknown as bigint) : '0',
-        apy: '12.5',
+        reserveA: formatEther(poolData.reserveA),
+        reserveB: formatEther(poolData.reserveB),
+        totalSupply: formatEther(poolData.totalLiquidity),
+        userLiquidity: userLiquidityInfo ? formatEther((userLiquidityInfo as unknown as [bigint, bigint, bigint, bigint, bigint])[0]) : '0',
+        apy: (Number(poolData.apy) / 100).toString(), // Convert from basis points to percentage
       };
       setLiquidityPools([mockPool]);
     }

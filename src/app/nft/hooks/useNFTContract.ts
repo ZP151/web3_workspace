@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useAccount, useContractRead, useContractWrite, usePrepareContractWrite, useWaitForTransaction, useNetwork } from 'wagmi';
-import { parseEther } from 'viem';
-import { toast } from 'react-hot-toast';
-import { getContractAddress, getContractABI } from '@/config/contracts';
+  import React, { useState, useEffect } from 'react';
+  import { useAccount, useContractRead, useContractWrite, usePrepareContractWrite, useWaitForTransaction, useNetwork, usePublicClient, useContractWrite as useWriteContract } from 'wagmi';
+  import { parseEther, formatEther } from 'viem';
+  import { toast } from 'react-hot-toast';
+  import { getContractAddress, getContractABI } from '@/config/contracts';
 import { NFT, MintData } from '../types';
 
 // Storage key for persisting NFT data
@@ -82,6 +82,7 @@ const determineRarity = (tokenId: number, attributes?: any[]): 'Common' | 'Rare'
 export function useNFTContract() {
   const { address } = useAccount();
   const { chain } = useNetwork();
+  const publicClient = usePublicClient();
   const [isMinting, setIsMinting] = useState(false);
   const [nfts, setNfts] = useState<NFT[]>([]);
   const [mintData, setMintData] = useState<MintData | null>(null);
@@ -125,114 +126,107 @@ export function useNFTContract() {
   const marketplaceAddress = chain?.id ? getContractAddress(chain.id, 'NFTMarketplace') : null;
   const marketplaceABI = getContractABI('NFTMarketplace');
 
-  // Get marketplace stats
-  const { data: marketplaceStats } = useContractRead({
-    address: marketplaceAddress as `0x${string}`,
-    abi: marketplaceABI,
-    functionName: 'getMarketplaceStats',
-    enabled: !!marketplaceAddress,
-  });
+      // Get marketplace stats
+    const { data: marketplaceStats, error: marketplaceStatsError } = useContractRead({
+      address: marketplaceAddress as `0x${string}`,
+      abi: marketplaceABI,
+      functionName: 'getMarketplaceStats',
+      enabled: !!marketplaceAddress,
+    });
 
-  // Get listing count
-  const { data: listingCount } = useContractRead({
-    address: marketplaceAddress as `0x${string}`,
-    abi: marketplaceABI,
-    functionName: 'getListingCount',
-    enabled: !!marketplaceAddress,
-  });
+    // Get listing count
+    const { data: listingCount, error: listingCountError } = useContractRead({
+      address: marketplaceAddress as `0x${string}`,
+      abi: marketplaceABI,
+      functionName: 'getListingCount',
+      enabled: !!marketplaceAddress,
+    });
 
-  // Initialize NFT data from storage or create mock data
-  useEffect(() => {
-    if (typeof window === 'undefined' || isInitialized) return;
-    
-    // Try to load existing NFTs from localStorage first
-    const storedNfts = loadNFTsFromStorage();
-    
-    if (storedNfts.length > 0) {
-      // Load stored NFTs
-      setNfts(storedNfts);
-      console.log(`📦 Loaded ${storedNfts.length} NFTs from localStorage`);
-    } else {
-      // Create initial mock NFTs if no stored data
-      const mockNfts: NFT[] = [
-        {
-          id: '1',
-          tokenId: 1,
-          name: 'Cosmic Cat',
-          description: 'A mystical cat exploring the cosmos',
-          image: 'https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=400&h=400&fit=crop&crop=center',
-          price: '0.05',
-          owner: '0x1234...5678',
-          creator: '0x1234...5678',
-          category: 'art',
-          isListed: true,
-          likes: 42,
-          views: 156,
-          rarity: 'Rare',
-          metadataUri: 'https://gateway.pinata.cloud/ipfs/QmExampleHash1',
-          attributes: [
-            { trait_type: 'Category', value: 'art' },
-            { trait_type: 'Rarity', value: 'Rare' },
-            { trait_type: 'Species', value: 'Cat' },
-            { trait_type: 'Theme', value: 'Cosmic' }
-          ]
-        },
-        {
-          id: '2',
-          tokenId: 2,
-          name: 'Digital Landscape',
-          description: 'A breathtaking digital landscape scene',
-          image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=400&fit=crop&crop=center',
-          price: '0.1',
-          owner: '0x5678...9012',
-          creator: '0x5678...9012',
-          category: 'photography',
-          isListed: true,
-          likes: 78,
-          views: 234,
-          rarity: 'Epic',
-          metadataUri: 'https://gateway.pinata.cloud/ipfs/QmExampleHash2',
-          attributes: [
-            { trait_type: 'Category', value: 'photography' },
-            { trait_type: 'Rarity', value: 'Epic' },
-            { trait_type: 'Location', value: 'Mountains' },
-            { trait_type: 'Time of Day', value: 'Sunset' }
-          ]
-        },
-        {
-          id: '3',
-          tokenId: 3,
-          name: 'Abstract Art',
-          description: 'Modern abstract digital artwork',
-          image: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=400&fit=crop&crop=center',
-          price: '0.03',
-          owner: '0x9012...3456',
-          creator: '0x9012...3456',
-          category: 'art',
-          isListed: false,
-          likes: 23,
-          views: 89,
-          rarity: 'Common',
-          metadataUri: 'https://gateway.pinata.cloud/ipfs/QmExampleHash3',
-          attributes: [
-            { trait_type: 'Category', value: 'art' },
-            { trait_type: 'Rarity', value: 'Common' },
-            { trait_type: 'Style', value: 'Abstract' },
-            { trait_type: 'Colors', value: 'Multicolor' }
-          ]
-        }
-      ];
-      setNfts(mockNfts);
-      saveNFTsToStorage(mockNfts);
-      console.log('🎨 Created initial mock NFTs and saved to localStorage');
+    // Log marketplace errors for debugging
+    if (marketplaceStatsError) {
+      console.warn('Marketplace stats error:', marketplaceStatsError);
     }
-    
-    setIsInitialized(true);
-  }, [isInitialized]);
+    if (listingCountError) {
+      console.warn('Listing count error:', listingCountError);
+    }
 
-  // Function to load NFTs from blockchain
+      // Initialize NFT data
+    useEffect(() => {
+      if (typeof window === 'undefined' || isInitialized) return;
+      
+      console.log('🏁 Initializing NFT hook...');
+      
+      // Try to load from localStorage first, then from blockchain
+      const storedNfts = loadNFTsFromStorage();
+      if (storedNfts.length > 0) {
+        console.log(`📱 Loaded ${storedNfts.length} NFTs from localStorage`);
+        setNfts(storedNfts);
+      }
+      
+      setIsInitialized(true);
+    }, [isInitialized]);
+
+    // Load user NFTs from blockchain when data is available
+  useEffect(() => {
+    console.log('🔧 NFT Loading Check:', {
+      isInitialized,
+      contractAddress: !!contractAddress,
+      address: !!address,
+      totalSupply: totalSupply?.toString(),
+      isLoadingFromContract,
+      nftsLength: nfts.length
+    });
+    
+    if (isInitialized && contractAddress && address && totalSupply && !isLoadingFromContract) {
+      console.log('✅ All conditions met, loading NFTs from blockchain...');
+      // Add a delay to ensure all contract data is ready
+      setTimeout(() => {
+        loadNFTsFromBlockchain();
+      }, 200);
+    }
+  }, [isInitialized, contractAddress, address, totalSupply]);
+  
+  // Handle page refresh scenario - reload NFTs if conditions are met but no NFTs loaded
+  useEffect(() => {
+    // Only trigger if we've been initialized but have no NFTs, and all contract data is available
+    if (isInitialized && contractAddress && address && totalSupply && 
+        nfts.length === 0 && !isLoadingFromContract) {
+      
+      console.log('🔄 Detected page refresh scenario, reloading NFTs...');
+      
+      // Check if we have stored data for this user
+      const storedNfts = loadNFTsFromStorage();
+      const userStoredNfts = storedNfts.filter(nft => 
+        nft.owner?.toLowerCase() === address.toLowerCase()
+      );
+      
+      if (userStoredNfts.length > 0) {
+        console.log(`📱 Found ${userStoredNfts.length} stored NFTs for user, loading immediately`);
+        setNfts(userStoredNfts);
+      }
+      
+      // Always try to refresh from blockchain to get latest state
+      setTimeout(() => {
+        console.log('🔗 Triggering blockchain refresh after page reload...');
+        loadNFTsFromBlockchain();
+      }, 500);
+    }
+  }, [isInitialized, contractAddress, address, totalSupply, nfts.length, isLoadingFromContract]);
+
+    // Force refresh function to manually reload data
+    const forceRefresh = async () => {
+      if (!contractAddress || !address) {
+        toast.error('Wallet not connected or contract not available');
+        return;
+      }
+      
+      console.log('🔄 Force refreshing NFT data...');
+      await loadNFTsFromBlockchain();
+    };
+
+    // Function to load NFTs from blockchain
   const loadNFTsFromBlockchain = async () => {
-    if (!contractAddress || !marketplaceAddress || isLoadingFromContract) return;
+    if (!contractAddress || isLoadingFromContract) return;
     
     setIsLoadingFromContract(true);
     console.log('🔗 Loading NFTs from blockchain...');
@@ -248,11 +242,11 @@ export function useNFTContract() {
       const loadedNfts: NFT[] = [];
       const batchSize = 10; // Load in batches to avoid overwhelming the RPC
       
-      for (let i = 0; i < totalSupplyNum; i += batchSize) {
+      for (let i = 1; i <= totalSupplyNum; i += batchSize) {
         const batch = [];
-        const end = Math.min(i + batchSize, totalSupplyNum);
+        const end = Math.min(i + batchSize - 1, totalSupplyNum);
         
-        for (let tokenId = i; tokenId < end; tokenId++) {
+        for (let tokenId = i; tokenId <= end; tokenId++) {
           batch.push(loadSingleNFT(tokenId));
         }
         
@@ -268,7 +262,7 @@ export function useNFTContract() {
         }
         
         // Small delay between batches to avoid rate limiting
-        if (end < totalSupplyNum) {
+        if (i + batchSize <= totalSupplyNum) {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
       }
@@ -291,41 +285,111 @@ export function useNFTContract() {
     }
   };
 
-  // Function to load a single NFT from blockchain
+  // Function to load a single NFT from blockchain  
   const loadSingleNFT = async (tokenId: number): Promise<NFT | null> => {
     try {
-      // This would need to be implemented with actual contract calls
-      // For now, we'll use a mock implementation
-      // In a real implementation, you would:
-      // 1. Get token owner using ownerOf(tokenId)
-      // 2. Get token URI using tokenURI(tokenId)
-      // 3. Fetch metadata from URI
-      // 4. Get stats using getNFTStats(tokenId)
-      // 5. Check if token is listed in marketplace
+      if (!contractAddress || !address) return null;
+
+      // Get token owner
+      const ownerResult = await publicClient?.readContract({
+        address: contractAddress as `0x${string}`,
+        abi: contractABI,
+        functionName: 'ownerOf',
+        args: [BigInt(tokenId)]
+      });
+
+      const owner = String(ownerResult || '');
       
-      // Mock implementation for demonstration
-      const mockNft: NFT = {
-        id: `blockchain-${tokenId}`,
-        tokenId,
-        name: `Blockchain NFT #${tokenId}`,
-        description: `NFT loaded from blockchain with token ID ${tokenId}`,
-        image: `https://via.placeholder.com/400x400?text=NFT+${tokenId}`,
-        price: '0',
-        owner: '0xBlockchain...Owner',
-        creator: '0xBlockchain...Creator',
-        category: 'art',
-        isListed: false,
-        likes: 0,
-        views: 0,
-        rarity: determineRarity(tokenId),
-        metadataUri: `ipfs://QmMockHash${tokenId}`,
-        attributes: [
-          { trait_type: 'Source', value: 'Blockchain' },
-          { trait_type: 'Token ID', value: tokenId }
-        ]
-      };
+      // Skip if current user doesn't own this NFT
+      if (!owner || owner.toLowerCase() !== address.toLowerCase()) {
+        return null;
+      }
+
+      // Get token URI
+      const tokenURIResult = await publicClient?.readContract({
+        address: contractAddress as `0x${string}`,
+        abi: contractABI,
+        functionName: 'tokenURI',
+        args: [BigInt(tokenId)]
+      });
+
+      const tokenURI = String(tokenURIResult || '');
+      let metadata = null;
       
-      return mockNft;
+      // Try to parse metadata
+      try {
+        if (tokenURI) {
+          if (tokenURI.startsWith('data:application/json;base64,')) {
+            const base64Data = tokenURI.split(',')[1];
+            metadata = JSON.parse(atob(base64Data));
+          } else if (tokenURI.startsWith('http') || tokenURI.startsWith('ipfs')) {
+            const response = await fetch(tokenURI.replace('ipfs://', 'https://ipfs.io/ipfs/'));
+            metadata = await response.json();
+          } else {
+            // Try to parse as direct JSON string
+            metadata = JSON.parse(tokenURI);
+          }
+        }
+      } catch (metadataError) {
+        console.warn(`Failed to parse metadata for token ${tokenId}:`, metadataError);
+                  console.warn('Raw tokenURI:', tokenURI);
+        }
+
+        // Check if this NFT is currently listed on marketplace
+        let isListed = false;
+        let listingPrice = '0';
+        let listingId: number | undefined;
+        try {
+          if (marketplaceAddress && listingCount) {
+            // Check all active listings to see if this token is listed
+            for (let i = 0; i < Number(listingCount); i++) {
+              try {
+                const listingResult = await publicClient?.readContract({
+                  address: marketplaceAddress as `0x${string}`,
+                  abi: marketplaceABI,
+                  functionName: 'getListing',
+                  args: [BigInt(i)]
+                });
+                
+                if (listingResult) {
+                  const [listingTokenId, seller, price, , status] = listingResult as any[];
+                  if (Number(listingTokenId) === tokenId && Number(status) === 0) { // 0 = ACTIVE
+                    isListed = true;
+                    listingPrice = formatEther(BigInt(price));
+                    listingId = i; // Store the listing ID
+                    break;
+                  }
+                }
+              } catch (error) {
+                // Ignore individual listing check errors
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to check listing status for token', tokenId);
+        }
+
+        const nft: NFT = {
+          id: `blockchain-${tokenId}`,
+          tokenId,
+          name: metadata?.name || `NFT #${tokenId}`,
+          description: metadata?.description || `NFT with token ID ${tokenId}`,
+          image: metadata?.image || `https://via.placeholder.com/400x400?text=NFT+${tokenId}`,
+          price: isListed ? listingPrice : '0',
+          owner,
+          creator: owner, // Assume owner is creator for now
+          category: metadata?.category || 'art',
+          isListed,
+          likes: 0,
+          views: 0,
+          rarity: determineRarity(tokenId, metadata?.attributes),
+          metadataUri: tokenURI,
+          attributes: metadata?.attributes || [],
+          listingId: listingId // Add listing ID for cancellation
+        };
+      
+      console.log(`✅ Found user NFT: ${nft.name} (Token ID: ${tokenId})`);
+      return nft;
     } catch (error) {
       console.warn(`Failed to load NFT ${tokenId}:`, error);
       return null;
@@ -376,6 +440,34 @@ export function useNFTContract() {
     functionName: 'mint',
   });
 
+  // Marketplace contract write
+  const { write: writeListItem, data: listTxData, error: listError } = useContractWrite({
+    address: marketplaceAddress as `0x${string}`,
+    abi: marketplaceABI,
+    functionName: 'listItem',
+  });
+
+  // Approval contract write
+  const { write: writeApproval, data: approvalTxData, error: approvalError } = useContractWrite({
+    address: contractAddress as `0x${string}`,
+    abi: contractABI,
+    functionName: 'setApprovalForAll',
+  });
+
+  // Purchase NFT contract write
+  const { write: writeBuyItem, data: buyTxData, error: buyError } = useContractWrite({
+    address: marketplaceAddress as `0x${string}`,
+    abi: marketplaceABI,
+    functionName: 'buyItem',
+  });
+
+  // Cancel listing contract write
+  const { write: writeCancelListing, data: cancelTxData, error: cancelError } = useContractWrite({
+    address: marketplaceAddress as `0x${string}`,
+    abi: marketplaceABI,
+    functionName: 'cancelListing',
+  });
+
   const { isLoading: isMintingTransaction } = useWaitForTransaction({
     hash: mintTxData?.hash,
     onSuccess: () => {
@@ -411,6 +503,74 @@ export function useNFTContract() {
       toast.error('Failed to mint NFT: ' + (error as Error).message);
       setMintData(null);
       setIsMinting(false);
+    }
+  });
+
+  // Watch for listing transaction
+  const { isLoading: isListingTransaction } = useWaitForTransaction({
+    hash: listTxData?.hash,
+    onSuccess: () => {
+      toast.dismiss();
+      toast.success('🎉 NFT successfully listed for sale!');
+      // Force reload NFTs from blockchain after successful listing
+      setTimeout(() => {
+        loadNFTsFromBlockchain();
+      }, 2000);
+    },
+    onError: (error) => {
+      toast.dismiss();
+      toast.error('Failed to list NFT: ' + (error as Error).message);
+    }
+  });
+
+  // Watch for approval transaction
+  const { isLoading: isApprovingTransaction } = useWaitForTransaction({
+    hash: approvalTxData?.hash,
+    onSuccess: () => {
+      toast.dismiss();
+      toast.success('✅ Marketplace approved! You can now list your NFTs for sale.');
+      // Force refresh NFTs after approval
+      setTimeout(() => {
+        loadNFTsFromBlockchain();
+      }, 2000);
+    },
+    onError: (error) => {
+      toast.dismiss();
+      toast.error('Failed to approve marketplace: ' + (error as Error).message);
+    }
+  });
+
+  // Watch for purchase transaction
+  const { isLoading: isBuyingTransaction } = useWaitForTransaction({
+    hash: buyTxData?.hash,
+    onSuccess: () => {
+      toast.dismiss();
+      toast.success('🎉 NFT purchased successfully!');
+      // Force reload NFTs from blockchain after successful purchase
+      setTimeout(() => {
+        loadNFTsFromBlockchain();
+      }, 2000); // Wait 2 seconds for blockchain to update
+    },
+    onError: (error) => {
+      toast.dismiss();
+      toast.error('Failed to purchase NFT: ' + (error as Error).message);
+    }
+  });
+
+  // Watch for cancel listing transaction
+  const { isLoading: isCancellingTransaction } = useWaitForTransaction({
+    hash: cancelTxData?.hash,
+    onSuccess: () => {
+      toast.dismiss();
+      toast.success('✅ Listing cancelled successfully!');
+      // Force reload NFTs from blockchain after cancellation
+      setTimeout(() => {
+        loadNFTsFromBlockchain();
+      }, 2000);
+    },
+    onError: (error) => {
+      toast.dismiss();
+      toast.error('Failed to cancel listing: ' + (error as Error).message);
     }
   });
 
@@ -465,25 +625,41 @@ export function useNFTContract() {
       return;
     }
 
-    if (!contractAddress) {
-      toast.error('NFT contract not available on this network');
+    if (!marketplaceAddress || !writeBuyItem) {
+      toast.error('Marketplace contract not available');
+      return;
+    }
+
+    if (!nft.listingId && nft.listingId !== 0) {
+      toast.error('NFT listing ID not found');
       return;
     }
 
     try {
-      // In a real implementation, this would use prepared transactions
-      // For now, just simulate the purchase
-      const updatedNfts = nfts.map(n => 
-        n.id === nft.id 
-          ? { ...n, owner: address, isListed: false }
-          : n
-      );
-      setNfts(updatedNfts);
-      saveNFTsToStorage(updatedNfts);
+      toast.loading('Purchasing NFT...');
 
-      toast.success('NFT purchased successfully!');
-    } catch (error) {
-      toast.error('Failed to purchase NFT');
+      const priceInWei = parseEther(nft.price);
+
+      // Buy the item from the marketplace
+      writeBuyItem({
+        args: [BigInt(nft.listingId)],
+        value: priceInWei // Send ETH along with the transaction
+      });
+
+      // Note: Don't update local state immediately - wait for blockchain confirmation
+    } catch (error: any) {
+      toast.dismiss();
+      console.error('Failed to purchase NFT:', error);
+      
+      if (error.message?.includes('User rejected')) {
+        toast.error('Transaction cancelled by user');
+      } else if (error.message?.includes('insufficient funds')) {
+        toast.error('Insufficient ETH balance');
+      } else if (error.message?.includes('Item not for sale')) {
+        toast.error('This NFT is no longer for sale');
+      } else {
+        toast.error('Failed to purchase NFT: ' + (error.message || 'Unknown error'));
+      }
     }
   };
 
@@ -493,14 +669,33 @@ export function useNFTContract() {
       return;
     }
 
-    if (!contractAddress) {
-      toast.error('NFT contract not available on this network');
+    if (!contractAddress || !marketplaceAddress) {
+      toast.error('Contracts not available on this network');
       return;
     }
 
     try {
-      // In a real implementation, this would use prepared transactions
-      // For now, just simulate the listing
+      toast.loading('Listing NFT for sale...');
+
+      // Convert price to wei
+      const priceInWei = parseEther(price);
+
+      // List the item on the marketplace using wagmi hook
+      if (!writeListItem) {
+        toast.error('Contract write function not available');
+        return;
+      }
+
+      writeListItem({
+        args: [
+          BigInt(nft.tokenId),
+          priceInWei,
+          0, // ListingType.FIXED_PRICE
+          0  // auctionDuration (not used for fixed price)
+        ]
+      });
+
+      // Update local state immediately for better UX
       const updatedNfts = nfts.map(n => 
         n.id === nft.id 
           ? { ...n, price, isListed: true }
@@ -508,10 +703,80 @@ export function useNFTContract() {
       );
       setNfts(updatedNfts);
       saveNFTsToStorage(updatedNfts);
+    } catch (error: any) {
+      toast.dismiss();
+      console.error('Failed to list NFT:', error);
+      
+      if (error.message?.includes('User rejected')) {
+        toast.error('Transaction cancelled by user');
+      } else if (error.message?.includes('Not token owner')) {
+        toast.error('You are not the owner of this NFT');
+      } else if (error.message?.includes('Contract not approved')) {
+        toast.error('Please approve the marketplace contract first');
+      } else {
+        toast.error('Failed to list NFT: ' + (error.message || 'Unknown error'));
+      }
+    }
+  };
 
-      toast.success('NFT listed for sale!');
-    } catch (error) {
-      toast.error('Failed to list NFT');
+  const approveMarketplace = async () => {
+    if (!address) {
+      toast.error('Please connect your wallet');
+      return;
+    }
+
+    if (!marketplaceAddress || !writeApproval) {
+      toast.error('Marketplace contract not available');
+      return;
+    }
+
+    try {
+      toast.loading('Approving marketplace to manage your NFTs...');
+      writeApproval({
+        args: [marketplaceAddress as `0x${string}`, true]
+      });
+    } catch (error: any) {
+      toast.dismiss();
+      console.error('Failed to approve marketplace:', error);
+      toast.error('Failed to approve marketplace: ' + (error.message || 'Unknown error'));
+    }
+  };
+
+  const cancelListing = async (nft: NFT) => {
+    if (!address) {
+      toast.error('Please connect your wallet');
+      return;
+    }
+
+    if (!marketplaceAddress || !writeCancelListing) {
+      toast.error('Marketplace contract not available');
+      return;
+    }
+
+    if (!nft.listingId && nft.listingId !== 0) {
+      toast.error('NFT listing ID not found');
+      return;
+    }
+
+    try {
+      toast.loading('Cancelling NFT listing...');
+      
+      writeCancelListing({
+        args: [BigInt(nft.listingId)]
+      });
+
+      // Note: Don't update local state immediately - wait for blockchain confirmation
+    } catch (error: any) {
+      toast.dismiss();
+      console.error('Failed to cancel listing:', error);
+      
+      if (error.message?.includes('User rejected')) {
+        toast.error('Transaction cancelled by user');
+      } else if (error.message?.includes('Not listing owner')) {
+        toast.error('You are not the owner of this listing');
+      } else {
+        toast.error('Failed to cancel listing: ' + (error.message || 'Unknown error'));
+      }
     }
   };
 
@@ -547,16 +812,104 @@ export function useNFTContract() {
     toast.success('NFT data reset successfully');
   };
 
-  // Effect to load blockchain data when contract info is available
-  useEffect(() => {
-    if (isInitialized && contractAddress && totalSupply && Number(totalSupply) > 0) {
-      // Only load if we don't have much local data or user requests refresh
-      const localNfts = loadNFTsFromStorage();
-      if (localNfts.length < Number(totalSupply)) {
-        loadNFTsFromBlockchain();
-      }
+  // Function to load marketplace listings (NFTs for sale by all users)
+  const loadMarketplaceListings = async (): Promise<NFT[]> => {
+    if (!marketplaceAddress || !contractAddress) {
+      console.warn('Marketplace or NFT contract not available');
+      return [];
     }
-  }, [contractAddress, totalSupply, isInitialized]);
+
+    try {
+      const marketplaceListings: NFT[] = [];
+      const totalListings = Number(listingCount || 0);
+      
+      if (totalListings === 0) {
+        console.log('📭 No marketplace listings found');
+        return [];
+      }
+
+      console.log(`🛒 Loading ${totalListings} marketplace listings...`);
+
+      // Load all active listings
+      for (let listingId = 0; listingId < totalListings; listingId++) {
+        try {
+          // Get listing details
+          const listingResult = await publicClient?.readContract({
+            address: marketplaceAddress as `0x${string}`,
+            abi: marketplaceABI,
+            functionName: 'getListing',
+            args: [BigInt(listingId)]
+          });
+
+          if (!listingResult) continue;
+
+          const [tokenId, seller, price, listingType, status] = listingResult as any[];
+          
+          // Only include active listings
+          if (Number(status) !== 0) continue; // 0 = ACTIVE
+          
+          // Get NFT details from the NFT contract
+          const tokenURIResult = await publicClient?.readContract({
+            address: contractAddress as `0x${string}`,
+            abi: contractABI,
+            functionName: 'tokenURI',
+            args: [tokenId]
+          });
+
+          const tokenURI = String(tokenURIResult || '');
+          let metadata = null;
+          
+          // Parse metadata
+          try {
+            if (tokenURI) {
+              if (tokenURI.startsWith('data:application/json;base64,')) {
+                const base64Data = tokenURI.split(',')[1];
+                metadata = JSON.parse(atob(base64Data));
+              } else if (tokenURI.startsWith('http') || tokenURI.startsWith('ipfs')) {
+                const response = await fetch(tokenURI.replace('ipfs://', 'https://ipfs.io/ipfs/'));
+                metadata = await response.json();
+              } else {
+                metadata = JSON.parse(tokenURI);
+              }
+            }
+          } catch (metadataError) {
+            console.warn(`Failed to parse metadata for listing ${listingId}:`, metadataError);
+          }
+
+          const nft: NFT = {
+            id: `marketplace-${listingId}`,
+            tokenId: Number(tokenId),
+            name: metadata?.name || `NFT #${tokenId}`,
+            description: metadata?.description || `NFT with token ID ${tokenId}`,
+            image: metadata?.image || `https://via.placeholder.com/400x400?text=NFT+${tokenId}`,
+            price: formatEther(BigInt(price)),
+            owner: String(seller),
+            creator: String(seller), // Assume seller is creator for marketplace listings
+            category: metadata?.category || 'art',
+            isListed: true,
+            likes: 0,
+            views: 0,
+            rarity: determineRarity(Number(tokenId), metadata?.attributes),
+            metadataUri: tokenURI,
+            attributes: metadata?.attributes || [],
+            listingId: listingId, // Add listing ID for purchasing
+            listingType: Number(listingType) === 0 ? 'FIXED_PRICE' : 'AUCTION'
+          };
+
+          marketplaceListings.push(nft);
+          console.log(`🛒 Found marketplace NFT: ${nft.name} - ${nft.price} ETH`);
+        } catch (error) {
+          console.warn(`Failed to load listing ${listingId}:`, error);
+        }
+      }
+
+      console.log(`✅ Loaded ${marketplaceListings.length} marketplace listings`);
+      return marketplaceListings;
+    } catch (error) {
+      console.error('❌ Failed to load marketplace listings:', error);
+      return [];
+    }
+  };
 
   return {
     nfts,
@@ -564,11 +917,19 @@ export function useNFTContract() {
     mintNFT,
     buyNFT,
     listForSale,
+    cancelListing,
+    approveMarketplace,
     likeNFT,
     updateNFTViews,
     resetNFTData,
     loadNFTsFromBlockchain,
+    loadMarketplaceListings,
+    forceRefresh,
     isMinting: isMinting || isMintingTransaction,
+    isListing: isListingTransaction,
+    isBuying: isBuyingTransaction,
+    isApproving: isApprovingTransaction,
+    isCancelling: isCancellingTransaction,
     isLoadingFromContract,
     contractAddress,
     marketplaceAddress,
@@ -577,5 +938,6 @@ export function useNFTContract() {
     totalSupply: Number(totalSupply || 0),
     mintFee: mintFee?.toString() || '0.001 ETH',
     marketplaceStats,
+    listingCount: Number(listingCount || 0),
   };
 } 

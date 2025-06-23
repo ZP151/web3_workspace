@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, Plus } from 'lucide-react';
+import { Image, Plus, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NFTCard } from './NFTCard';
 import { NFT, ActiveView } from '../types';
@@ -9,7 +9,10 @@ interface MyCollectionTabProps {
   onViewDetails: (nft: NFT) => void;
   onLike: (nft: NFT) => void;
   onListForSale: (nft: NFT) => void;
+  onCancelListing?: (nft: NFT) => void;
   onViewChange: (view: ActiveView) => void;
+  onRefresh?: () => void;
+  isLoading?: boolean;
 }
 
 export function MyCollectionTab({
@@ -17,7 +20,10 @@ export function MyCollectionTab({
   onViewDetails,
   onLike,
   onListForSale,
-  onViewChange
+  onCancelListing,
+  onViewChange,
+  onRefresh,
+  isLoading
 }: MyCollectionTabProps) {
   return (
     <div className="space-y-6">
@@ -25,6 +31,18 @@ export function MyCollectionTab({
         <h3 className="text-2xl font-bold text-gray-900">
           My Collection ({myNfts.length})
         </h3>
+        {onRefresh && (
+          <Button 
+            onClick={onRefresh}
+            variant="outline"
+            size="sm"
+            disabled={isLoading}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            刷新
+          </Button>
+        )}
       </div>
 
       {myNfts.length === 0 ? (
@@ -48,6 +66,7 @@ export function MyCollectionTab({
               onViewDetails={onViewDetails}
               onLike={onLike}
               onListForSale={onListForSale}
+              onCancelListing={onCancelListing}
               isOwner={true}
             />
           ))}

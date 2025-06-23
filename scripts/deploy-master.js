@@ -3,10 +3,9 @@ const fs = require("fs");
 const path = require("path");
 
 // Import staged deployment modules
-const { deployCoreContracts } = require("./deployment/01-deploy-core-contracts");
-const { deployTestTokens } = require("./deployment/02-deploy-tokens");
-const { deployDeFiContracts } = require("./deployment/03-deploy-defi-contracts");
-const { initializeContracts } = require("./deployment/04-initialize-contracts");
+const { deployAllContracts } = require("./deployment/01-deploy-all-contracts");
+const { deployAndMintTokens } = require("./deployment/02-deploy-tokens");
+const { initializeAndSetup } = require("./deployment/03-initialize-and-setup");
 
 async function main() {
   console.log("🚀 Starting Complete Deployment");
@@ -50,28 +49,22 @@ async function main() {
   };
 
   try {
-    // Stage 1: Deploy Core Contracts
+    // Stage 1: Deploy All Contracts
     console.log("\n" + "=".repeat(60));
-    const coreContracts = await deployCoreContracts();
-    allContracts = { ...allContracts, ...coreContracts };
-    deploymentStats.totalDeployments += Object.keys(coreContracts).length;
+    const allContractsResult = await deployAllContracts();
+    allContracts = { ...allContracts, ...allContractsResult };
+    deploymentStats.totalDeployments += Object.keys(allContractsResult).length;
 
-    // Stage 2: Deploy Test Tokens (only on local networks)
+    // Stage 2: Deploy and Mint Tokens
     console.log("\n" + "=".repeat(60));
-    const testTokens = await deployTestTokens();
-    allContracts = { ...allContracts, ...testTokens };
-    deploymentStats.totalDeployments += Object.keys(testTokens).length;
+    const tokenContracts = await deployAndMintTokens();
+    allContracts = { ...allContracts, ...tokenContracts };
+    deploymentStats.totalDeployments += Object.keys(tokenContracts).length;
 
-    // Stage 3: Deploy DeFi Contracts
+    // Stage 3: Initialize and Setup Sample Data
     console.log("\n" + "=".repeat(60));
-    const defiContracts = await deployDeFiContracts(testTokens);
-    allContracts = { ...allContracts, ...defiContracts };
-    deploymentStats.totalDeployments += Object.keys(defiContracts).length;
-
-    // Stage 4: Initialize Contracts
-    console.log("\n" + "=".repeat(60));
-    const initializedContracts = await initializeContracts(allContracts);
-    allContracts = { ...allContracts, ...initializedContracts };
+    const setupResult = await initializeAndSetup(allContracts);
+    allContracts = { ...allContracts, ...setupResult };
 
     // Update address file
     console.log("\n📝 Updating address configuration file...");
@@ -93,14 +86,21 @@ async function main() {
     console.log(`  Total Contracts: ${deploymentStats.totalDeployments}`);
     console.log(`  Deployment Time: ${deploymentTime.toFixed(2)}s`);
     console.log(`  Deployed At: ${deploymentInfo.deployedAt}`);
+    console.log(`  Sample Data: ${setupResult.sampleDataCreated ? '✅ Created' : '❌ Failed'}`);
     
     console.log("\n📋 Deployed Contracts:");
     Object.entries(allContracts).forEach(([name, address]) => {
-      console.log(`  ✅ ${name}: ${address}`);
+      if (typeof address === 'string' && address.startsWith('0x')) {
+        console.log(`  ✅ ${name}: ${address}`);
+      }
     });
 
     console.log("\n📁 Address file updated: src/contracts/addresses.json");
     console.log("💡 Tip: Restart frontend application to load new contract addresses");
+    console.log("🎯 Sample Data: Bank and DEX preloaded with sample data for testing");
+    console.log("📖 Includes:");
+    console.log("   • Bank: Community pools, savings goals, staking examples");
+    console.log("   • DEX: Liquidity pools, token pairs, initial trading pair prices");
 
   } catch (error) {
     console.error("\n❌ Deployment failed:", error);
@@ -125,9 +125,17 @@ async function updateAddressFile(chainId, deployedContracts, deploymentInfo) {
     console.log("⚠️ Cannot read existing address file, creating new one");
   }
 
+  // Filter out non-address fields and BigInt values
+  const contractAddresses = {};
+  Object.entries(deployedContracts).forEach(([key, value]) => {
+    if (typeof value === 'string' && value.startsWith('0x')) {
+      contractAddresses[key] = value;
+    }
+  });
+
   // Update current network addresses
   addressData[chainId] = {
-    ...deployedContracts,
+    ...contractAddresses,
     ...deploymentInfo
   };
 

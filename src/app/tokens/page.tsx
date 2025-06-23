@@ -8,7 +8,6 @@ import { toast } from 'react-hot-toast';
 import { ArrowLeft, Plus, Coins, Eye, ExternalLink, Copy, Users, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getContractAddress, getContractABI } from '@/config/contracts';
-
 interface CreatedToken {
   id: number;
   name: string;
@@ -88,6 +87,15 @@ export default function TokenFactoryPage() {
     enabled: !!contractAddress && isConnected,
   });
 
+  // Read user's created tokens from blockchain
+  const { data: userTokenIndexes, refetch: refetchUserTokens } = useContractRead({
+    address: contractAddress as `0x${string}`,
+    abi: contractABI,
+    functionName: 'getCreatorTokens',
+    args: [address],
+    enabled: !!contractAddress && !!address && isConnected,
+  });
+
   // Prepare create token transaction
   const { config: createTokenConfig } = usePrepareContractWrite({
     address: contractAddress as `0x${string}`,
@@ -109,23 +117,6 @@ export default function TokenFactoryPage() {
     onSuccess: (data) => {
       toast.success('Token created successfully!');
       
-      // Add the new token to localStorage immediately
-      const newTokenData: CreatedToken = {
-        id: createdTokens.length,
-        name: newToken.name,
-        symbol: newToken.symbol,
-        totalSupply: newToken.totalSupply,
-        address: `0x${Math.random().toString(16).substr(2, 40)}`, // Mock address for now
-        creator: address || '',
-        timestamp: new Date().toISOString(),
-        txHash: data.hash,
-        decimals: newToken.decimals,
-      };
-      
-      const updatedTokens = [...createdTokens, newTokenData];
-      setCreatedTokens(updatedTokens);
-      saveTokens(updatedTokens);
-      
       // Reset form
       setNewToken({
         name: '',
@@ -146,7 +137,9 @@ export default function TokenFactoryPage() {
         },
       });
       
+      // Refetch blockchain data
       refetchTokenCount();
+      refetchUserTokens();
       setActiveView('manage');
     },
     onError: (error) => {
@@ -155,97 +148,31 @@ export default function TokenFactoryPage() {
     },
   });
 
-  // localStorage functions
-  const getTokenKey = () => {
-    return `created_tokens_${address}_${chain?.id}`;
-  };
-
-  const loadStoredTokens = () => {
-    if (!address || !chain?.id) return [];
-    
-    try {
-      const key = getTokenKey();
-      const stored = localStorage.getItem(key);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch (error) {
-      console.error('Error loading tokens:', error);
-    }
-    return [];
-  };
-
-  const saveTokens = (tokensToSave: CreatedToken[]) => {
-    if (!address || !chain?.id) return;
-    
-    try {
-      const key = getTokenKey();
-      localStorage.setItem(key, JSON.stringify(tokensToSave));
-    } catch (error) {
-      console.error('Error saving tokens:', error);
-    }
-  };
-
-  // Load tokens when component mounts
+  // Simplified: show the user token count for now
   useEffect(() => {
-    if (isConnected && address && chain?.id) {
-      const tokens = loadStoredTokens();
-      setCreatedTokens(tokens);
+    if (userTokenIndexes && userTokenIndexes.length > 0) {
+      // 简化显示：暂时显示代币数量，真实代币信息需要合约升级
+      const mockTokens: CreatedToken[] = [];
+      
+      for (let i = 0; i < userTokenIndexes.length; i++) {
+        mockTokens.push({
+          id: Number(userTokenIndexes[i]),
+          name: `Token ${i + 1}`,
+          symbol: `TK${i + 1}`,
+          totalSupply: "1000000",
+          address: `0x${Math.random().toString(16).substr(2, 40)}`,
+          creator: address || '',
+          timestamp: new Date().toISOString(),
+          txHash: '',
+          decimals: 18
+        });
+      }
+      
+      setCreatedTokens(mockTokens);
+    } else {
+      setCreatedTokens([]);
     }
-  }, [isConnected, address, chain?.id]);
-
-  // Create token function
-  const handleCreateToken = async () => {
-    console.log('🔍 开始创建代币流程调试...');
-    console.log('isConnected:', isConnected);
-    console.log('contractAddress:', contractAddress);
-    console.log('newToken:', newToken);
-    console.log('creationFee:', creationFee);
-    console.log('createToken function:', createToken);
-    console.log('createTokenConfig:', createTokenConfig);
-
-    if (!isConnected) {
-      console.log('❌ 钱包未连接');
-      toast.error('Please connect your wallet first');
-      return;
-    }
-
-    if (!newToken.name.trim()) {
-      console.log('❌ 代币名称为空');
-      toast.error('Please enter token name');
-      return;
-    }
-
-    if (!newToken.symbol.trim()) {
-      console.log('❌ 代币符号为空');
-      toast.error('Please enter token symbol');
-      return;
-    }
-
-    if (!newToken.totalSupply || parseFloat(newToken.totalSupply) <= 0) {
-      console.log('❌ 总供应量无效');
-      toast.error('Please enter valid total supply');
-      return;
-    }
-
-    if (!createToken) {
-      console.log('❌ createToken函数未定义 - 这是主要问题!');
-      console.log('contractAddress:', contractAddress);
-      console.log('createTokenConfig:', createTokenConfig || 'undefined');
-      toast.error('Unable to create token, please check network connection');
-      return;
-    }
-
-    console.log('✅ 所有检查通过，开始调用createToken函数...');
-    try {
-      console.log('📤 正在发送交易到MetaMask...');
-      createToken();
-      console.log('✅ createToken函数调用成功');
-    } catch (error) {
-      console.error('❌ createToken函数调用失败:', error);
-      toast.error('Failed to send create token transaction');
-    }
-  };
+  }, [userTokenIndexes, address]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -581,7 +508,7 @@ export default function TokenFactoryPage() {
                     )}
 
                     <Button
-                      onClick={handleCreateToken}
+                      onClick={createToken}
                       disabled={isCreatingToken || !newToken.name.trim() || !newToken.symbol.trim()}
                       className="w-full mt-6"
                     >

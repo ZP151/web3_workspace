@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Heart, Tag, ShoppingCart } from 'lucide-react';
+import { Eye, Heart, Tag, ShoppingCart, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NFT } from '../types';
 
@@ -9,6 +9,7 @@ interface NFTCardProps {
   onLike: (nft: NFT) => void;
   onBuy?: (nft: NFT) => void;
   onListForSale?: (nft: NFT) => void;
+  onCancelListing?: (nft: NFT) => void;
   isOwner?: boolean;
 }
 
@@ -18,6 +19,7 @@ export function NFTCard({
   onLike, 
   onBuy, 
   onListForSale, 
+  onCancelListing,
   isOwner = false 
 }: NFTCardProps) {
   const getRarityColor = (rarity: string) => {
@@ -96,14 +98,37 @@ export function NFTCard({
           </div>
           
           {isOwner ? (
-            <Button
-              size="sm"
-              className="w-full"
-              onClick={() => onListForSale?.(nft)}
-            >
-              <Tag className="h-4 w-4 mr-1" />
-              {nft.isListed ? 'Update Price' : 'List for Sale'}
-            </Button>
+            nft.isListed ? (
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => onListForSale?.(nft)}
+                >
+                  <Tag className="h-4 w-4 mr-1" />
+                  Update Price
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 text-red-600 hover:text-red-700"
+                  onClick={() => onCancelListing?.(nft)}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                className="w-full"
+                onClick={() => onListForSale?.(nft)}
+              >
+                <Tag className="h-4 w-4 mr-1" />
+                List for Sale
+              </Button>
+            )
           ) : (
             nft.isListed && onBuy && (
               <Button
