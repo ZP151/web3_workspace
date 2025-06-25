@@ -24,6 +24,14 @@ interface NetworkAccount {
   index: number;
 }
 
+interface NetworkConfig {
+  name: string;
+  chainId: number;
+  url: string;
+  description?: string;
+  features?: string[];
+}
+
 interface NetworkInfo {
   name: string;
   chainId: number;
@@ -31,6 +39,8 @@ interface NetworkInfo {
   status: 'connected' | 'disconnected' | 'error';
   accounts: NetworkAccount[];
   blockNumber?: number;
+  description?: string;
+  features?: string[];
 }
 
 export default function NetworkAccountsManager() {
@@ -42,14 +52,25 @@ export default function NetworkAccountsManager() {
 
   const networks = [
     {
+      name: 'Anvil Local (Foundry)',
+      chainId: 31337,
+      url: 'http://127.0.0.1:8546',
+      description: 'Fast persistent blockchain simulator',
+      features: ['Persistence', 'Fast', 'Latest']
+    },
+    {
       name: 'Hardhat Local',
       chainId: 31337,
-      url: 'http://127.0.0.1:8545'
+      url: 'http://127.0.0.1:8545',
+      description: 'Local development network with auto-deployment and debugging support',
+      features: ['Auto Deploy', 'Gas Simulation', 'Debug Tools', 'Fast Confirmation']
     },
     {
       name: 'Ganache Local',
       chainId: 1337,
-      url: 'http://127.0.0.1:7545'
+      url: 'http://127.0.0.1:7545',
+      description: 'Graphical local blockchain network for easy account management',
+      features: ['GUI', 'Easy Management']
     }
   ];
 
@@ -134,6 +155,8 @@ export default function NetworkAccountsManager() {
             status: 'connected',
             accounts: accountsWithBalance,
             blockNumber,
+            description: network.description,
+            features: network.features,
           });
         } else {
           results.push({
@@ -142,6 +165,8 @@ export default function NetworkAccountsManager() {
             url: network.url,
             status: 'disconnected',
             accounts: [],
+            description: network.description,
+            features: network.features,
           });
         }
       } catch (error) {
@@ -151,6 +176,8 @@ export default function NetworkAccountsManager() {
           url: network.url,
           status: 'error',
           accounts: [],
+          description: network.description,
+          features: network.features,
         });
       }
     }
@@ -273,8 +300,22 @@ export default function NetworkAccountsManager() {
                       <p className="text-sm text-gray-500">
                         Chain ID: {network.chainId} | {network.url}
                       </p>
+                      {network.description && (
+                        <p className="text-xs text-gray-600 mt-1">
+                          {network.description}
+                        </p>
+                      )}
+                      {network.features && (
+                        <div className="flex gap-1 mt-1">
+                          {network.features.map((feature) => (
+                            <Badge key={feature} variant="outline" className="text-xs px-2 py-0">
+                              {feature}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                       {network.blockNumber && (
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-gray-400 mt-1">
                           Latest block: #{network.blockNumber}
                         </p>
                       )}
@@ -363,9 +404,14 @@ export default function NetworkAccountsManager() {
           <div className="mt-6 p-4 bg-blue-50 rounded-lg">
             <h4 className="font-medium text-blue-900 mb-2">Quick start instructions:</h4>
             <div className="space-y-1 text-sm text-blue-700">
+              <p>• <strong>Anvil (推荐)</strong>: <code className="bg-blue-100 px-1 rounded">node scripts/start-networks.js anvil --persistent</code></p>
               <p>• Hardhat: <code className="bg-blue-100 px-1 rounded">npm run node</code></p>
               <p>• Ganache: <code className="bg-blue-100 px-1 rounded">ganache-cli --port 7545 --networkId 1337</code></p>
-              <p>• Frontend: <code className="bg-blue-100 px-1 rounded">npm run dev</code></p>
+            </div>
+            <div className="mt-3 pt-2 border-t border-blue-200">
+              <p className="text-xs text-blue-600">
+                💡 使用 <code className="bg-blue-100 px-1 rounded">node scripts/utilities/anvil-debugger.js</code> 调试Anvil网络
+              </p>
             </div>
           </div>
         </CardContent>

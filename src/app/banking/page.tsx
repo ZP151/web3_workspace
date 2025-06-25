@@ -245,29 +245,39 @@ export default function BankingPage() {
 
   if (!isConnected) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white shadow-sm border-b border-gray-200">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        {/* Navigation */}
+        <nav className="bg-white shadow-sm border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center">
-                <Link href="/" className="flex items-center text-gray-600 hover:text-gray-900">
-                  <ArrowLeft className="h-5 w-5 mr-2" />
-                  Back to Dashboard
-                </Link>
-              </div>
-              <div className="flex items-center space-x-2 text-sm text-gray-500">
-                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                Auto refresh: 10s
+            <div className="flex justify-between items-center h-16">
+              <Link href="/" className="flex items-center text-green-600 hover:text-green-800">
+                <ArrowLeft className="h-5 w-5 mr-2" />
+                Back to Home
+              </Link>
+              <h1 className="text-xl font-bold text-gray-900">DeFi Bank</h1>
+              <div className="flex items-center space-x-2">
+                <div className="text-sm text-gray-500">
+                  Auto-refresh: 30s
+                </div>
+                <button
+                  className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+                  title="Refresh data"
+                >
+                  <Wallet className="h-4 w-4" />
+                </button>
               </div>
             </div>
           </div>
-        </div>
+        </nav>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center py-16">
+          <div className="text-center py-12">
             <Wallet className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Connect Your Wallet</h3>
-            <p className="text-gray-600">Please connect your wallet to access banking features</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Wallet Connection Required</h2>
+            <p className="text-gray-600 mb-6">Please connect your wallet to access banking features</p>
+            <Link href="/">
+              <Button>Return to Home and Connect Wallet</Button>
+            </Link>
           </div>
         </div>
       </div>
@@ -275,23 +285,31 @@ export default function BankingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b border-gray-200">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* Navigation */}
+      <nav className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <Link href="/" className="flex items-center text-gray-600 hover:text-gray-900">
-                <ArrowLeft className="h-5 w-5 mr-2" />
-                Back to Home
-              </Link>
-            </div>
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              Auto refresh: 5s
+          <div className="flex justify-between items-center h-16">
+            <Link href="/" className="flex items-center text-green-600 hover:text-green-800">
+              <ArrowLeft className="h-5 w-5 mr-2" />
+              Back to Home
+            </Link>
+            <h1 className="text-xl font-bold text-gray-900">DeFi Bank</h1>
+            <div className="flex items-center space-x-2">
+              <div className="text-sm text-gray-500">
+                Auto-refresh: 5s
+              </div>
+              <button
+                onClick={handleManualRefresh}
+                className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+                title="Refresh data"
+              >
+                <Wallet className="h-4 w-4" />
+              </button>
             </div>
           </div>
         </div>
-      </div>
+      </nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Banking Info Card */}
@@ -312,13 +330,14 @@ export default function BankingPage() {
         {activeView === 'overview' && (
           <OverviewTab
             bankBalance={bankBalance}
-            ethBalance={ethBalance}
-            address={address}
             totalDeposited={totalDeposited}
             totalWithdrawn={totalWithdrawn}
             pendingInterest={pendingInterest}
-            interestRate={interestRate}
-            interestCalc={interestCalc}
+            totalBankFunds={totalBankFunds}
+            ethBalance={ethBalance}
+            interestRate={interestRate ? Number(interestRate) / 100 : 0}
+            minimumDeposit={minimumDeposit ? formatEther(minimumDeposit as unknown as bigint) : '0.001'}
+            onManualRefresh={handleManualRefresh}
           />
         )}
 

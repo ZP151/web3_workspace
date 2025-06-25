@@ -28,7 +28,9 @@ const ganache = {
 // Enhanced Hardhat configuration
 const hardhatLocal = {
   ...hardhat,
+  id: 31337,
   name: 'Hardhat Local',
+  network: 'hardhat',
   rpcUrls: {
     public: { http: ['http://127.0.0.1:8545'] },
     default: { http: ['http://127.0.0.1:8545'] },
@@ -36,9 +38,30 @@ const hardhatLocal = {
   testnet: true,
 } as const;
 
+// Anvil network configuration (using default Anvil settings)
+const anvilLocal = {
+  id: 31338,
+  name: 'Anvil Local',
+  network: 'anvil',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Ether',
+    symbol: 'ETH',
+  },
+  rpcUrls: {
+    public: { http: ['http://127.0.0.1:8546'] },
+    default: { http: ['http://127.0.0.1:8546'] },
+  },
+  blockExplorers: {
+    default: { name: 'Anvil Explorer', url: '' },
+  },
+  testnet: true,
+} as const;
+
 // Configure supported chains - 简化配置，只使用公共提供商避免API密钥问题
 const { chains, publicClient } = configureChains(
   [
+    anvilLocal,
     hardhatLocal,
     ganache,
     ...(process.env.NODE_ENV === 'development' ? [sepolia, polygonMumbai] : []),
@@ -63,13 +86,25 @@ export const wagmiConfig = createConfig({
   publicClient,
 });
 
-export { chains, ganache, hardhatLocal };
+export { chains, ganache, hardhatLocal, anvilLocal };
 
 // 注意：合约配置已移动到 src/config/contracts.ts 进行集中管理
 // 这里保留这个注释作为提醒
 
 // Enhanced network configuration
 export const NETWORK_CONFIG = {
+  [anvilLocal.id]: {
+    name: 'Anvil Local Network',
+    shortName: 'Anvil',
+    blockExplorer: '',
+    currency: 'ETH',
+    rpcUrl: 'http://127.0.0.1:8546',
+    chainId: 31338,
+    description: 'Foundry Anvil local node with persistence and advanced features',
+    features: ['State Persistence', 'Fork Support', 'Mining Control', 'Debug Traces'],
+    icon: '⚒️',
+    color: '#9333ea',
+  },
   [hardhatLocal.id]: {
     name: 'Hardhat Local Network',
     shortName: 'Hardhat',
@@ -198,11 +233,15 @@ export const switchToNetwork = async (chainId: number) => {
 // 本地网络连接检查
 export const checkLocalNetworkConnection = async (chainId: number): Promise<boolean> => {
   const networkConfig = NETWORK_CONFIG[chainId as keyof typeof NETWORK_CONFIG];
+  console.log(`[Debug] Checking network: ${networkConfig.name} (ChainID: ${chainId}) at ${networkConfig.rpcUrl}`);
+
   if (!networkConfig || !networkConfig.rpcUrl.includes('127.0.0.1')) {
+    console.log(`[Debug] ${networkConfig.name}: Invalid config or not a local network.`);
     return false;
   }
 
   try {
+    console.log(`[Debug] ${networkConfig.name}: Sending fetch request...`);
     const response = await fetch(networkConfig.rpcUrl, {
       method: 'POST',
       headers: {
@@ -212,30 +251,43 @@ export const checkLocalNetworkConnection = async (chainId: number): Promise<bool
         jsonrpc: '2.0',
         method: 'eth_chainId',
         params: [],
-        id: 1,
+        id: Date.now(), // 使用唯一ID防止缓存
       }),
+      cache: 'no-cache', // 显式禁用缓存
     });
+
+    console.log(`[Debug] ${networkConfig.name}: Response received. Status: ${response.status}, OK: ${response.ok}`);
 
     if (response.ok) {
       const data = await response.json();
-      return data.result === `0x${chainId.toString(16)}`;
+      console.log(`[Debug] ${networkConfig.name}: Response data:`, data);
+      const isMatch = data.result === `0x${chainId.toString(16)}`;
+      console.log(`[Debug] ${networkConfig.name}: ChainID match? ${isMatch}. (Expected: 0x${chainId.toString(16)}, Got: ${data.result})`);
+      return isMatch;
     }
+    console.log(`[Debug] ${networkConfig.name}: Response not OK.`);
     return false;
   } catch (error) {
+    console.error(`[Debug] ${networkConfig.name}: Fetch failed with error:`, error);
     return false;
   }
 };
 
 // 获取推荐的本地网络
 export const getRecommendedLocalNetwork = async (): Promise<number | null> => {
-  // 首先检查Hardhat网络
-  if (await checkLocalNetworkConnection(31337)) {
-    return 31337;
+  // 优先检查 Anvil 网络
+  if (await checkLocalNetworkConnection(CHAIN_IDS.ANVIL)) {
+    return CHAIN_IDS.ANVIL;
   }
   
-  // 然后检查Ganache网络
-  if (await checkLocalNetworkConnection(1337)) {
-    return 1337;
+  // 其次检查 Hardhat 网络
+  if (await checkLocalNetworkConnection(CHAIN_IDS.HARDHAT)) {
+    return CHAIN_IDS.HARDHAT;
+  }
+  
+  // 最后检查 Ganache 网络
+  if (await checkLocalNetworkConnection(CHAIN_IDS.GANACHE)) {
+    return CHAIN_IDS.GANACHE;
   }
   
   return null;
@@ -245,10 +297,11 @@ export const getRecommendedLocalNetwork = async (): Promise<number | null> => {
 
 // 导出常用的链ID常量
 export const CHAIN_IDS = {
-  HARDHAT: 31337,
-  GANACHE: 1337,
-  SEPOLIA: 11155111,
-  MUMBAI: 80001,
-  MAINNET: 1,
-  POLYGON: 137,
+  GANACHE: ganache.id,
+  HARDHAT: hardhatLocal.id,
+  ANVIL: anvilLocal.id,
+  SEPOLIA: sepolia.id,
+  MUMBAI: polygonMumbai.id,
+  MAINNET: mainnet.id,
+  POLYGON: polygon.id,
 } as const; 

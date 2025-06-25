@@ -46,7 +46,7 @@ export default function AnalyticsTab({ liquidityPools }: AnalyticsTabProps) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Pools</p>
-              <p className="text-2xl font-bold text-gray-900">{liquidityPools.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{liquidityPools?.length || 0}</p>
             </div>
             <div className="p-3 bg-purple-100 rounded-full">
               <Droplets className="h-6 w-6 text-purple-600" />

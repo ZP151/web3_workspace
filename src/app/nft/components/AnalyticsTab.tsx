@@ -1,13 +1,21 @@
 import React from 'react';
 import { Image, DollarSign, Tag, Users } from 'lucide-react';
 import { NFT, NFTCategory } from '../types';
+import { formatEther } from 'ethers';
 
 interface AnalyticsTabProps {
   nfts: NFT[];
   categories: NFTCategory[];
+  marketplaceStats?: any;
 }
 
-export function AnalyticsTab({ nfts, categories }: AnalyticsTabProps) {
+export function AnalyticsTab({ nfts, categories, marketplaceStats }: AnalyticsTabProps) {
+  const totalVolume = marketplaceStats?.totalVolume ? parseFloat(formatEther(marketplaceStats.totalVolume)).toFixed(4) : '0';
+  const totalSales = marketplaceStats?.totalSales ? Number(marketplaceStats.totalSales) : 0;
+  const averagePrice = totalSales > 0 && marketplaceStats?.totalVolume
+    ? (parseFloat(formatEther(marketplaceStats.totalVolume)) / totalSales).toFixed(4)
+    : '0';
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -37,8 +45,8 @@ export function AnalyticsTab({ nfts, categories }: AnalyticsTabProps) {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Volume</p>
-              <p className="text-2xl font-bold text-gray-900">{nfts.reduce((sum, nft) => sum + parseFloat(nft.price), 0).toFixed(1)} ETH</p>
+              <p className="text-sm font-medium text-gray-600">Total transaction</p>
+              <p className="text-2xl font-bold text-gray-900">{totalVolume} ETH</p>
             </div>
             <div className="p-3 bg-green-100 rounded-full">
               <DollarSign className="h-6 w-6 text-green-600" />
@@ -52,15 +60,17 @@ export function AnalyticsTab({ nfts, categories }: AnalyticsTabProps) {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Active Listings</p>
-              <p className="text-2xl font-bold text-gray-900">{nfts.filter(nft => nft.isListed).length}</p>
+              <p className="text-sm font-medium text-gray-600">Total sales</p>
+              <p className="text-2xl font-bold text-gray-900">{totalSales}</p>
             </div>
             <div className="p-3 bg-blue-100 rounded-full">
               <Tag className="h-6 w-6 text-blue-600" />
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-sm text-gray-500">{nfts.length > 0 ? ((nfts.filter(nft => nft.isListed).length / nfts.length) * 100).toFixed(1) : 0}% of total</span>
+            <span className="text-sm text-gray-500">
+              Average price: {averagePrice} ETH
+            </span>
           </div>
         </div>
 

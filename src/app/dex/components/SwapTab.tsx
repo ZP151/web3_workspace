@@ -192,16 +192,16 @@ export default function SwapTab({
           )}
 
           {/* Pool Status */}
-          {liquidityPools.length > 0 && (
+          {liquidityPools && liquidityPools.length > 0 && (
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
               <div className="text-sm space-y-1">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Pool Liquidity:</span>
-                  <span>${((parseFloat(liquidityPools[0].reserveA) * 2000) + (parseFloat(liquidityPools[0].reserveB))).toFixed(2)}</span>
+                  <span>${((parseFloat(liquidityPools[0]?.reserveA || '0') * 2000) + (parseFloat(liquidityPools[0]?.reserveB || '0'))).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Pool Ratio:</span>
-                  <span>{liquidityPools[0].tokenA}/{liquidityPools[0].tokenB}</span>
+                  <span>{liquidityPools[0]?.tokenA || 'N/A'}/{liquidityPools[0]?.tokenB || 'N/A'}</span>
                 </div>
               </div>
             </div>

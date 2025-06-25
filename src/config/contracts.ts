@@ -25,6 +25,13 @@ try {
 
 // 网络信息配置
 export const NETWORK_CONFIG = {
+  31338: { 
+    name: "Anvil Local", 
+    type: "development",
+    currency: "ETH",
+    blockExplorer: "http://localhost:8546",
+    rpc: "http://127.0.0.1:8546"
+  },
   31337: { 
     name: "Hardhat Local", 
     type: "development",
@@ -81,7 +88,7 @@ function generateContractAddresses() {
   const addresses: Record<number, Record<string, string>> = {};
   
   // 支持的网络列表
-  const supportedNetworks = [31337, 1337, 11155111, 80001, 1, 137, 56];
+  const supportedNetworks = [31338, 31337, 1337, 11155111, 80001, 1, 137, 56];
   
   // 支持的合约列表
   const contractNames = ['VotingCore', 'SimpleBank', 'EnhancedBank', 'TokenFactory', 'PlatformNFT', 'NFTMarketplace', 'DEXPlatform'];

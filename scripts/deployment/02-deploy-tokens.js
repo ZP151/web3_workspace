@@ -17,7 +17,7 @@ async function deployAndMintTokens() {
   const deployedContracts = {};
 
   // Only deploy test tokens on local networks
-  if (chainId !== "31337" && chainId !== "1337") {
+  if (chainId !== "31337" && chainId !== "1337" && chainId !== "31338") {
     console.log("⚠️ Skipping test token deployment on non-local network");
     return deployedContracts;
   }

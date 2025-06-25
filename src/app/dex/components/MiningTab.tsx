@@ -75,20 +75,20 @@ export default function MiningTab({
               </select>
             </div>
 
-            {liquidityPools.length > 0 && miningData.selectedPool && (
+            {liquidityPools && liquidityPools.length > 0 && miningData.selectedPool && (
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
                 <div className="text-sm space-y-1">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Pool APY:</span>
-                    <span className="font-medium">{liquidityPools[0].apy}%</span>
+                    <span className="font-medium">{liquidityPools[0]?.apy || 'N/A'}%</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Your Share:</span>
-                    <span>{liquidityPools[0].userLiquidity}</span>
+                    <span>{liquidityPools[0]?.userLiquidity || '0'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Pool Total:</span>
-                    <span>{liquidityPools[0].totalSupply}</span>
+                    <span>{liquidityPools[0]?.totalSupply || '0'}</span>
                   </div>
                 </div>
               </div>

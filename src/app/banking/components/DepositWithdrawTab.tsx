@@ -4,20 +4,16 @@ import { TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
 
 interface DepositWithdrawTabProps {
   depositAmount: string;
-  withdrawAmount: string;
   setDepositAmount: (amount: string) => void;
+  withdrawAmount: string;
   setWithdrawAmount: (amount: string) => void;
-  bankBalance: string;
-  ethBalance?: any;
-  minimumDeposit?: any;
-  isDepositing: boolean;
-  isWithdrawing: boolean;
-  isWithdrawingAll: boolean;
   onDeposit: (amount: string) => Promise<void>;
   onWithdraw: (amount: string) => Promise<void>;
   onWithdrawAll: () => Promise<void>;
   onClaimInterest: () => Promise<void>;
-  pendingInterest: string;
+  isDepositing: boolean;
+  isWithdrawing: boolean;
+  isWithdrawingAll: boolean;
 }
 
 export default function DepositWithdrawTab({
@@ -25,17 +21,13 @@ export default function DepositWithdrawTab({
   withdrawAmount,
   setDepositAmount,
   setWithdrawAmount,
-  bankBalance,
-  ethBalance,
-  minimumDeposit,
-  isDepositing,
-  isWithdrawing,
-  isWithdrawingAll,
   onDeposit,
   onWithdraw,
   onWithdrawAll,
   onClaimInterest,
-  pendingInterest,
+  isDepositing,
+  isWithdrawing,
+  isWithdrawingAll,
 }: DepositWithdrawTabProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -57,10 +49,7 @@ export default function DepositWithdrawTab({
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
             <p className="text-xs text-gray-500 mt-1">
-              Minimum: {minimumDeposit ? `${Number(minimumDeposit) / 1e18} ETH` : '0.01 ETH'}
-            </p>
-            <p className="text-xs text-gray-500">
-              Available: {ethBalance ? `${parseFloat(ethBalance.formatted).toFixed(6)} ETH` : '0 ETH'}
+            Please make sure you have a sufficient balance in your wallet.
             </p>
           </div>
           <Button
@@ -98,48 +87,42 @@ export default function DepositWithdrawTab({
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
             <p className="text-xs text-gray-500 mt-1">
-              Available: {bankBalance} ETH
+              You can withdraw from your bank balance.
             </p>
           </div>
           <div className="space-y-2">
             <Button
               onClick={() => onWithdraw(withdrawAmount)}
-              disabled={isWithdrawing || !withdrawAmount || parseFloat(withdrawAmount) <= 0 || parseFloat(withdrawAmount) > parseFloat(bankBalance)}
+              disabled={isWithdrawing || !withdrawAmount || parseFloat(withdrawAmount) <= 0}
               className="w-full bg-red-600 hover:bg-red-700"
             >
               {isWithdrawing ? 'Withdrawing...' : 'Withdraw'}
             </Button>
             <Button
               onClick={onWithdrawAll}
-              disabled={isWithdrawingAll || parseFloat(bankBalance) <= 0}
+              disabled={isWithdrawingAll}
               variant="outline"
               className="w-full border-red-600 text-red-600 hover:bg-red-50"
             >
-              {isWithdrawingAll ? 'Withdrawing All...' : 'Withdraw All'}
+              {isWithdrawingAll ? 'Withdrawing all...' : 'Withdraw all'}
             </Button>
           </div>
-          {parseFloat(pendingInterest) > 0 && (
-            <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-yellow-800 font-medium">
-                    💰 Accrued Interest: {parseFloat(pendingInterest).toFixed(6)} ETH
-                  </span>
-                  <Button
-                    onClick={onClaimInterest}
-                    size="sm"
-                    className="bg-yellow-600 hover:bg-yellow-700"
-                  >
-                    Claim Interest
-                  </Button>
-                </div>
-                <p className="text-xs text-yellow-700">
-                  Interest is calculated based on your balance and time since last transaction.
-                  Claiming will add this amount to your balance.
-                </p>
+          <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-yellow-800 font-medium">
+                Click here to claim your accumulated interest
+                </span>
+                <Button
+                  onClick={onClaimInterest}
+                  size="sm"
+                  className="bg-yellow-600 hover:bg-yellow-700"
+                >
+                Claim Interest
+                </Button>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
 

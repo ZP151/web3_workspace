@@ -17,7 +17,7 @@ const NETWORKS = {
   anvil: {
     name: 'Anvil Local (Foundry)',
     port: 8546,  // 使用不同端口避免冲突
-    chainId: 31337,
+    chainId: 31338,
     command: 'anvil',
     persistent: true,
     stateFile: './anvil-state.json'
@@ -70,7 +70,7 @@ function buildAnvilCommand(options = {}) {
     ? '"C:/Users/Dell/.foundry/bin/anvil.exe"' 
     : 'anvil';
   
-  let cmd = `${anvilPath} --port ${port} --chain-id 31337`;
+  let cmd = `${anvilPath} --port ${port} --chain-id 31338`;
   
   // Add fixed mnemonic for consistent accounts
   cmd += ' --mnemonic "test test test test test test test test test test test junk"';

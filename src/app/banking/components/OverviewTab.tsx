@@ -1,38 +1,38 @@
 import React, { useState } from 'react';
-import { DollarSign, TrendingUp, Wallet, Award, AlertCircle, Calculator } from 'lucide-react';
+import { DollarSign, TrendingUp, Wallet, Award, AlertCircle, Calculator, RefreshCw } from 'lucide-react';
 import { formatEther } from 'viem';
+import { Button } from '@/components/ui/button';
+import { FetchBalanceResult } from 'wagmi/actions';
 
 interface OverviewTabProps {
   bankBalance: string;
-  ethBalance?: any;
-  address?: string;
   totalDeposited: string;
   totalWithdrawn: string;
   pendingInterest: string;
-  interestRate?: any;
-  interestCalc: {
-    daily: number;
-    monthly: number;
-    yearly: number;
-  };
+  totalBankFunds: string;
+  ethBalance?: FetchBalanceResult;
+  interestRate: number;
+  minimumDeposit: string;
+  onManualRefresh: () => void;
 }
 
 export default function OverviewTab({
   bankBalance,
-  ethBalance,
-  address,
   totalDeposited,
   totalWithdrawn,
   pendingInterest,
+  totalBankFunds,
+  ethBalance,
   interestRate,
-  interestCalc,
+  minimumDeposit,
+  onManualRefresh,
 }: OverviewTabProps) {
   const [calcAmount, setCalcAmount] = useState('1.0');
   const [calcPeriod, setCalcPeriod] = useState(365);
 
   const calculateProjection = () => {
     const amount = parseFloat(calcAmount) || 0;
-    const rate = (interestRate ? Number(interestRate) : 5) / 100;
+    const rate = (interestRate || 0) / 100;
     const daily = (amount * rate) / 365;
     const result = daily * calcPeriod;
     return result;
@@ -40,6 +40,14 @@ export default function OverviewTab({
 
   return (
     <>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold text-gray-800">Account Overview</h2>
+        <Button onClick={onManualRefresh} variant="outline" size="sm">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh Data
+        </Button>
+      </div>
+
       {/* Account Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {/* Bank Balance */}
@@ -57,7 +65,7 @@ export default function OverviewTab({
             <div className="flex items-center">
               <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
               <span className="text-sm text-green-600">
-                +{parseFloat(pendingInterest).toFixed(6)} ETH pending interest
+                +{parseFloat(pendingInterest || '0').toFixed(6)} ETH pending interest
               </span>
             </div>
           </div>
@@ -69,7 +77,7 @@ export default function OverviewTab({
             <div>
               <p className="text-sm font-medium text-gray-600">Wallet Balance</p>
               <p className="text-2xl font-bold text-gray-900">
-                {ethBalance ? formatEther(ethBalance.value) : '0'} ETH
+                {ethBalance ? parseFloat(formatEther(ethBalance.value)).toFixed(4) : '0'} ETH
               </p>
             </div>
             <div className="p-3 bg-blue-100 rounded-full">
@@ -77,7 +85,9 @@ export default function OverviewTab({
             </div>
           </div>
           <div className="mt-4">
-            <p className="text-xs text-gray-500">Address: {address?.slice(0, 6)}...{address?.slice(-4)}</p>
+            <p className="text-xs text-gray-500 truncate" title={ethBalance?.formatted}>
+              {ethBalance ? `Formatted: ${ethBalance.formatted}` : ''}
+            </p>
           </div>
         </div>
 
@@ -101,9 +111,9 @@ export default function OverviewTab({
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Interest Rate</p>
+              <p className="text-sm font-medium text-gray-600">Current Interest Rate (APY)</p>
               <p className="text-2xl font-bold text-gray-900">
-                {interestRate ? Number(interestRate) : '0'}% APY
+                {(interestRate || 0).toFixed(2)}%
               </p>
             </div>
             <div className="p-3 bg-orange-100 rounded-full">
@@ -120,27 +130,27 @@ export default function OverviewTab({
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
           <Award className="h-5 w-5 mr-2 text-yellow-600" />
-          Interest Earnings Projection
+          Key Banking Metrics
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600">Daily</p>
-            <p className="text-xl font-bold text-gray-900">{interestCalc.daily.toFixed(6)} ETH</p>
+            <p className="text-sm text-gray-600">Pending Interest</p>
+            <p className="text-xl font-bold text-gray-900">{parseFloat(pendingInterest || '0').toFixed(6)} ETH</p>
           </div>
           <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600">Monthly</p>
-            <p className="text-xl font-bold text-gray-900">{interestCalc.monthly.toFixed(6)} ETH</p>
+            <p className="text-sm text-gray-600">Total Bank Funds</p>
+            <p className="text-xl font-bold text-gray-900">{parseFloat(totalBankFunds || '0').toFixed(4)} ETH</p>
           </div>
           <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600">Yearly</p>
-            <p className="text-xl font-bold text-gray-900">{interestCalc.yearly.toFixed(6)} ETH</p>
+            <p className="text-sm text-gray-600">Minimum Deposit</p>
+            <p className="text-xl font-bold text-gray-900">{minimumDeposit} ETH</p>
           </div>
         </div>
         <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
           <div className="flex items-center">
             <AlertCircle className="h-5 w-5 text-yellow-600 mr-2" />
             <span className="text-sm text-yellow-800">
-              Pending Interest: {parseFloat(pendingInterest).toFixed(6)} ETH (will be added on next transaction)
+              Pending Interest: {parseFloat(pendingInterest || '0').toFixed(6)} ETH (will be added on next transaction)
             </span>
           </div>
         </div>
@@ -190,7 +200,7 @@ export default function OverviewTab({
           </div>
         </div>
         <div className="mt-4 text-sm text-gray-500">
-          * Based on current interest rate of {interestRate ? Number(interestRate) : 5}% APY
+          * Based on current interest rate {(interestRate || 0).toFixed(2)}% APY
         </div>
       </div>
     </>

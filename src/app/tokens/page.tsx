@@ -190,7 +190,7 @@ export default function TokenFactoryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Navigation */}
       <nav className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -200,8 +200,20 @@ export default function TokenFactoryPage() {
               Back to Home
             </Link>
             <h1 className="text-xl font-bold text-gray-900">Token Factory</h1>
-            <div className="text-sm text-gray-500">
-              {creationFee && typeof creationFee === 'bigint' && `Fee: ${formatEther(creationFee)} ETH`}
+            <div className="flex items-center space-x-2">
+              <div className="text-sm text-gray-500">
+                Auto-refresh: 30s
+              </div>
+              <button
+                onClick={() => {
+                  refetchTokenCount();
+                  refetchUserTokens();
+                }}
+                className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+                title="Refresh data"
+              >
+                <Coins className="h-4 w-4" />
+              </button>
             </div>
           </div>
         </div>
@@ -241,8 +253,8 @@ export default function TokenFactoryPage() {
         ) : !contractAddress ? (
           <div className="text-center py-12">
             <Coins className="mx-auto h-16 w-16 text-red-400 mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Unsupported Network</h2>
-            <p className="text-gray-600 mb-6">Please switch to a supported network</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Contract Not Deployed</h2>
+            <p className="text-gray-600 mb-6">Token Factory contract is not deployed on this network. Please switch to a supported network.</p>
           </div>
         ) : (
           <>

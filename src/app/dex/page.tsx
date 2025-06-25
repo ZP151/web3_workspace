@@ -5,7 +5,7 @@ import { useAccount, useNetwork, useContractRead, useContractWrite } from 'wagmi
 import { parseEther, formatEther } from 'viem';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
-import { ArrowUpDown, AlertCircle, ArrowLeft, Droplets, BarChart3, TrendingUp, Coins } from 'lucide-react';
+import { ArrowUpDown, AlertCircle, ArrowLeft, Droplets, BarChart3, TrendingUp, Coins, RefreshCw, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // 导入拆分后的组件
@@ -16,16 +16,58 @@ import PoolsTab from './components/PoolsTab';
 import AnalyticsTab from './components/AnalyticsTab';
 import OrdersTab from './components/OrdersTab';
 import MiningTab from './components/MiningTab';
+import DEXNavigation from './components/DEXNavigation';
 
 // 导入钩子和工具函数
 import { useDEXContract, useSwapLogic, useLimitOrders, useMining } from './hooks/useDEXHooks';
-import { erc20ABI } from './utils/tokenUtils';
+import { getTokenAddresses, erc20ABI } from './utils/tokenUtils';
 import { LiquidityPool } from './types';
+import { getContractAddress } from '@/config/contracts';
+import { SystemFeedback } from '@/components/SystemFeedback';
 
 export default function DEXPage() {
   const { address, isConnected } = useAccount();
   const { chain } = useNetwork();
   
+  // Minimal check
+  const dexAddressCheck = chain?.id ? getContractAddress(chain.id, 'DEXPlatform') : null;
+  const tokensCheck = chain?.id ? getTokenAddresses(chain.id) : null;
+  if (!isConnected) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              <Link href="/" className="flex items-center text-gray-600 hover:text-gray-800 transition-colors">
+                <ArrowLeft className="h-5 w-5 mr-2" />
+                Back to Home 
+                </Link>
+              <h1 className="text-xl font-bold text-gray-900">DEX Platform</h1>
+              <div className="w-[88px]"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center py-12">
+            <div className="inline-flex h-24 w-24 items-center justify-center rounded-full bg-orange-100 mb-8">
+              <Wallet className="h-12 w-12 text-orange-600" />
+            </div>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Wallet Not Connected</h2>
+            <p className="text-gray-600 mb-8">You need to connect your wallet to use this module.</p>
+            <Link href="/">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg">
+                Return to Home and Connect Wallet
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // 使用自定义钩子
   const { contractAddress, contractABI, TOKEN_ADDRESSES, calculatePoolId } = useDEXContract(chain?.id);
   const { 
@@ -358,152 +400,119 @@ export default function DEXPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Top Navigation */}
+      {/* Navigation */}
       <nav className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <Link 
-              href="/" 
-              className="flex items-center text-blue-600 hover:text-blue-800 transition-colors duration-200 cursor-pointer z-10 relative"
-            >
+            <Link href="/" className="flex items-center text-blue-600 hover:text-blue-800 transition-colors">
               <ArrowLeft className="h-5 w-5 mr-2" />
-              <span className="font-medium">Back to Home</span>
+              Back to Home
             </Link>
             <h1 className="text-xl font-bold text-gray-900">DEX Platform</h1>
-            <div className="w-24"></div>
+            <div className="flex items-center space-x-2">
+              <div className="text-sm text-gray-500">
+                Auto-refresh: 30s
+              </div>
+              <button
+                onClick={() => {
+                  refetchPools();
+                  refetchPoolInfo();
+                  refetchUserLiquidity();
+                  refetchUserOrders();
+                }}
+                className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors duration-200"
+                title="Refresh data"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* DEX Information */}
-        {isConnected && contractAddress && (
-          <>
-            <DEXInfoCard
-              address={address}
-              chainName={chain?.name}
-              chainId={chain?.id}
-              contractAddress={contractAddress}
+        {/* DEX Information Card */}
+        <DEXInfoCard
+          contractAddress={contractAddress}
+          poolInfo={poolInfo}
+          userLiquidityInfo={userLiquidityInfo}
+          wethBalance={wethBalance}
+          usdcBalance={usdcBalance}
+          daiBalance={daiBalance}
+        />
+
+        {/* Navigation Tabs */}
+        <DEXNavigation
+          activeView={activeView}
+          setActiveView={setActiveView}
+        />
+
+        {/* Main Content */}
+        <div className="mt-6">
+          {activeView === 'swap' && (
+            <SwapTab
+              swapData={swapData}
+              setSwapData={setSwapData}
               liquidityPools={liquidityPools}
+              handleSwap={handleSwap}
+              isSwapping={isSwapping}
+              handleSwapInputChange={handleSwapInputChange}
+              handleSwapTokens={handleSwapTokens}
+              wethBalance={wethBalance}
+              usdcBalance={usdcBalance}
+              daiBalance={daiBalance}
+              tokenAAllowance={tokenAAllowance}
+              tokenBAllowance={tokenBAllowance}
+              needsApproval={needsApproval}
             />
-            
-            {/* Navigation Tabs - 移动到DEX信息卡片下面 */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-              <div className="border-b border-gray-200">
-                <nav className="-mb-px flex flex-wrap justify-center md:justify-start space-x-2 md:space-x-8 p-2 md:p-0" aria-label="Tabs">
-                  {[
-                    { id: 'swap', name: 'Swap', icon: ArrowUpDown },
-                    { id: 'liquidity', name: 'Add Liquidity', icon: Droplets },
-                    { id: 'pools', name: 'Pools', icon: BarChart3 },
-                    { id: 'analytics', name: 'Analytics', icon: TrendingUp },
-                    { id: 'orders', name: 'Orders', icon: Coins },
-                    { id: 'mining', name: 'Mining', icon: Droplets },
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveView(tab.id as any)}
-                      className={`${
-                        activeView === tab.id
-                          ? 'border-blue-500 text-blue-600 bg-blue-50'
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                      } whitespace-nowrap py-3 px-4 md:py-4 md:px-6 border-b-2 font-medium text-sm flex items-center rounded-t-lg transition-colors duration-200`}
-                    >
-                      <tab.icon className="h-4 w-4 md:h-5 md:w-5 mr-2" />
-                      <span className="hidden sm:inline">{tab.name}</span>
-                      <span className="sm:hidden">{tab.name.split(' ')[0]}</span>
-                    </button>
-                  ))}
-                </nav>
-              </div>
-            </div>
-          </>
-        )}
-
-        {!isConnected ? (
-          <div className="text-center py-12">
-            <ArrowUpDown className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Wallet Connection Required</h2>
-            <p className="text-gray-600 mb-6">Please connect your wallet to access DEX features</p>
-            <Link href="/">
-              <Button>Return to Home and Connect Wallet</Button>
-            </Link>
-          </div>
-        ) : !contractAddress ? (
-          <div className="text-center py-12">
-            <AlertCircle className="mx-auto h-16 w-16 text-red-400 mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Unsupported Network</h2>
-            <p className="text-gray-600 mb-6">Please switch to a supported network</p>
-          </div>
-        ) : (
-          <>
-            {/* Swap Tab */}
-            {activeView === 'swap' && (
-              <SwapTab
-                swapData={swapData}
-                setSwapData={setSwapData}
-                liquidityPools={liquidityPools}
-                handleSwapInputChange={handleSwapInputChange}
-                handleSwapTokens={handleSwapTokens}
-                handleSwap={handleSwap}
-                isSwapping={isSwapping}
-                wethBalance={wethBalance}
-                usdcBalance={usdcBalance}
-                daiBalance={daiBalance}
-                tokenAAllowance={tokenAAllowance}
-                tokenBAllowance={tokenBAllowance}
-                needsApproval={needsApproval}
-              />
-            )}
-
-            {/* Add Liquidity Tab */}
-            {activeView === 'liquidity' && (
-              <LiquidityTab
-                liquidityAmount={liquidityAmount}
-                setLiquidityAmount={setLiquidityAmount}
-                handleAddLiquidity={handleAddLiquidity}
-                isAddingLiquidity={isAddingLiquidity}
-              />
-            )}
-
-            {/* Pools Tab */}
-            {activeView === 'pools' && (
-              <PoolsTab liquidityPools={liquidityPools} />
-            )}
-
-            {/* Analytics Tab */}
-            {activeView === 'analytics' && (
-              <AnalyticsTab liquidityPools={liquidityPools} />
-            )}
-
-            {/* Orders Tab */}
-            {activeView === 'orders' && (
-              <OrdersTab
-                limitOrderData={limitOrderData}
-                setLimitOrderData={setLimitOrderData}
-                userOrders={userOrders}
-                calculatePoolId={calculatePoolId}
-                handleCreateLimitOrder={handleCreateLimitOrder}
-                handleCancelOrder={handleCancelOrder}
-                isCreatingOrder={isCreatingOrder}
-                isCancellingOrder={isCancellingOrder}
-                refetchUserOrders={refetchUserOrders}
-              />
-            )}
-
-            {/* Mining Tab */}
-            {activeView === 'mining' && (
-              <MiningTab
-                miningData={miningData}
-                setMiningData={setMiningData}
-                liquidityPools={liquidityPools}
-                wethUsdcPoolId={wethUsdcPoolId}
-                handleClaimRewards={handleClaimRewards}
-                isClaimingRewards={isClaimingRewards}
-                refetchUserLiquidity={refetchUserLiquidity}
-              />
-            )}
-          </>
-        )}
+          )}
+          {activeView === 'liquidity' && (
+            <LiquidityTab
+              liquidityAmount={liquidityAmount}
+              setLiquidityAmount={setLiquidityAmount}
+              handleAddLiquidity={handleAddLiquidity}
+              isAddingLiquidity={isAddingLiquidity}
+              poolInfo={poolInfo}
+              userLiquidityInfo={userLiquidityInfo}
+            />
+          )}
+          {activeView === 'pools' && (
+            <PoolsTab
+              liquidityPools={liquidityPools}
+              allPoolIds={allPoolIds}
+              refetchPools={refetchPools}
+            />
+          )}
+          {activeView === 'analytics' && (
+            <AnalyticsTab
+              poolInfo={poolInfo}
+              userLiquidityInfo={userLiquidityInfo}
+              allPoolIds={allPoolIds}
+            />
+          )}
+          {activeView === 'orders' && (
+            <OrdersTab
+              limitOrderData={limitOrderData}
+              setLimitOrderData={setLimitOrderData}
+              userOrders={userOrders}
+              handleCreateLimitOrder={handleCreateLimitOrder}
+              handleCancelOrder={handleCancelOrder}
+              isCreatingOrder={isCreatingOrder}
+              isCancellingOrder={isCancellingOrder}
+            />
+          )}
+          {activeView === 'mining' && (
+            <MiningTab
+              miningData={miningData}
+              setMiningData={setMiningData}
+              liquidityPools={liquidityPools}
+              wethUsdcPoolId={wethUsdcPoolId}
+              handleClaimRewards={handleClaimRewards}
+              isClaimingRewards={isClaimingRewards}
+              refetchUserLiquidity={refetchUserLiquidity}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

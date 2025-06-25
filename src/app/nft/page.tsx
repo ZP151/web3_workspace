@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Palette, Star, Plus, Grid3X3, List, Image, ArrowLeft } from 'lucide-react';
+import { Palette, Star, Plus, Grid3X3, List, Image, ArrowLeft, RefreshCw, Wallet } from 'lucide-react';
 import { useAccount, useBalance, useNetwork } from 'wagmi';
 import { formatEther } from 'viem';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 import { 
   NFTNavigation,
@@ -13,6 +14,7 @@ import {
   MyCollectionTab,
   AnalyticsTab
 } from './components';
+import { SystemFeedback } from '@/components/SystemFeedback';
 import { 
   NFT, 
   MintData, 
@@ -23,6 +25,7 @@ import {
   SortBy 
 } from './types';
 import { useNFTContract } from './hooks/useNFTContract';
+import { getContractAddress } from '@/config/contracts';
 
 export default function NFTPage() {
   const { address, isConnected } = useAccount();
@@ -58,11 +61,12 @@ export default function NFTPage() {
     forceRefresh,
     isMinting,
     isLoadingFromContract,
-    contractAddress,
     marketplaceAddress,
     isContractAvailable,
     totalSupply,
     marketplaceStats,
+    contractAddress,
+    listingCount,
   } = useNFTContract();
 
   const { data: balance } = useBalance({
@@ -110,6 +114,62 @@ export default function NFTPage() {
 
     return filtered;
   }, [nfts, selectedCategory, sortBy]);
+
+  if (!isConnected) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <Link href="/" className="flex items-center text-purple-600 hover:text-purple-800 transition-colors">
+                <ArrowLeft className="h-5 w-5 mr-2" />
+                Back to Home
+              </Link>
+              <h1 className="text-xl font-bold text-gray-900">NFT Marketplace</h1>
+              <div className="flex items-center space-x-2">
+                <div className="text-sm text-gray-500">
+                  Manual Refresh
+                </div>
+                <button
+                  onClick={forceRefresh}
+                  className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors duration-200"
+                  title="Refresh data"
+                  disabled={isLoadingFromContract}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center py-12">
+            <div className="inline-flex h-24 w-24 items-center justify-center rounded-full bg-orange-100 mb-8">
+              <Wallet className="h-12 w-12 text-orange-600" />
+            </div>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Wallet Not Connected</h2>
+            <p className="text-gray-600 mb-8">You need to connect your wallet to use this module.</p>
+            <Link href="/">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg">
+                Return to Home and Connect Wallet
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!marketplaceAddress || !contractAddress) {
+    return (
+      <div className="w-full h-full">
+                      <SystemFeedback type="contract-not-deployed" moduleName="NFT Marketplace" />
+      </div>
+    );
+  }
 
   const handleMintNFT = async () => {
     await mintNFT(mintData);
@@ -190,6 +250,7 @@ export default function NFTPage() {
           <AnalyticsTab
             nfts={nfts}
             categories={categories}
+            marketplaceStats={marketplaceStats}
           />
         );
       default:
@@ -198,89 +259,77 @@ export default function NFTPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <div className="flex items-center mb-2">
-              <Link 
-                href="/" 
-                className="flex items-center text-gray-600 hover:text-gray-900 mr-4 transition-colors"
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <Link href="/" className="flex items-center text-purple-600 hover:text-purple-800 transition-colors">
+              <ArrowLeft className="h-5 w-5 mr-2" />
+              Back to Home
+            </Link>
+            <h1 className="text-xl font-bold text-gray-900">NFT Marketplace</h1>
+            <div className="flex items-center space-x-2">
+              <div className="text-sm text-gray-500">
+                Manual Refresh
+              </div>
+              <button
+                onClick={forceRefresh}
+                className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors duration-200"
+                title="Refresh data"
+                disabled={isLoadingFromContract}
               >
-                <ArrowLeft className="h-5 w-5 mr-1" />
-                Back to Home
-              </Link>
+                <RefreshCw className="h-4 w-4" />
+              </button>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-              <Image className="h-8 w-8 mr-3 text-purple-600" />
-              NFT Marketplace
-            </h1>
-            <p className="text-gray-600 mt-2">Create, collect, and trade unique digital assets</p>
           </div>
         </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* NFT Information Card */}
         {isConnected && (
-          <div className={`border rounded-lg p-6 mb-8 ${
+          <div className={`bg-white border rounded-lg p-6 mb-8 shadow-sm ${
             isContractAvailable 
-              ? 'bg-green-50 border-green-200' 
-              : 'bg-yellow-50 border-yellow-200'
+              ? 'border-green-200' 
+              : 'border-yellow-200'
           }`}>
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Your NFT Marketplace Information</h3>
-                <p className="text-gray-600">Address: {address?.slice(0, 6)}...{address?.slice(-4)}</p>
-                <p className="text-gray-600">Network: {chain?.name || 'Unknown'} (ID: {chain?.id})</p>
-                <p className="text-gray-600">NFT Contract: {contractAddress?.slice(0, 6)}...{contractAddress?.slice(-4) || 'Not Available'}</p>
-                <p className="text-gray-600">Marketplace: {marketplaceAddress?.slice(0, 6)}...{marketplaceAddress?.slice(-4) || 'Not Available'}</p>
-                <p className="text-gray-600">Total Supply: {totalSupply || 0}</p>
-                <div className="mt-2 flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className={`w-2 h-2 rounded-full mr-2 ${
-                      isContractAvailable ? 'bg-green-500' : 'bg-yellow-500'
-                    }`}></div>
-                    <span className={`text-sm ${
-                      isContractAvailable ? 'text-green-600' : 'text-yellow-600'
-                    }`}>
-                      {isContractAvailable ? 'Network Connected' : 'Network Issue'}
-                    </span>
-                  </div>
-                  {isContractAvailable && (
-                    <button
-                      onClick={loadNFTsFromBlockchain}
-                      disabled={isLoadingFromContract}
-                      className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:opacity-50 flex items-center"
-                    >
-                      {isLoadingFromContract ? (
-                        <>
-                          <div className="animate-spin h-3 w-3 border border-white border-t-transparent rounded-full mr-1"></div>
-                          Loading...
-                        </>
-                      ) : (
-                        '🔄 Refresh from Blockchain'
-                      )}
-                    </button>
-                  )}
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  <Palette className="inline-block h-5 w-5 mr-2 text-purple-600" />
+                  NFT Marketplace Info
+                </h3>
+                <div className="space-y-1 text-sm text-gray-600">
+                  <p>Address: {address?.slice(0, 6)}...{address?.slice(-4)}</p>
+                  <p>Network: {chain?.name || 'Unknown'} (ID: {chain?.id})</p>
+                  <p>NFT Contract: {contractAddress?.slice(0, 6)}...{contractAddress?.slice(-4) || 'Not Deployed'}</p>
+                  <p>Marketplace Contract: {marketplaceAddress?.slice(0, 6)}...{marketplaceAddress?.slice(-4) || 'Not Deployed'}</p>
+                </div>
+                <div className="mt-3 flex items-center">
+                  <div className={`w-2 h-2 rounded-full mr-2 ${
+                    isContractAvailable ? 'bg-green-500' : 'bg-yellow-500'
+                  }`}></div>
+                  <span className={`text-sm ${
+                    isContractAvailable ? 'text-green-600' : 'text-yellow-600'
+                  }`}>
+                    {isContractAvailable ? 'Contract Connected' : 'Contract Not Deployed'}
+                  </span>
                 </div>
               </div>
               <div className="text-right">
                 {balance && (
                   <>
-                    <div className={`text-2xl font-bold ${
-                      isContractAvailable ? 'text-green-600' : 'text-yellow-600'
-                    }`}>
-                      {formatEther(balance.value)} ETH
+                    <div className="text-2xl font-bold text-blue-600">
+                      {parseFloat(formatEther(balance.value)).toFixed(4)} ETH
                     </div>
-                    <div className="text-gray-600">Wallet Balance</div>
-                    <div className="text-sm text-gray-500 mt-1">
-                      Total NFTs: {nfts.length} • My NFTs: {myNfts.length}
-                      <br />
-                      {nfts.length > 0 && (
-                        <span className="text-xs text-gray-400">
-                          {nfts.filter(nft => nft.id.startsWith('blockchain-')).length} from blockchain • {' '}
-                          {nfts.filter(nft => !nft.id.startsWith('blockchain-')).length} local/mock
-                        </span>
-                      )}
+                    <div className="text-gray-600 text-sm">Wallet Balance</div>
+                    <div className="text-sm text-gray-500 mt-2">
+                      <div>Total NFTs: {nfts.length}</div>
+                      <div>My NFTs: {myNfts.length}</div>
+                      <div>Total Supply: {totalSupply || 0}</div>
                     </div>
                   </>
                 )}
@@ -296,36 +345,23 @@ export default function NFTPage() {
                 ⚠️
               </div>
               <div className="ml-3">
-                <p className="text-sm text-yellow-800">
-                  NFT contract not available on this network. Please switch to a supported network.
-                </p>
+                              <p className="text-sm text-yellow-800">
+                NFT contract not available on this network. Please switch to a supported network.
+              </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Data Source Information */}
-        {isConnected && nfts.length > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                ℹ️
-              </div>
-              <div className="ml-3">
-                <h4 className="text-sm font-medium text-blue-800 mb-1">NFT Data Sources</h4>
-                <p className="text-sm text-blue-700">
-                  <span className="font-medium">🔗 Blockchain NFTs</span>: Loaded directly from smart contracts with real ownership data. 
-                  <span className="font-medium ml-4">💾 Local/Mock NFTs</span>: Sample data and newly minted NFTs (until indexed).
-                  {isLoadingFromContract && <span className="ml-2 text-blue-600">Currently syncing with blockchain...</span>}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
 
-        <NFTNavigation activeView={activeView} onViewChange={setActiveView} />
 
-        {renderContent()}
+        {/* NFT Navigation Tabs */}
+        <NFTNavigation activeView={activeView} setActiveView={setActiveView} />
+
+        {/* Main Content */}
+        <div className="mt-6">
+          {renderContent()}
+        </div>
 
         {selectedNFT && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">

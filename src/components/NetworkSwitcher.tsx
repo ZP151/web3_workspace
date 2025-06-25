@@ -58,6 +58,7 @@ const NetworkSwitcher = () => {
   // 初始化时检查本地网络状态
   useEffect(() => {
     const initNetworkStatus = async () => {
+      await checkNetworkStatus(CHAIN_IDS.ANVIL);
       await checkNetworkStatus(CHAIN_IDS.HARDHAT);
       await checkNetworkStatus(CHAIN_IDS.GANACHE);
     };
@@ -66,6 +67,7 @@ const NetworkSwitcher = () => {
 
     // 定期检查网络状态
     const interval = setInterval(() => {
+      checkNetworkStatus(CHAIN_IDS.ANVIL);
       checkNetworkStatus(CHAIN_IDS.HARDHAT);
       checkNetworkStatus(CHAIN_IDS.GANACHE);
     }, 30000); // 每30秒检查一次
@@ -106,7 +108,7 @@ const NetworkSwitcher = () => {
     setSwitching(true);
     try {
       // 对于本地网络，先检查连接状态
-      if (targetChainId === CHAIN_IDS.HARDHAT || targetChainId === CHAIN_IDS.GANACHE) {
+      if (targetChainId === CHAIN_IDS.ANVIL || targetChainId === CHAIN_IDS.HARDHAT || targetChainId === CHAIN_IDS.GANACHE) {
         const isNetworkRunning = await checkNetworkStatus(targetChainId);
         if (!isNetworkRunning) {
           const networkName = NETWORK_CONFIG[targetChainId as keyof typeof NETWORK_CONFIG]?.name;
@@ -130,6 +132,7 @@ const NetworkSwitcher = () => {
 
   const handleRefreshStatus = async () => {
     await Promise.all([
+      checkNetworkStatus(CHAIN_IDS.ANVIL),
       checkNetworkStatus(CHAIN_IDS.HARDHAT),
       checkNetworkStatus(CHAIN_IDS.GANACHE)
     ]);
@@ -202,7 +205,7 @@ const NetworkSwitcher = () => {
                 Local Development Networks
               </h4>
               
-              {[CHAIN_IDS.HARDHAT, CHAIN_IDS.GANACHE].map((chainId) => {
+              {[CHAIN_IDS.ANVIL, CHAIN_IDS.HARDHAT, CHAIN_IDS.GANACHE].map((chainId) => {
                 const network = NETWORK_CONFIG[chainId];
                 const status = networkStatus[chainId];
                 const isCurrentNetwork = chain?.id === chainId;
@@ -325,6 +328,7 @@ const NetworkSwitcher = () => {
                 Start Local Networks
               </h5>
               <div className="text-xs text-blue-700 space-y-1">
+                <div>• Anvil: <code className="bg-blue-100 px-1 rounded">anvil --port 8546</code></div>
                 <div>• Hardhat: <code className="bg-blue-100 px-1 rounded">npm run node</code></div>
                 <div>• Ganache: Start Ganache application</div>
               </div>

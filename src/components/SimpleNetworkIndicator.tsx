@@ -17,6 +17,12 @@ export default function SimpleNetworkIndicator() {
 
   const getNetworkInfo = () => {
     switch (chain.id) {
+      case 31338:
+        return {
+          name: 'Anvil Local Network',
+          color: 'bg-purple-100 border-purple-300 text-purple-700',
+          icon: '⚒️'
+        };
       case 31337:
         return {
           name: 'Hardhat Local Network',
@@ -70,6 +76,7 @@ export default function SimpleNetworkIndicator() {
 // 工具函数：获取网络名称
 export const getNetworkName = (chainId: number): string => {
   switch (chainId) {
+    case 31338: return 'Anvil Local Network';
     case 31337: return 'Hardhat Local Network';
     case 1337: return 'Ganache Local Networks';
     case 1: return 'Ethereum Mainnet';
@@ -80,5 +87,5 @@ export const getNetworkName = (chainId: number): string => {
 
 // 工具函数：检查是否为本地网络
 export const isLocalNetwork = (chainId: number): boolean => {
-  return chainId === 31337 || chainId === 1337;
+  return chainId === 31338 || chainId === 31337 || chainId === 1337;
 }; 

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm:*)",
+      "Bash(grep:*)",
+      "Bash(npm run build:*)",
+      "Bash(ls:*)",
+      "Bash(node:*)",
+      "Bash(npm --version)",
+      "Bash(claude-code config get:*)",
+      "Bash(claude-code config --help)",
+      "Bash(claude-code config list --global)"
+    ],
+    "deny": []
+  }
+}

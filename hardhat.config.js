@@ -35,6 +35,14 @@ module.exports = {
       }
     },
 
+    anvil: {
+      url: "http://127.0.0.1:8546",
+      chainId: 31338,
+      accounts: {
+        mnemonic: "test test test test test test test test test test test junk"
+      }
+    },
+
     localhost: {
       url: "http://127.0.0.1:8545",
       chainId: 31337

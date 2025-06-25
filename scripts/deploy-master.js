@@ -31,6 +31,7 @@ async function main() {
 
   // Network name mapping
   const networkNames = {
+    "31338": "Anvil Local",
     "31337": "Hardhat Local",
     "1337": "Ganache Local",
     "11155111": "Sepolia Testnet",

@@ -4,6 +4,7 @@ import React from 'react';
 import { useAccount } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import WalletConnection from '@/components/WalletConnection';
+
 import { 
   Code, 
   Shield, 
@@ -79,7 +80,9 @@ export default function HomePage() {
               <Coins className="h-8 w-8 text-blue-600 mr-3" />
               <span className="text-xl font-bold text-gray-900">Modern Web3 Platform</span>
             </div>
-            <WalletConnection />
+            <div className="flex items-center space-x-4">
+              <WalletConnection />
+            </div>
           </div>
         </div>
       </nav>
@@ -231,19 +234,22 @@ export default function HomePage() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Local Development Networks</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div className="bg-gray-50 rounded-lg p-3">
-                <div className="font-medium text-gray-900">Hardhat Network</div>
+                <div className="font-medium text-gray-900">Anvil Network</div>
                 <div className="text-gray-600">Chain ID: 31337 - Port: 8545</div>
-                <div className="text-gray-600 font-mono text-xs mt-1">VotingCore: 0x5FbDB...0aa3</div>
-                <div className="text-gray-600 font-mono text-xs">SimpleBank: 0xe7f17...0512</div>
-                <div className="text-gray-600 font-mono text-xs">TokenFactory: 0x9fE46...6e0</div>
-                <div className="text-gray-600 font-mono text-xs">+3 more contracts</div>
+                <div className="text-amber-600 text-xs mt-1">Not Running</div>
+                <div className="text-gray-500 text-xs mt-1">Start with: <code className="bg-gray-100 px-1 rounded">anvil</code></div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <div className="font-medium text-gray-900">Hardhat Network</div>
+                <div className="text-gray-600">Chain ID: 31338 - Port: 8546</div>
+                <div className="text-amber-600 text-xs mt-1">Not Running</div>
+                <div className="text-gray-500 text-xs mt-1">Start with: <code className="bg-gray-100 px-1 rounded">npx hardhat node --port 8546</code></div>
               </div>
               <div className="bg-gray-50 rounded-lg p-3">
                 <div className="font-medium text-gray-900">Ganache Network</div>
                 <div className="text-gray-600">Chain ID: 1337 - Port: 7545</div>
-                <div className="text-gray-600 font-mono text-xs mt-1">VotingCore: 0xa8e0...7341</div>
-                <div className="text-gray-600 font-mono text-xs">SimpleBank: 0xF9c8...F3CB</div>
-                <div className="text-gray-600 font-mono text-xs">All 6 contracts deployed</div>
+                <div className="text-amber-600 text-xs mt-1">Not Running</div>
+                <div className="text-gray-500 text-xs mt-1">Start with: <code className="bg-gray-100 px-1 rounded">ganache --port 7545</code></div>
               </div>
             </div>
             

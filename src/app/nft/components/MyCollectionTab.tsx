@@ -40,7 +40,7 @@ export function MyCollectionTab({
             className="flex items-center gap-2"
           >
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            刷新
+            Refresh
           </Button>
         )}
       </div>
