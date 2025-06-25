@@ -1,330 +1,349 @@
-# 🚀 Web3平台快速设置指南
+# 🚀 Web3 Platform Quick Setup Guide
 
-## 概述
-这个指南将帮助您快速部署和设置完整的Web3平台，包括所有智能合约和测试数据。
+## Overview
+This guide will help you quickly deploy and set up a complete Web3 platform, including all smart contracts and test data. This guide contains detailed installation steps, environment configuration, and troubleshooting solutions.
 
-## 🛠️ 可用脚本
+## 🛠️ Environment Requirements
 
-### 1. 完整部署脚本 (推荐)
+### System Requirements
+- **Operating System**: Windows 10+, macOS 10.15+, or Linux
+- **Memory**: At least 4GB RAM (8GB+ recommended)
+- **Storage**: 2GB available space
+- **Network**: Stable internet connection
+
+### Required Software
+1. **Node.js 18+** (LTS version)
+   - Download: [nodejs.org](https://nodejs.org/)
+   - Verify: `node --version`
+
+2. **Git** 
+   - Windows: [git-scm.com](https://git-scm.com/download/win)
+   - macOS: `brew install git`
+   - Linux: `sudo apt install git`
+
+3. **MetaMask Browser Extension**
+   - Chrome: [Chrome Web Store](https://chrome.google.com/webstore/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn)
+   - Firefox: [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/ether-metamask/)
+
+## 📦 Project Installation
+
+### 1. Clone Project
 ```bash
-npx hardhat run scripts/deploy-and-setup-all.js --network ganache
+git clone https://github.com/ZP151/web3_workspace.git
+cd web3_workspace
 ```
 
-**功能：**
-- ✅ 部署所有智能合约 (EnhancedBank, TokenFactory, DEXPlatform, PlatformNFT, NFTMarketplace, VotingCore)
-- ✅ 部署测试代币 (USDC, DAI, WETH)
-- ✅ 初始化DEX交易池并添加流动性
-- ✅ 创建NFT测试数据 (8个NFT，部分上架销售)
-- ✅ 创建投票提案 (3个提案)
-- ✅ 自动保存合约地址配置
+### 2. Install Dependencies
+```bash
+# Install all dependencies
+npm install
 
-### 2. 仅NFT数据设置脚本
+# If installation fails, try clearing cache
+npm cache clean --force
+npm install
+```
+
+### 3. Verify Installation
+```bash
+# Check Node.js version
+node --version
+
+# Check dependency installation
+npm list --depth=0
+
+# Test contract compilation
+npm run compile
+```
+
+## 🌐 Blockchain Network Selection
+
+### Option 1: Anvil (Foundry) - Recommended
+**Advantages**: Data persistence, fast startup, low memory usage
+
+```bash
+# Install Foundry (if not installed)
+curl -L https://foundry.paradigm.xyz | bash
+source ~/.bashrc && foundryup
+
+# Start Anvil network
+node scripts/start-networks.js anvil --persistent
+```
+
+> 📖 **Detailed Installation**: See [Anvil Installation Guide](ANVIL_INSTALLATION_GUIDE.md)
+
+### Option 2: Ganache
+**Advantages**: Graphical interface, easy to use
+
+```bash
+# Method 1: Command line startup
+npx ganache --deterministic --accounts 10 --host 0.0.0.0 --port 8545 --networkId 1337 --chain.chainId 1337
+
+# Method 2: Download Ganache GUI
+# Visit: https://trufflesuite.com/ganache/
+```
+
+> 📖 **Detailed Configuration**: See [Local Networks Guide](LOCAL_NETWORKS_GUIDE.md)
+
+### Option 3: Hardhat Network
+**Advantages**: Integrated development environment
+
+```bash
+# Hardhat network will start automatically during deployment
+npx hardhat run scripts/deploy-master.js --network hardhat
+```
+
+## 🔧 MetaMask Configuration
+
+### Add Local Network
+1. Open MetaMask extension
+2. Click network dropdown menu
+3. Select "Add Custom Network"
+4. Fill in network information:
+   - **Anvil**: RPC URL: `http://localhost:8546`, Chain ID: `31338`
+   - **Ganache**: RPC URL: `http://localhost:8545`, Chain ID: `1337`
+   - **Hardhat**: RPC URL: `http://localhost:8545`, Chain ID: `31337`
+
+### Import Test Accounts
+1. Copy private keys displayed by the blockchain network
+2. In MetaMask, select "Import Account"
+3. Paste private key and set account name
+
+> 📖 **Detailed Steps**: See [Network Configuration Guide](NETWORK_GUIDE.md)
+
+## 🛠️ Available Scripts
+
+### 1. Complete Deployment Script (Recommended)
+```bash
+# Deploy to Anvil (recommended)
+npx hardhat run scripts/deploy-master.js --network anvil
+
+# Deploy to Ganache
+npx hardhat run scripts/deploy-master.js --network ganache
+
+# Deploy to Hardhat
+npx hardhat run scripts/deploy-master.js --network hardhat
+```
+
+**Features:**
+- ✅ Deploy all smart contracts (EnhancedBank, TokenFactory, DEXPlatform, PlatformNFT, NFTMarketplace, VotingCore)
+- ✅ Deploy test tokens (USDC, DAI, WETH)
+- ✅ Initialize DEX trading pools and add liquidity
+- ✅ Create NFT test data (8 NFTs, some listed for sale)
+- ✅ Create voting proposals (3 proposals)
+- ✅ Automatically save contract address configuration
+
+### 2. NFT Data Setup Script Only
 ```bash
 npx hardhat run scripts/setup-complete-nft-data.js --network ganache
 ```
 
-**功能：**
-- 🎨 创建20个不同类型的NFT (艺术、头像、游戏、音乐、体育、收藏品、摄影)
-- 🏪 自动上架部分NFT到市场
-- 📊 提供详细的分类和稀有度统计
-- 👥 分配给不同的用户账户
+**Features:**
+- 🎨 Create 20 different types of NFTs (art, avatars, games, music, sports, collectibles, photography)
+- 🏪 Automatically list some NFTs on the marketplace
+- 📊 Provide detailed category and rarity statistics
+- 👥 Distribute to different user accounts
 
-## 📋 使用步骤
+## 📋 Usage Steps
 
-### 第一次设置
+### First Time Setup
 
-1. **启动Ganache网络**
+1. **Start Ganache Network**
    ```bash
    npx ganache --deterministic --accounts 10 --host 0.0.0.0 --port 8545 --networkId 1337 --chain.chainId 1337
    ```
 
-2. **运行完整部署脚本**
+2. **Run Complete Deployment Script**
    ```bash
-   npx hardhat run scripts/deploy-and-setup-all.js --network ganache
+   # Deploy to your chosen network (Anvil recommended)
+   npx hardhat run scripts/deploy-master.js --network anvil
+   
+   # Or deploy to Ganache
+   npx hardhat run scripts/deploy-master.js --network ganache
    ```
 
-3. **启动前端应用**
+3. **Start Frontend Application**
    ```bash
    npm run dev
    ```
 
-4. **配置MetaMask**
-   - 添加Ganache网络 (RPC: http://localhost:8545, Chain ID: 1337)
-   - 导入Ganache账户私钥进行测试
+4. **Configure MetaMask**
+   - Add Ganache network (RPC: http://localhost:8545, Chain ID: 1337)
+   - Import Ganache account private keys for testing
 
-### Ganache重置后快速恢复
+### Quick Recovery After Ganache Reset
 
-当Ganache网络重置后，只需要运行一个命令：
+When your local network is reset, just run one command:
 
 ```bash
-npx hardhat run scripts/deploy-and-setup-all.js --network ganache
+# For Anvil (recommended)
+npx hardhat run scripts/deploy-master.js --network anvil
+
+# For Ganache
+npx hardhat run scripts/deploy-master.js --network ganache
+
+# For Hardhat
+npx hardhat run scripts/deploy-master.js --network hardhat
 ```
 
-这个脚本会自动：
-- 重新部署所有合约
-- 重新创建所有测试数据
-- 更新配置文件
-- 准备好立即使用的完整平台
+This script will automatically:
+- Redeploy all contracts
+- Recreate all test data
+- Update configuration files
+- Prepare a complete platform ready for immediate use
 
-### 仅添加更多NFT数据
+### Add More NFT Data Only
 
-如果只想添加更多NFT测试数据：
+If you only want to add more NFT test data:
 
 ```bash
 npx hardhat run scripts/setup-complete-nft-data.js --network ganache
 ```
 
-## 📊 部署后的数据
+## 📊 Post-Deployment Data
 
-### 智能合约
-- **EnhancedBank**: 银行系统 (存款、贷款、质押)
-- **TokenFactory**: 代币工厂
-- **DEXPlatform**: 去中心化交易所
-- **PlatformNFT**: NFT合约
-- **NFTMarketplace**: NFT市场
-- **VotingCore**: 投票治理系统
+### Smart Contracts
+- **EnhancedBank**: Banking system (deposits, loans, staking)
+- **TokenFactory**: Token factory
+- **DEXPlatform**: Decentralized exchange
+- **PlatformNFT**: NFT contract
+- **NFTMarketplace**: NFT marketplace
+- **VotingCore**: Voting governance system
 
-### 测试代币
-- **WETH**: 包装以太坊
-- **USDC**: 美元稳定币 (6位小数)
-- **DAI**: DAI稳定币 (18位小数)
+### Test Tokens
+- **WETH**: Wrapped Ethereum
+- **USDC**: USD Stablecoin (6 decimals)
+- **DAI**: DAI Stablecoin (18 decimals)
 
-### DEX交易池
-- WETH/USDC 池 (1 WETH = 2000 USDC)
-- WETH/DAI 池 (1 WETH = 2000 DAI)
-- USDC/DAI 池
+### DEX Trading Pools
+- WETH/USDC Pool (1 WETH = 2000 USDC)
+- WETH/DAI Pool (1 WETH = 2000 DAI)
+- USDC/DAI Pool (1 USDC = 1 DAI)
 
-### NFT数据
-- 20个不同类型的NFT
-- 分布在8个用户账户中
-- 包含艺术、头像、游戏、音乐、体育、收藏品、摄影等类别
-- 4个稀有度等级：Common, Rare, Epic, Legendary
+### NFT Test Data
+- **Categories**: Art, Avatars, Games, Music, Sports, Collectibles, Photography
+- **Quantities**: 20 NFTs total
+- **Marketplace**: 50% listed for sale
+- **Price Range**: 0.01 - 1.0 ETH
 
-### 投票提案
-- 平台手续费调整提案
-- 新功能开发投票
-- 社区治理规则修订
+### Community Pools
+- **Community Development Fund**: 0.1 ETH
+- **Education Scholarship Pool**: 0.1 ETH
+- **Environmental Action Fund**: 0.1 ETH
+- **Startup Incubator Pool**: 0 ETH
+- **Medical Aid Fund**: 0 ETH
+- **Arts & Culture Support**: 0 ETH
 
-## 🔧 详细故障排除指南
+### Voting Proposals
+- **Proposal 1**: "Increase Community Development Fund"
+- **Proposal 2**: "Launch New DeFi Products"
+- **Proposal 3**: "Platform UI/UX Improvements"
 
-### 安装问题
+## 🚀 Quick Start Commands
 
-**Q: npm install 失败或依赖缺失？**
+### Full Platform Setup (One Command)
 ```bash
-# 解决方案：清除缓存并重新安装
-npm cache clean --force
-rm -rf node_modules package-lock.json
-npm install
-```
+# Terminal 1: Start network (choose one)
+# Option 1: Anvil (recommended)
+node scripts/start-networks.js anvil --persistent
 
-**Q: Node.js版本不兼容？**
-A: 确保使用Node.js 18+版本，推荐使用最新LTS版本
-
-### Ganache相关问题
-
-**Q: Ganache GUI下载链接？**
-A: 官方下载地址：https://trufflesuite.com/ganache/
-
-**Q: Ganache GUI推荐设置？**
-A: 
-1. 启动Ganache后选择"Quick Start"
-2. 如需自定义设置，确保端口为8545，网络ID为1337
-3. 推荐设置账户数量为10+
-
-**Q: 如何在Ganache GUI中查看私钥？**
-A: 在账户列表中点击任意账户旁边的🔑（钥匙）图标
-
-**Q: Ganache命令行启动失败？**
-```bash
-# 如果chainId参数错误，使用此命令
+# Option 2: Ganache
 npx ganache --deterministic --accounts 10 --host 0.0.0.0 --port 8545 --networkId 1337 --chain.chainId 1337
+
+# Terminal 2: Deploy everything (match your network choice)
+# For Anvil
+npx hardhat run scripts/deploy-master.js --network anvil
+
+# For Ganache
+npx hardhat run scripts/deploy-master.js --network ganache
+
+# Terminal 3: Start frontend
+npm run dev
 ```
 
-**Q: 端口8545被占用？**
+### Alternative Networks
 ```bash
-# Windows查看端口占用
-netstat -ano | findstr :8545
-# 结束占用进程或更换端口
+# Using Anvil (Recommended)
+node scripts/start-networks.js anvil --persistent
+npx hardhat run scripts/deploy-master.js --network anvil
+
+# Using Hardhat
+npx hardhat node
+npx hardhat run scripts/deploy-master.js --network hardhat
 ```
 
-**Q: Ganache GUI无法启动？**
-A: 
-1. 确保关闭其他使用8545端口的程序
-2. 以管理员身份运行Ganache
-3. 检查防火墙设置是否阻止了Ganache
+## 🔍 Verification
 
-### MetaMask问题
-
-**Q: MetaMask无法连接到本地网络？**
-A: 
-1. 确保Ganache正在运行
-2. 检查网络配置中的RPC URL
-3. 尝试重置MetaMask连接
-
-**Q: 交易失败或Gas费用错误？**
-A: 
-1. 检查账户是否有足够的ETH余额
-2. 确保连接到正确的网络（Chain ID: 1337）
-3. 尝试重置账户交易历史
-
-**Q: 导入账户后看不到余额？**
-A: 
-1. 确保MetaMask已切换到Ganache网络
-2. 检查导入的私钥是否正确
-3. 刷新页面或重启MetaMask
-4. 确认Ganache正在运行且端口正确
-
-**Q: 找不到"添加账户或硬件钱包"选项？**
-A: 
-1. 确保点击的是顶部的账户名称下拉菜单
-2. 对于旧版MetaMask，选项可能是"导入账户"
-3. 更新MetaMask到最新版本
-
-**Q: 私钥导入失败？**
-A: 
-1. 确保私钥格式正确（64位十六进制，以0x开头）
-2. 检查是否有多余的空格或换行符
-3. 确保该私钥之前没有被导入过
-
-### 合约部署问题
-
-**Q: 合约部署失败？**
+### 1. Check Contract Addresses
 ```bash
-# 解决方案：重新编译并部署
-npm run compile
-npx hardhat run scripts/deploy-and-setup-all.js --network ganache
+cat src/contracts/addresses.json
 ```
 
-**Q: 找不到合约地址？**
-A: 检查 `src/contracts/addresses.json` 文件是否存在且包含正确的地址
+### 2. Test Frontend Features
+- Visit `http://localhost:3000`
+- Connect MetaMask
+- Test each module:
+  - Banking: Deposits, loans, staking
+  - DEX: Token swapping, liquidity
+  - NFT: Minting, marketplace
+  - Voting: Proposals, voting
 
-### 前端应用问题
+### 3. Verify Test Data
+- Check account balances
+- Verify NFT collections
+- Test community pools
+- Review voting proposals
 
-**Q: 页面显示"合约未部署"？**
-A: 
-1. 确保已运行部署脚本
-2. 检查MetaMask连接到正确的网络
-3. 刷新页面
+## 🐛 Troubleshooting
 
-**Q: 交易不触发MetaMask弹窗？**
-A: 
-1. 检查MetaMask是否已解锁
-2. 确保网站已连接到MetaMask
-3. 检查浏览器是否阻止了弹窗
+### Common Issues
 
-**Q: NFT购买不成功？**
-A: 
-1. 确保使用正确的账户
-2. 检查NFT是否仍在销售中
-3. 确保账户有足够的ETH余额
+1. **Contract Deployment Fails**
+   ```bash
+   # Clear cache and try again
+   npx hardhat clean
+   npx hardhat compile
+   ```
 
-### 环境重置
+2. **MetaMask Connection Issues**
+   - Ensure correct network configuration
+   - Check account has enough ETH for gas
+   - Reset MetaMask account if needed
 
-**Q: 如何完全重置开发环境？**
-```bash
-# 1. 停止所有服务
-# 2. 重启Ganache
-# 3. 重新部署
-npx hardhat run scripts/deploy-and-setup-all.js --network ganache
-# 4. 在MetaMask中重置账户交易历史
-# 5. 刷新前端页面
-```
+3. **Frontend Not Loading**
+   ```bash
+   # Restart development server
+   npm run dev
+   ```
 
-### 快速状态检查
+4. **Transaction Failures**
+   - Check gas settings
+   - Verify account balances
+   - Ensure contracts are deployed
 
-运行这些命令来验证环境设置：
-```bash
-# 1. 检查Node.js版本
-node --version
+### Get Help
 
-# 2. 检查依赖安装
-npm list --depth=0
+- Check console logs for error messages
+- Verify network connectivity
+- Ensure all dependencies are installed
+- Check contract addresses in `addresses.json`
 
-# 3. 编译合约
-npm run compile
+## 📚 Additional Resources
 
-# 4. 检查Ganache连接
-npx hardhat run scripts/test-network-stability.js --network ganache
-```
+- [Local Networks Guide](LOCAL_NETWORKS_GUIDE.md)
+- [Network Configuration Guide](NETWORK_GUIDE.md)
+- [Anvil Installation Guide](ANVIL_INSTALLATION_GUIDE.md)
+- [Development Scripts Guide](DEVELOPMENT_SCRIPTS_GUIDE.md)
+- [Deployment with Sample Data Guide](DEPLOYMENT_WITH_SAMPLE_DATA_GUIDE.md)
+- [NFT Image Generation Guide](NFT_IMAGE_GENERATION_GUIDE.md)
+- [DEX Functionality Guide](DEX_FUNCTIONALITY_GUIDE.md)
 
-## 💡 提示
+## 🎉 Success!
 
-- **账户管理**: Ganache提供10个预配置账户，可以导入到MetaMask进行测试
-- **数据持久性**: 只要不重启Ganache，数据会保持持久
-- **开发调试**: 可以使用 `console.log` 在智能合约中进行调试
-- **Gas费用**: Ganache网络的Gas费用很低，适合开发测试
+Once everything is set up, you'll have a fully functional Web3 platform with:
+- Complete DeFi banking system
+- Decentralized exchange with liquidity pools
+- NFT minting and marketplace
+- Governance voting system
+- Rich test data for immediate testing
 
-## 🚀 开始使用
-
-部署完成后，您可以：
-
-1. **银行系统**: 存款、取款、申请贷款、质押
-2. **代币工厂**: 创建自定义ERC20代币
-3. **DEX交易**: 交换代币、添加流动性
-4. **NFT市场**: 铸造、购买、出售NFT
-5. **投票治理**: 创建提案、参与投票
-
-享受您的Web3开发之旅！🎉
-
-## 🌐 生产环境配置
-
-### 支持的网络
-
-**测试网络**
-- **Sepolia** (Ethereum testnet)
-- **Mumbai** (Polygon testnet)  
-- **Goerli** (Ethereum testnet)
-
-**主网络**
-- **Ethereum** mainnet
-- **Polygon** mainnet
-- **BSC** (Binance Smart Chain)
-- **Arbitrum** One
-- **Optimism**
-- **Avalanche**
-
-### 环境变量配置
-
-创建 `.env` 文件用于测试网/主网部署：
-
-```env
-# API密钥
-INFURA_PROJECT_ID=your-infura-project-id
-ALCHEMY_API_KEY=your-alchemy-api-key
-
-# 私钥
-PRIVATE_KEY=your-testnet-private-key
-MAINNET_PRIVATE_KEY=your-mainnet-private-key
-
-# 区块链浏览器
-ETHERSCAN_API_KEY=your-etherscan-api-key
-POLYGONSCAN_API_KEY=your-polygonscan-api-key
-BSCSCAN_API_KEY=your-bscscan-api-key
-ARBISCAN_API_KEY=your-arbiscan-api-key
-OPTIMISM_API_KEY=your-optimism-api-key
-SNOWTRACE_API_KEY=your-snowtrace-api-key
-
-# 前端
-NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your-walletconnect-project-id
-```
-
-### 部署命令
-
-```bash
-# 部署到Sepolia测试网
-npx hardhat run scripts/deploy-and-setup-all.js --network sepolia
-
-# 部署到Polygon Mumbai测试网
-npx hardhat run scripts/deploy-and-setup-all.js --network mumbai
-
-# 部署到以太坊主网（谨慎使用）
-npx hardhat run scripts/deploy-and-setup-all.js --network mainnet
-```
-
-### 安全注意事项
-
-⚠️ **重要提醒**：
-- 测试私钥仅用于本地开发，切勿在主网使用
-- 主网部署前请充分测试
-- 妥善保管生产环境私钥
-- 使用硬件钱包进行主网操作 
+Happy building! 🚀

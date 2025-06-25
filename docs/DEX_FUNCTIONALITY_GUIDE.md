@@ -1,128 +1,128 @@
-# DEX (去中心化交易所) 功能指南
+# DEX (Decentralized Exchange) Functionality Guide
 
-## 什么是DEX？
+## What is a DEX?
 
-DEX (Decentralized Exchange) 是去中心化交易所，它是一个基于智能合约的自动化做市商 (AMM - Automated Market Maker) 系统。与传统的中心化交易所不同，DEX 不需要中介机构，用户可以直接通过智能合约进行代币交换。
+DEX (Decentralized Exchange) is a decentralized exchange that is an automated market maker (AMM) system based on smart contracts. Unlike traditional centralized exchanges, DEX does not require intermediary institutions, and users can directly exchange tokens through smart contracts.
 
-## 我们的DEX系统架构
+## Our DEX System Architecture
 
-### 1. 核心组件
+### 1. Core Components
 
-#### DEXPlatform 智能合约
-- **地址**: `0x26626478fE2c71d0DFF0c82a47d3618E7F0F4fDB` (Ganache网络)
-- **功能**: 管理流动性池、处理代币交换、计算价格
+#### DEXPlatform Smart Contract
+- **Address**: `0x26626478fE2c71d0DFF0c82a47d3618E7F0F4fDB` (Ganache network)
+- **Function**: Manage liquidity pools, process token swaps, calculate prices
 
-#### 支持的代币
+#### Supported Tokens
 - **WETH** (Wrapped Ethereum): `0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2`
 - **USDC** (USD Coin): `0xfB392E5667bEd8C8E3eBf15B062e1147841a4F6B`  
 - **DAI** (Dai Stablecoin): `0xcbC9836ee256F1DFe9143b175dFe041191e89c07`
 
-#### 交易池 (Trading Pools)
-1. **WETH/USDC池** (ID: 0)
-2. **WETH/DAI池** (ID: 1) 
-3. **USDC/DAI池** (ID: 2)
+#### Trading Pools
+1. **WETH/USDC Pool** (ID: 0)
+2. **WETH/DAI Pool** (ID: 1) 
+3. **USDC/DAI Pool** (ID: 2)
 
-### 2. DEX工作原理
+### 2. How DEX Works
 
-#### 自动化做市商 (AMM) 模型
-我们的DEX使用恒定乘积公式：`x * y = k`
-- `x` = 池中代币A的数量
-- `y` = 池中代币B的数量  
-- `k` = 恒定值
+#### Automated Market Maker (AMM) Model
+Our DEX uses the constant product formula: `x * y = k`
+- `x` = Amount of token A in the pool
+- `y` = Amount of token B in the pool  
+- `k` = Constant value
 
-#### 价格发现机制
-代币价格由供需关系自动确定：
-- 当用户购买代币A时，池中代币A减少，代币B增加
-- 根据恒定乘积公式，代币A的价格上涨
-- 反之亦然
+#### Price Discovery Mechanism
+Token prices are automatically determined by supply and demand:
+- When users buy token A, token A decreases in the pool, token B increases
+- According to the constant product formula, token A price increases
+- Vice versa
 
-#### 滑点 (Slippage)
-- 大额交易会导致价格滑点
-- 滑点 = (执行价格 - 预期价格) / 预期价格 * 100%
-- 我们的系统会显示预计滑点并允许用户设置最大可接受滑点
+#### Slippage
+- Large trades will cause price slippage
+- Slippage = (Execution Price - Expected Price) / Expected Price * 100%
+- Our system displays estimated slippage and allows users to set maximum acceptable slippage
 
-## 主要功能
+## Main Functions
 
-### 1. 代币交换 (Token Swap)
+### 1. Token Swap
 
-#### 工作流程：
-1. **选择代币对**: 从下拉菜单选择要交换的代币
-2. **输入数量**: 输入要交换的代币数量
-3. **查看报价**: 系统自动计算交换比率和预计收到的代币数量
-4. **确认交易**: 点击"Swap"按钮，MetaMask会弹出确认交易
-5. **等待确认**: 交易在区块链上确认后完成
+#### Workflow:
+1. **Select Token Pair**: Choose tokens to swap from dropdown menus
+2. **Input Amount**: Enter the amount of tokens to swap
+3. **View Quote**: System automatically calculates exchange rate and estimated tokens to receive
+4. **Confirm Transaction**: Click "Swap" button, MetaMask will pop up transaction confirmation
+5. **Wait for Confirmation**: Transaction completes after blockchain confirmation
 
-#### 关键参数：
-- **交换比率**: 基于当前池中代币比例计算
-- **最小输出**: 考虑滑点后的最少收到代币数量
-- **Gas费用**: 执行交易所需的网络费用
+#### Key Parameters:
+- **Exchange Rate**: Calculated based on current token ratio in pool
+- **Minimum Output**: Minimum tokens to receive considering slippage
+- **Gas Fee**: Network fee required to execute transaction
 
-### 2. 流动性管理
+### 2. Liquidity Management
 
-#### 添加流动性：
-- 用户向池中同时提供两种代币
-- 获得LP (Liquidity Provider) 代币作为凭证
-- 赚取交易手续费分成
+#### Add Liquidity:
+- Users provide both tokens to the pool simultaneously
+- Receive LP (Liquidity Provider) tokens as proof
+- Earn trading fee distributions
 
-#### 移除流动性：
-- 燃烧LP代币
-- 按比例取回两种代币
-- 包含累积的手续费收益
+#### Remove Liquidity:
+- Burn LP tokens
+- Withdraw both tokens proportionally
+- Includes accumulated fee earnings
 
-### 3. 价格图表和统计
+### 3. Price Charts and Statistics
 
-#### 实时数据显示：
-- 当前代币价格
-- 24小时价格变化
-- 交易量统计
-- 流动性总值 (TVL)
+#### Real-time Data Display:
+- Current token prices
+- 24-hour price changes
+- Trading volume statistics
+- Total Value Locked (TVL)
 
-## 使用步骤详解
+## Detailed Usage Steps
 
-### 步骤1: 连接钱包
+### Step 1: Connect Wallet
 ```
-1. 确保MetaMask已安装并连接到Ganache网络 (Chain ID: 1337)
-2. 确保账户中有足够的ETH用于Gas费用
-3. 确保账户中有要交换的代币
+1. Ensure MetaMask is installed and connected to Ganache network (Chain ID: 1337)
+2. Ensure account has sufficient ETH for gas fees
+3. Ensure account has tokens to swap
 ```
 
-### 步骤2: 获取测试代币
+### Step 2: Get Test Tokens
 ```bash
-# 运行脚本获取测试代币
+# Run script to get test tokens
 npx hardhat run scripts/deploy-test-tokens.js --network ganache
 ```
 
-### 步骤3: 执行交换
+### Step 3: Execute Swap
 ```
-1. 访问DEX页面
-2. 选择"From"代币 (例如: WETH)
-3. 选择"To"代币 (例如: USDC)  
-4. 输入交换数量
-5. 检查交换详情：
-   - 交换比率
-   - 预计收到数量
-   - 价格影响
-   - 最小输出
-6. 点击"Swap"按钮
-7. 在MetaMask中确认交易
-8. 等待交易确认
+1. Visit DEX page
+2. Select "From" token (e.g.: WETH)
+3. Select "To" token (e.g.: USDC)  
+4. Input swap amount
+5. Check swap details:
+   - Exchange rate
+   - Expected received amount
+   - Price impact
+   - Minimum output
+6. Click "Swap" button
+7. Confirm transaction in MetaMask
+8. Wait for transaction confirmation
 ```
 
-## 技术实现细节
+## Technical Implementation Details
 
-### 智能合约函数
+### Smart Contract Functions
 
-#### 主要交换函数：
+#### Main Swap Function:
 ```solidity
 function swapTokens(
-    uint256 poolId,           // 交易池ID
-    address tokenIn,          // 输入代币地址
-    uint256 amountIn,         // 输入代币数量
-    uint256 minAmountOut      // 最小输出数量
+    uint256 poolId,           // Trading pool ID
+    address tokenIn,          // Input token address
+    uint256 amountIn,         // Input token amount
+    uint256 minAmountOut      // Minimum output amount
 ) external
 ```
 
-#### 价格查询函数：
+#### Price Query Function:
 ```solidity
 function getAmountOut(
     uint256 poolId,
@@ -131,9 +131,9 @@ function getAmountOut(
 ) external view returns (uint256 amountOut)
 ```
 
-### 前端集成
+### Frontend Integration
 
-#### 使用Wagmi进行合约交互：
+#### Using Wagmi for Contract Interaction:
 ```typescript
 const { config } = usePrepareContractWrite({
   address: dexContractAddress,
@@ -145,81 +145,131 @@ const { config } = usePrepareContractWrite({
 const { write: executeSwap } = useContractWrite(config);
 ```
 
-## 安全考虑
+## Security Considerations
 
-### 1. 滑点保护
-- 用户可设置最大可接受滑点
-- 如果实际滑点超过设置值，交易会失败
+### 1. Slippage Protection
+- Users can set maximum acceptable slippage
+- If actual slippage exceeds the set value, transaction will fail
 
-### 2. 前置运行保护
-- 使用最小输出参数防止前置运行攻击
-- 交易确认时检查实际输出是否满足最小要求
+### 2. Front-running Protection
+- Use minimum output parameter to prevent front-running attacks
+- Check actual output meets minimum requirement during transaction confirmation
 
-### 3. 重入攻击防护
-- 智能合约使用ReentrancyGuard
-- 确保外部调用的安全性
+### 3. Reentrancy Attack Protection
+- Smart contract uses ReentrancyGuard
+- Ensure security of external calls
 
-## 费用结构
+## Fee Structure
 
-### 交易手续费
-- **交换费用**: 每笔交换收取0.3%手续费
-- **Gas费用**: 由网络收取，用于执行交易
-- **滑点成本**: 大额交易的隐性成本
+### Trading Fees
+- **Swap Fee**: 0.3% fee charged per swap
+- **Gas Fee**: Network-charged fee for executing transactions
+- **Slippage Cost**: Hidden cost of large trades
 
-### 收益分配
-- 0.25% 分给流动性提供者
-- 0.05% 作为协议费用
+### Revenue Distribution
+- 0.25% goes to liquidity providers
+- 0.05% as protocol fee
 
-## 常见问题
+## Common Questions
 
-### Q: 为什么我的交易失败了？
-A: 可能原因：
-- Gas费用不足
-- 滑点超过设置的最大值
-- 代币余额不足
-- 未授权合约使用代币
+### Q: Why did my transaction fail?
+A: Possible reasons:
+- Insufficient gas fee
+- Slippage exceeded maximum setting
+- Insufficient token balance
+- Contract not authorized to use tokens
 
-### Q: 什么是WETH？
-A: WETH是Wrapped Ethereum，是ETH的ERC-20代币版本，可以在DEX中交易。
+### Q: What is WETH?
+A: WETH is Wrapped Ethereum, an ERC-20 token version of ETH that can be traded on DEX.
 
-### Q: 如何减少滑点？
+### Q: How to reduce slippage?
 A: 
-- 减少交易数量
-- 在流动性充足时交易
-- 增加滑点容忍度设置
+- Reduce trade amount
+- Trade when liquidity is sufficient
+- Increase slippage tolerance setting
 
-### Q: 交易需要多长时间？
-A: 在Ganache本地网络上通常几秒钟，主网可能需要几分钟。
+### Q: How long do transactions take?
+A: Usually a few seconds on Ganache local network, may take several minutes on mainnet.
 
-## 开发和测试
+## Development and Testing
 
-### 本地测试环境
+### Local Test Environment
 ```bash
-# 启动Ganache
+# Start Ganache
 npx ganache --deterministic --accounts 10 --host 0.0.0.0 --port 8545 --networkId 1337 --chain.chainId 1337
 
-# 部署合约
-npx hardhat run scripts/deploy-ganache.js --network ganache
+# Deploy contracts
+npx hardhat run scripts/deploy-master.js --network ganache
 
-# 部署测试代币
-npx hardhat run scripts/deploy-test-tokens.js --network ganache
-
-# 初始化DEX池
-npx hardhat run scripts/init-dex-pools.js --network ganache
+# Start frontend
+npm run dev
 ```
 
-### 调试工具
-- 浏览器开发者工具查看交易日志
-- MetaMask查看交易状态
-- Ganache查看区块链状态
+### Testing Scenarios
 
-## 总结
+#### Basic Swap Testing
+1. Connect MetaMask to Ganache
+2. Import test account with tokens
+3. Execute small amount swap
+4. Verify balance changes
 
-我们的DEX系统提供了完整的去中心化交易功能，包括：
-- 自动化价格发现
-- 流动性管理
-- 多代币支持
-- 安全保护机制
-- 用户友好界面
+#### Slippage Testing
+1. Execute large amount swap
+2. Observe price impact
+3. Test with different slippage settings
+4. Verify slippage protection works
 
-通过智能合约自动化执行，用户可以安全、透明地进行代币交换，无需信任中介机构。 
+#### Liquidity Testing
+1. Add liquidity to pool
+2. Execute swaps
+3. Remove liquidity
+4. Verify fee earnings
+
+## Advanced Features
+
+### Liquidity Pool Analytics
+- Pool composition tracking
+- Fee earning calculations
+- Impermanent loss monitoring
+- Historical performance data
+
+### Price Impact Analysis
+- Real-time price impact calculation
+- Optimal trade size recommendations
+- Multi-hop routing (future feature)
+- Arbitrage opportunity detection
+
+### Risk Management
+- Slippage tolerance configuration
+- Transaction deadline settings
+- Gas price optimization
+- Emergency pause functionality
+
+## API Integration
+
+### Price Feed API
+```typescript
+// Get current price for token pair
+const price = await dexContract.getAmountOut(poolId, tokenIn, amountIn);
+
+// Get pool reserves
+const reserves = await dexContract.getReserves(poolId);
+
+// Calculate price impact
+const priceImpact = calculatePriceImpact(amountIn, reserves);
+```
+
+### Event Monitoring
+```typescript
+// Listen for swap events
+dexContract.on('Swap', (user, tokenIn, tokenOut, amountIn, amountOut) => {
+  console.log('Swap executed:', { user, tokenIn, tokenOut, amountIn, amountOut });
+});
+
+// Listen for liquidity events
+dexContract.on('LiquidityAdded', (user, tokenA, tokenB, amountA, amountB) => {
+  console.log('Liquidity added:', { user, tokenA, tokenB, amountA, amountB });
+});
+```
+
+This comprehensive guide covers all aspects of the DEX functionality. For specific implementation details or troubleshooting, refer to the contract documentation or development team. 

@@ -1,95 +1,95 @@
-# 部署和示例数据初始化指南
+# Deployment and Sample Data Initialization Guide
 
-本指南介绍如何使用更新后的部署脚本来部署合约并初始化示例数据，让用户可以立即开始测试和使用平台功能。
+This guide introduces how to use the updated deployment scripts to deploy contracts and initialize sample data, allowing users to immediately start testing and using platform features.
 
-## 🚀 功能概述
+## 🚀 Feature Overview
 
-更新后的部署系统现在包含5个阶段：
+The updated deployment system now includes 5 phases:
 
-1. **阶段1**: 部署核心合约 (银行、投票等)
-2. **阶段2**: 部署测试代币 (WETH, USDC, DAI等)  
-3. **阶段3**: 部署DeFi合约 (DEX、NFT市场等)
-4. **阶段4**: 基础合约初始化和配置
-5. **阶段5**: 示例数据初始化 ⭐ **新增**
+1. **Phase 1**: Deploy core contracts (banking, voting, etc.)
+2. **Phase 2**: Deploy test tokens (WETH, USDC, DAI, etc.)  
+3. **Phase 3**: Deploy DeFi contracts (DEX, NFT marketplace, etc.)
+4. **Phase 4**: Basic contract initialization and configuration
+5. **Phase 5**: Sample data initialization ⭐ **New**
 
-## 📦 示例数据包含内容
+## 📦 Sample Data Contents
 
-### 🏦 银行模块示例数据
+### 🏦 Banking Module Sample Data
 
-- **社区池**: 6个预设社区池
-  - 社区发展基金
-  - 教育奖学金池
-  - 环保行动基金
-  - 创业孵化池
-  - 医疗援助基金
-  - 艺术文化支持
+- **Community Pools**: 6 preset community pools
+  - Community Development Fund
+  - Education Scholarship Pool
+  - Environmental Action Fund
+  - Startup Incubator Pool
+  - Medical Aid Fund
+  - Arts & Culture Support
 
-- **初始资金**: 
-  - 部署者存款: 2 ETH
-  - 社区池资金: 每池0.1 ETH (前3个池)
+- **Initial Funding**: 
+  - Deployer deposits: 2 ETH
+  - Community pool funds: 0.1 ETH each (first 3 pools)
 
-- **储蓄目标示例**:
-  - 紧急备用金 (1.0 ETH, 90天)
-  - 旅行基金 (0.5 ETH, 180天)
-  - 新设备购买 (0.3 ETH, 60天)
+- **Savings Goals Examples**:
+  - Emergency Fund (1.0 ETH, 90 days)
+  - Travel Fund (0.5 ETH, 180 days)
+  - New Device Purchase (0.3 ETH, 60 days)
 
-- **质押示例**: 0.5 ETH质押
+- **Staking Example**: 0.5 ETH staked
 
-### 💱 DEX模块示例数据
+### 💱 DEX Module Sample Data
 
-- **流动性池**:
-  - WETH/USDC池 (价格: 1 WETH = 2000 USDC)
-  - WETH/DAI池 (价格: 1 WETH = 2000 DAI)  
-  - USDC/DAI池 (价格: 1 USDC = 1 DAI)
+- **Liquidity Pools**:
+  - WETH/USDC Pool (Price: 1 WETH = 2000 USDC)
+  - WETH/DAI Pool (Price: 1 WETH = 2000 DAI)  
+  - USDC/DAI Pool (Price: 1 USDC = 1 DAI)
 
-- **初始流动性**:
+- **Initial Liquidity**:
   - WETH/USDC: 3 WETH + 6000 USDC
   - WETH/DAI: 3 WETH + 6000 DAI
   - USDC/DAI: 3000 USDC + 3000 DAI
 
-- **测试代币铸造**:
-  - 10 WETH (从ETH转换)
-  - USDC和DAI (部署时自动铸造)
+- **Test Token Minting**:
+  - 10 WETH (converted from ETH)
+  - USDC and DAI (automatically minted during deployment)
 
-## 🛠️ 使用方法
+## 🛠️ Usage Methods
 
-### 方法1: 一键部署 (推荐)
+### Method 1: One-Click Deployment (Recommended)
 
 ```bash
-# 启动本地节点
+# Start local node
 npm run node
 
-# 新终端中运行一键部署(包含示例数据)
+# Run one-click deployment (including sample data) in new terminal
 npm run deploy
 ```
 
-或者针对不同网络:
+Or manually deploy to different networks:
 ```bash
-npm run deploy:hardhat    # Hardhat本地网络
-npm run deploy:ganache    # Ganache网络
-npm run deploy:local      # 本地网络
+npx hardhat run scripts/deploy-master.js --network anvil     # Anvil (recommended)
+npx hardhat run scripts/deploy-master.js --network ganache  # Ganache network
+npx hardhat run scripts/deploy-master.js --network hardhat  # Hardhat network
 ```
 
-### 方法2: 分步部署
+### Method 2: Step-by-Step Deployment
 
 ```bash
-# 1. 仅部署合约(不含示例数据)
+# 1. Deploy contracts only (without sample data)
 npm run deploy:old
 
-# 2. 单独添加示例数据
+# 2. Add sample data separately
 npm run init-sample-data
 ```
 
-### 方法3: 重新初始化示例数据
+### Method 3: Re-initialize Sample Data
 
-如果已有部署的合约，但想重新添加示例数据:
+If you already have deployed contracts but want to re-add sample data:
 
 ```bash
-npm run init-sample-data         # 本地网络
-npm run init-sample-data:ganache # Ganache网络
+npm run init-sample-data         # Local network
+npm run init-sample-data:ganache # Ganache network
 ```
 
-## 📋 部署输出示例
+## 📋 Deployment Output Example
 
 ```
 🚀 Starting Complete Deployment
@@ -121,25 +121,25 @@ npm run init-sample-data:ganache # Ganache网络
 ============================================================
 🔧 Stage 4: Initialize Deployed Contracts
 ============================================================
-🏦 初始化银行基础设置...
-✅ 银行基础配置验证完成
+🏦 Initializing basic bank settings...
+✅ Bank basic configuration verification completed
 
 ============================================================
 🎯 Stage 5: Initialize Sample Data
 ============================================================
-🏦 初始化银行示例数据...
-   📦 创建 6 个社区池...
-   ✅ 社区发展基金 创建成功
-   ✅ 教育奖学金池 创建成功
+🏦 Initializing banking sample data...
+   📦 Creating 6 community pools...
+   ✅ Community Development Fund created successfully
+   ✅ Education Scholarship Pool created successfully
    ...
-   💰 部署者进行初始存款...
-   ✅ 存款 2.0 ETH 成功
+   💰 Deployer making initial deposit...
+   ✅ Deposit 2.0 ETH successful
 
-💱 初始化DEX示例数据...
-   🪙 铸造测试代币...
-   ✅ 铸造 10.0 WETH
-   🏊 创建流动性池...
-   ✅ WETH/USDC 池创建成功
+💱 Initializing DEX sample data...
+   🪙 Minting test tokens...
+   ✅ Minted 10.0 WETH
+   🏊 Creating liquidity pools...
+   ✅ WETH/USDC pool created successfully
    ...
 
 🎉 Complete Deployment Finished!
@@ -148,7 +148,7 @@ npm run init-sample-data:ganache # Ganache网络
   Network: Hardhat Local (31337)
   Total Contracts: 8
   Deployment Time: 45.32s
-  Sample Data: ✅ 已初始化
+  Sample Data: ✅ Initialized
 
 📋 Deployed Contracts:
   ✅ EnhancedBank: 0x...
@@ -156,24 +156,24 @@ npm run init-sample-data:ganache # Ganache网络
   ...
 
 📁 Address file updated: src/contracts/addresses.json
-🎯 Sample Data: 银行和DEX已预载示例数据，便于测试和演示
-📖 包含内容:
-   • 银行: 社区池、储蓄目标、质押示例
-   • DEX: 流动性池、代币对、初始交易对价格
+🎯 Sample Data: Banking and DEX pre-loaded with sample data for testing and demonstration
+📖 Contents include:
+   • Banking: Community pools, savings goals, staking examples
+   • DEX: Liquidity pools, token pairs, initial trading pair prices
 ```
 
-## ⚙️ 配置要求
+## ⚙️ Configuration Requirements
 
-### 账户余额要求
+### Account Balance Requirements
 
-- **最小余额**: 1 ETH (用于Gas费)
-- **推荐余额**: 5+ ETH (用于示例数据创建)
-- **银行示例数据**: 需要约3 ETH (2 ETH存款 + 0.3 ETH社区池 + 0.5 ETH质押)
-- **DEX示例数据**: 需要约10 ETH (转换为WETH)
+- **Minimum Balance**: 1 ETH (for gas fees)
+- **Recommended Balance**: 5+ ETH (for sample data creation)
+- **Banking Sample Data**: Requires ~3 ETH (2 ETH deposit + 0.3 ETH community pools + 0.5 ETH staking)
+- **DEX Sample Data**: Requires ~10 ETH (converted to WETH)
 
-### 网络配置
+### Network Configuration
 
-确保hardhat.config.js中配置了正确的网络:
+Ensure hardhat.config.js has correct network configuration:
 
 ```javascript
 networks: {
@@ -182,112 +182,109 @@ networks: {
   },
   ganache: {
     url: "http://127.0.0.1:7545", 
-    accounts: [/* 私钥 */]
+    accounts: [/* private keys */]
   }
 }
 ```
 
-## 🔍 验证部署结果
+## 🔍 Verify Deployment Results
 
-### 1. 检查合约地址文件
+### 1. Check Contract Address File
 
 ```bash
 cat src/contracts/addresses.json
 ```
 
-应该包含所有合约地址和初始化状态。
+Should contain all contract addresses and initialization status.
 
-### 2. 启动前端验证
-
+### 2. Start Frontend Verification
 ```bash
 npm run dev
 ```
 
-访问 http://localhost:3000，检查:
-- 银行模块: 社区池中应该有数据
-- DEX模块: 流动性池中应该有流动性
-- 所有功能都可以正常使用
+Visit `http://localhost:3000` and verify:
+- All contracts are properly connected
+- Sample data is visible in each module
+- Basic operations work correctly
 
-### 3. 手动验证 (可选)
-
-使用Hardhat控制台连接到合约进行验证:
-
+### 3. Manual Testing
 ```bash
-npx hardhat console --network localhost
+# Check account balances
+npx hardhat run scripts/utilities/check-user-data.js --network localhost
+
+# Verify community pools
+npx hardhat run scripts/utilities/check-bank-balance.js --network localhost
+
+# Check DEX liquidity
+npx hardhat run scripts/utilities/check-pool-status.js --network localhost
 ```
 
-```javascript
-// 检查银行
-const bank = await ethers.getContractAt("EnhancedBank", "0x...");
-const activePools = await bank.getActivePools();
-console.log("活跃池数量:", activePools.length);
+## 🎯 Sample Data Details
 
-// 检查DEX  
-const dex = await ethers.getContractAt("DEXPlatform", "0x...");
-const poolIds = await dex.poolIds();
-console.log("DEX池数量:", poolIds.length);
+### Banking Module Data
+- **6 Community Pools** with descriptions and initial funding
+- **3 Savings Goals** with different terms and amounts
+- **Initial Bank Deposit** of 2 ETH from deployer
+- **Staking Position** of 0.5 ETH
+
+### DEX Module Data
+- **3 Trading Pairs** with realistic exchange rates
+- **Initial Liquidity** sufficient for testing swaps
+- **Token Balances** distributed to deployer account
+
+### NFT Module Data (if enabled)
+- **Sample NFTs** across different categories
+- **Marketplace Listings** with various price points
+- **Metadata** properly formatted and accessible
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+**Insufficient Balance Error**
+```bash
+Error: sender doesn't have enough funds to send tx
 ```
+Solution: Ensure deployer account has sufficient ETH (minimum 5 ETH recommended)
 
-## 🚨 故障排除
+**Contract Already Deployed**
+```bash
+Error: Contract already deployed at address
+```
+Solution: Either use existing deployment or reset network state
 
-### 常见问题
+**Sample Data Creation Fails**
+```bash
+Error: execution reverted
+```
+Solution: Check if contracts are properly initialized before adding sample data
 
-1. **余额不足错误**
-   ```
-   ⚠️ 警告: 账户余额可能不足以完成示例数据初始化
-   ```
-   **解决**: 确保部署账户有足够的ETH余额
+### Network Reset Procedure
 
-2. **合约地址文件未找到**
-   ```
-   ❌ 找不到合约地址文件: src/contracts/addresses.json
-   ```
-   **解决**: 先运行基础部署 `npm run deploy:old`
-
-3. **池或目标已存在错误**
-   ```
-   ⚠️ 创建池失败 (可能已存在)
-   ```
-   **解决**: 这是正常的，表示示例数据已经存在
-
-4. **网络连接问题**
-   ```
-   Error: network does not support ENS
-   ```
-   **解决**: 检查网络配置，确保节点正在运行
-
-### 重置和重新部署
-
-如果需要完全重新开始:
+If you need to reset and redeploy:
 
 ```bash
-# 1. 清理编译文件
-npm run clean
-
-# 2. 重新编译
-npm run compile  
-
-# 3. 重启节点 (如果使用Hardhat)
+# 1. Stop current network (Ctrl+C)
+# 2. Restart network
 npm run node
 
-# 4. 重新部署
+# 3. Redeploy with fresh state
 npm run deploy
 ```
 
-## 📚 相关文档
+## 📚 Additional Resources
 
-- [快速设置指南](./QUICK_SETUP_GUIDE.md)
-- [网络配置指南](./NETWORK_GUIDE.md)
-- [DEX功能指南](./DEX_FUNCTIONALITY_GUIDE.md)
-- [NFT图片生成指南](./NFT_IMAGE_GENERATION_GUIDE.md)
+- [Quick Setup Guide](QUICK_SETUP_GUIDE.md)
+- [Network Configuration Guide](NETWORK_GUIDE.md)
+- [Development Scripts Guide](DEVELOPMENT_SCRIPTS_GUIDE.md)
+- [Local Networks Guide](LOCAL_NETWORKS_GUIDE.md)
 
-## 💡 使用提示
+## 🎉 Success Indicators
 
-1. **开发测试**: 使用一键部署可以快速获得完整的测试环境
-2. **演示展示**: 示例数据让平台功能立即可见和可用
-3. **学习研究**: 通过查看示例数据了解各功能模块的使用方式
-4. **自定义扩展**: 可以基于示例数据继续添加更多测试场景
+After successful deployment, you should see:
+- ✅ All contracts deployed and addresses saved
+- ✅ Sample data visible in frontend
+- ✅ Basic operations functional
+- ✅ Test tokens available for experimentation
 
----
-
-**注意**: 示例数据仅用于开发和测试环境，生产环境请谨慎使用。 
+Ready to start building and testing! 🚀 

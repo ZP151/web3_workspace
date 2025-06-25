@@ -1,4 +1,4 @@
-# 🚀 Web3 Smart Contract Platform
+# Web3 Workspace
 
 A comprehensive decentralized application platform featuring banking system, DEX exchange, NFT marketplace, token factory, and governance voting.
 
@@ -26,102 +26,68 @@ A comprehensive decentralized application platform featuring banking system, DEX
 git clone https://github.com/ZP151/web3_workspace.git
 cd web3_workspace
 
-# Install all dependencies (includes all necessary libraries)
-npm install
-
-# If installation fails, try clearing cache and reinstalling
-npm cache clean --force
+# Install dependencies
 npm install
 ```
 
-> 💡 **Note**: First-time installation may take several minutes as it includes all Web3 development libraries
+> 📖 **Detailed Setup**: See [Environment Setup Guide](docs/QUICK_SETUP_GUIDE.md) for troubleshooting
 
-### 2. Install MetaMask Browser Extension
+### 2. Install MetaMask
 
-1. **Download and Install MetaMask**
-   - Chrome: https://chrome.google.com/webstore/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn
-   - Firefox: https://addons.mozilla.org/en-US/firefox/addon/ether-metamask/
-   - Edge: https://microsoftedge.microsoft.com/addons/detail/metamask/ejbalbakoplchlghecdalmeeeajnimhm
+Download and install MetaMask browser extension, then create or import a wallet.
 
-2. **Create or Import Wallet** (follow MetaMask setup guide)
+> 📖 **MetaMask Guide**: See [Network Configuration Guide](docs/NETWORK_GUIDE.md) for detailed setup
 
 ### 3. Start Local Blockchain
 
-**Option 1: Ganache GUI Application (Recommended)**
-1. Download Ganache GUI: https://trufflesuite.com/ganache/
-2. Install and launch Ganache, recommend "Quick Start" for easy setup
-3. If creating custom workspace, configure:
-   - **Port**: 8545
-   - **Network ID**: 1337
-   - **Account Count**: 10
-   - **Mnemonic**: Use fixed mnemonic for consistent addresses
-
-**Option 2: Command Line**
+**Option 1: Anvil (Foundry) - Recommended**
 ```bash
-# If you don't have Ganache GUI, use command line
-npx ganache --deterministic --accounts 10 --host 0.0.0.0 --port 8545 --networkId 1337 --chain.chainId 1337
+# Start Anvil with persistence
+node scripts/start-networks.js anvil --persistent
 ```
 
-### 4. Compile Smart Contracts
+**Option 2: Ganache**
 ```bash
-# Compile all smart contracts
+# Command line version
+npx ganache --deterministic --accounts 10 --host 0.0.0.0 --port 8545
+```
+
+> 📖 **Installation Guides**: 
+> - [Anvil Installation Guide](docs/ANVIL_INSTALLATION_GUIDE.md)
+> - [Local Networks Guide](docs/LOCAL_NETWORKS_GUIDE.md)
+
+### 4. Deploy Contracts
+```bash
+# Compile contracts
 npm run compile
+
+# Deploy to Anvil (recommended)
+npx hardhat run scripts/deploy-master.js --network anvil
+
+# Deploy to Ganache
+npx hardhat run scripts/deploy-master.js --network ganache
+
+# Deploy to Hardhat
+npx hardhat run scripts/deploy-master.js --network hardhat
 ```
 
-### 5. Deploy All Contracts and Data
-```bash
-# Deploy contracts and create test data
-npx hardhat run scripts/deploy-and-setup-all.js --network ganache
-```
+> 📖 **Deployment Guide**: See [Deployment with Sample Data Guide](docs/DEPLOYMENT_WITH_SAMPLE_DATA_GUIDE.md)
 
-### 6. Start Frontend Application
+### 5. Start Frontend
 ```bash
-# Start development server
 npm run dev
 ```
 
 Visit `http://localhost:3000` to start using the platform!
 
-## 🔧 MetaMask Configuration Guide
+## 🔧 MetaMask Configuration
 
-### Step 1: Add Ganache Network
-1. Open MetaMask extension
-2. Click the network dropdown at the top left
-3. Select "Add a custom network"
-4. Fill in the following information:
-   - **Network Name**: `Ganache Local`
-   - **New RPC URL**: `http://localhost:8545`
-   - **Chain ID**: `1337`
-   - **Currency Symbol**: `ETH`
-   - **Block Explorer URL**: Leave empty
-5. Click "Save"
+After starting your local blockchain, configure MetaMask to connect to it:
 
-### Step 2: Import Test Accounts
-Use the following private keys to import Ganache test accounts (each has 1000 ETH):
+1. **Add Local Network** - Add your local blockchain network (Anvil/Ganache)
+2. **Import Test Accounts** - Import private keys from your local blockchain
 
-**How to get private keys:**
-1. Open Ganache GUI application
-2. View all accounts in the main interface
-3. Click the 🔑 icon next to any account to view private key
-4. Copy the private key for MetaMask import
-
-![Ganache Account Interface](resources/image.png)
-
-
-### MetaMask Import Steps:
-1. **Open MetaMask extension**
-2. **Click the account dropdown** (shows current account name)
-3. **Select "Add account or hardware wallet"**
-4. **Choose "Import account"**
-5. **Select "Private Key" in "Select Type"**
-6. **Paste private key into input field**
-7. **Click "Import" button**
-8. **Set a recognizable name** (e.g., "Ganache Account 1")
-9. **Repeat for multiple test accounts**
-
-> 📝 **Suggestion**: Give each account a meaningful name like "Deployer Account", "Test Account 1", etc., for easy identification
-
-> ⚠️ **Security Warning**: These private keys are for local development testing only, never use on mainnet!
+> 📖 **Detailed Guide**: See [Network Configuration Guide](docs/NETWORK_GUIDE.md) for step-by-step instructions
 
 ## 📱 Feature Modules
 
@@ -155,152 +121,85 @@ Use the following private keys to import Ganache test accounts (each has 1000 ET
 - View proposal status and results
 - Transparent governance process
 
-## 🛠️ Development Scripts
+## 🛠️ Development Commands
 
 ```bash
-# Contract related
+# Basic commands
 npm run compile              # Compile smart contracts
-npm run test                # Run contract tests
-
-# Deployment related
-npx hardhat run scripts/deploy-and-setup-all.js --network ganache    # Full deployment
-npx hardhat run scripts/setup-complete-nft-data.js --network ganache # NFT data only
-
-# Network check
-npx hardhat run scripts/test-network-stability.js --network ganache  # Check network status
-
-# Frontend related
 npm run dev                 # Start development server
 npm run build              # Build for production
-npm run start              # Start production server
+
+# Deployment
+npx hardhat run scripts/deploy-master.js --network anvil     # Deploy to Anvil
+npx hardhat run scripts/deploy-master.js --network ganache  # Deploy to Ganache
+npx hardhat run scripts/deploy-master.js --network hardhat  # Deploy to Hardhat
 ```
 
-### 🔍 Quick Status Check
-Run these commands to verify environment setup:
+> 📖 **More Scripts**: See [Development Scripts Guide](docs/DEVELOPMENT_SCRIPTS_GUIDE.md) for all available commands
+
+## 🔄 Network Reset
+
+When your local blockchain resets, simply redeploy:
 ```bash
-# 1. Check Node.js version
-node --version
+# For Anvil
+npx hardhat run scripts/deploy-master.js --network anvil
 
-# 2. Check dependency installation
-npm list --depth=0
+# For Ganache
+npx hardhat run scripts/deploy-master.js --network ganache
 
-# 3. Compile contracts
-npm run compile
-
-# 4. Check Ganache connection
-npx hardhat run scripts/test-network-stability.js --network ganache
+# For Hardhat
+npx hardhat run scripts/deploy-master.js --network hardhat
 ```
 
-## 🔄 Environment Reset
+## 📊 What You Get
 
-When Ganache network is reset, simply run:
-```bash
-npx hardhat run scripts/deploy-and-setup-all.js --network ganache
-```
-
-This will automatically:
-- Redeploy all contracts
-- Create test tokens (USDC, DAI, WETH)
-- Initialize DEX pools
-- Create NFT test data
-- Create voting proposals
-- Update configuration files
-
-## 📊 Test Data
-
-The deployment script automatically creates:
-- **Smart Contracts**: 7 core contracts
-- **Test Tokens**: USDC, DAI, WETH
-- **DEX Pools**: 3 trading pairs with liquidity
-- **NFT Data**: 20 different types of NFTs
-- **Voting Proposals**: 3 governance proposals
+After deployment, you'll have:
+- **7 Smart Contracts** - Banking, DEX, NFT, Token Factory, Voting
+- **Test Tokens** - USDC, DAI, WETH with liquidity pools
+- **Sample NFTs** - 20 different NFTs across various categories
+- **Governance Proposals** - 3 sample voting proposals
 
 ## 🎯 Project Structure
 
 ```
-src/
-├── app/                    # Next.js pages
-│   ├── banking/           # Banking system
-│   ├── dex/              # DEX exchange
-│   ├── nft/              # NFT marketplace
-│   ├── tokens/           # Token factory
-│   └── voting/           # Governance voting
-├── components/            # React components
-├── lib/                  # Utility libraries
-└── config/               # Configuration files
-
-contracts/                 # Smart contracts
-├── EnhancedBank.sol      # Banking contract
-├── DEXPlatform.sol       # DEX contract
-├── NFTMarketplace.sol    # NFT marketplace
-├── TokenFactory.sol      # Token factory
-└── VotingCore.sol        # Voting contract
-
-scripts/                  # Deployment scripts
-├── deploy-and-setup-all.js    # Complete deployment script
-└── setup-complete-nft-data.js # NFT data script
+src/app/                   # Frontend pages (banking, dex, nft, etc.)
+contracts/                 # Smart contracts (.sol files)
+scripts/                   # Deployment and utility scripts
+docs/                      # Detailed documentation
 ```
 
-## 🔒 Security Features
+## 💡 Key Features
 
-- OpenZeppelin security libraries
-- Reentrancy attack protection
-- Access control mechanisms
-- Input validation and boundary checks
-- Safe mathematical operations
+- **Security**: OpenZeppelin libraries, reentrancy protection
+- **Modern Stack**: React 18, Next.js 14, TypeScript, Tailwind CSS
+- **Web3 Integration**: Wagmi, RainbowKit, Ethers.js v6
+- **Development Tools**: Anvil, Ganache, Hardhat support
 
-## 💡 Usage Tips
+## 🆘 Troubleshooting
 
-- **Network Switching**: Use in-app network switching buttons
-- **Account Management**: Switch between different test accounts in MetaMask
-- **Transaction Confirmation**: Watch for MetaMask popups for transaction confirmation
-- **Balance Refresh**: Pages automatically refresh balances after transactions
-- **Error Handling**: Check browser console for detailed error information
+**Common Issues:**
+- Node.js version compatibility
+- Network connection problems
+- MetaMask configuration
+- Contract deployment failures
 
-## 📚 Technology Stack
+> 📖 **Detailed Solutions**: See [Quick Setup Guide](docs/QUICK_SETUP_GUIDE.md) for troubleshooting
 
-- **Frontend**: React 18, Next.js 14, TypeScript, Tailwind CSS
-- **Web3**: Wagmi, RainbowKit, Ethers.js v6
-- **Smart Contracts**: Solidity 0.8.x, Hardhat, OpenZeppelin
-- **Development Tools**: Ganache, MetaMask, Hardhat Network
+## 📄 Documentation
 
-## 🆘 Common Issues
-
-**Setup Problems?**
-- Ensure Node.js 18+ is installed
-- Clear npm cache: `npm cache clean --force`
-- Check Ganache is running on port 8545
-
-**MetaMask Issues?**
-- Verify network is set to Chain ID 1337
-- Ensure accounts are imported correctly
-- Check sufficient ETH balance for transactions
-
-**Contract Deployment Fails?**
-```bash
-npm run compile
-npx hardhat run scripts/deploy-and-setup-all.js --network ganache
-```
-
-> 📖 **Need Help?** See detailed troubleshooting in [`docs/QUICK_SETUP_GUIDE.md`](docs/QUICK_SETUP_GUIDE.md)
+- 📋 [Quick Setup Guide](docs/QUICK_SETUP_GUIDE.md) - Detailed installation and troubleshooting
+- 🔧 [Anvil Installation Guide](docs/ANVIL_INSTALLATION_GUIDE.md) - Install Foundry and Anvil
+- 🌐 [Network Configuration Guide](docs/NETWORK_GUIDE.md) - MetaMask and network setup
+- 🚀 [Deployment Guide](docs/DEPLOYMENT_WITH_SAMPLE_DATA_GUIDE.md) - Contract deployment and scripts
+- 🏪 [Local Networks Guide](docs/LOCAL_NETWORKS_GUIDE.md) - Anvil vs Ganache comparison
+- 🔄 [DEX Functionality Guide](docs/DEX_FUNCTIONALITY_GUIDE.md) - DEX features and usage
 
 ## 🌐 Multi-Chain Support
 
-Deploy to testnets and mainnets:
-- **Testnets**: Sepolia, Mumbai, Goerli
-- **Mainnets**: Ethereum, Polygon, BSC, Arbitrum, Optimism, Avalanche
+Supports deployment to testnets and mainnets including Ethereum, Polygon, BSC, Arbitrum, and more.
 
-```bash
-# Deploy to testnet
-npx hardhat run scripts/deploy-and-setup-all.js --network sepolia
-```
-
-> ⚙️ **Production Setup**: See environment configuration in [`docs/QUICK_SETUP_GUIDE.md`](docs/QUICK_SETUP_GUIDE.md)
-
-## 📄 Detailed Documentation
-
-See [`docs/QUICK_SETUP_GUIDE.md`](docs/QUICK_SETUP_GUIDE.md) for more detailed setup instructions.
+> 📖 **Production Setup**: See [Network Configuration Guide](docs/NETWORK_GUIDE.md)
 
 ---
 
-**Start Your Web3 Development Journey!** 🚀 
+**Start Your Web3 Development Journey!** 🚀

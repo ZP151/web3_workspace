@@ -46,7 +46,16 @@ npm install
 
 ### 3. 启动本地区块链
 
-**方式一：Ganache GUI应用（推荐）**
+**方式一：Anvil (Foundry) - 推荐**
+```bash
+# 启动Anvil并启用持久化（重启时保存状态）
+node scripts/start-networks.js anvil --persistent
+
+# 如果存在anvil-state.json文件，会自动重载数据
+# 包括已部署的合约、账户余额和交易历史
+```
+
+**方式二：Ganache GUI应用**
 1. 下载Ganache GUI: https://trufflesuite.com/ganache/
 2. 安装并启动Ganache，推荐quick start，就不用下一步了
 3. 创建新的工作区，设置：
@@ -55,7 +64,7 @@ npm install
    - **账户数量**: 10
    - **助记词**: 使用固定助记词以保持地址一致
 
-**方式二：命令行启动**
+**方式三：命令行启动**
 ```bash
 # 如果没有Ganache GUI，可以用命令行
 npx ganache --deterministic --accounts 10 --host 0.0.0.0 --port 8545 --networkId 1337 --chain.chainId 1337
@@ -69,8 +78,14 @@ npm run compile
 
 ### 5. 一键部署所有合约和数据
 ```bash
-# 部署合约并创建测试数据
-npx hardhat run scripts/deploy-and-setup-all.js --network ganache
+# Anvil网络（推荐）
+npx hardhat run scripts/deploy-master.js --network anvil
+
+# Ganache网络
+npx hardhat run scripts/deploy-master.js --network ganache
+
+# Hardhat网络
+npx hardhat run scripts/deploy-master.js --network hardhat
 ```
 
 ### 6. 启动前端应用
@@ -156,8 +171,9 @@ npm run compile              # 编译智能合约
 npm run test                # 运行合约测试
 
 # 部署相关
-npx hardhat run scripts/deploy-and-setup-all.js --network ganache    # 完整部署
-npx hardhat run scripts/setup-complete-nft-data.js --network ganache # 仅NFT数据
+npx hardhat run scripts/deploy-master.js --network anvil      # 部署到Anvil
+npx hardhat run scripts/deploy-master.js --network ganache   # 部署到Ganache
+npx hardhat run scripts/deploy-master.js --network hardhat   # 部署到Hardhat
 
 # 网络检查
 npx hardhat run scripts/test-network-stability.js --network ganache  # 检查网络状态
@@ -189,9 +205,16 @@ npx hardhat run scripts/test-network-stability.js --network ganache
 
 ## 🔄 重置环境
 
-当Ganache网络重置后，只需运行：
+当本地网络重置后，只需运行：
 ```bash
-npx hardhat run scripts/deploy-and-setup-all.js --network ganache
+# Anvil网络（推荐）
+npx hardhat run scripts/deploy-master.js --network anvil
+
+# Ganache网络
+npx hardhat run scripts/deploy-master.js --network ganache
+
+# Hardhat网络  
+npx hardhat run scripts/deploy-master.js --network hardhat
 ```
 
 这会自动：
@@ -233,8 +256,8 @@ contracts/                 # 智能合约
 └── VotingCore.sol        # 投票合约
 
 scripts/                  # 部署脚本
-├── deploy-and-setup-all.js    # 完整部署脚本
-└── setup-complete-nft-data.js # NFT数据脚本
+├── deploy-master.js           # 通用部署脚本（支持多网络）
+└── deployment/               # 部署模块化脚本
 ```
 
 ## 🔒 安全特性
@@ -347,7 +370,7 @@ A:
 ```bash
 # 解决方案：重新编译并部署
 npm run compile
-npx hardhat run scripts/deploy-and-setup-all.js --network ganache
+npx hardhat run scripts/deploy-master.js --network ganache
 ```
 
 **Q: 找不到合约地址？**
@@ -378,9 +401,11 @@ A:
 **Q: 如何完全重置开发环境？**
 ```bash
 # 1. 停止所有服务
-# 2. 重启Ganache
-# 3. 重新部署
-npx hardhat run scripts/deploy-and-setup-all.js --network ganache
+# 2. 重启Ganache (或Anvil/Hardhat)
+# 3. 重新部署 (根据使用的网络选择)
+npx hardhat run scripts/deploy-master.js --network ganache  # Ganache
+npx hardhat run scripts/deploy-master.js --network anvil    # Anvil
+npx hardhat run scripts/deploy-master.js --network hardhat  # Hardhat
 # 4. 在MetaMask中重置账户交易历史
 # 5. 刷新前端页面
 ```
@@ -391,4 +416,4 @@ npx hardhat run scripts/deploy-and-setup-all.js --network ganache
 
 ---
 
-**开始您的Web3开发之旅！** 🚀 
+**开始您的Web3开发之旅！** 🚀
