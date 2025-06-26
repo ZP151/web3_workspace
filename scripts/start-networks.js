@@ -5,6 +5,8 @@ const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
 
+//npx hardhat run scripts/deploy-master.js --network anvil
+
 // Network configuration options
 const NETWORKS = {
   hardhat: {
@@ -59,6 +61,12 @@ function printUsage() {
   console.log('  8546 - Anvil Network (Persistent)');
   console.log('  8547 - Fork Network');
   console.log('  7545 - Ganache Network');
+  console.log('\n⚠️  持久化网络常见问题:');
+  console.log('如果使用 --persistent 后前端返回空数据，可能是地址不匹配导致的。');
+  console.log('解决方案:');
+  console.log('  1. 检查地址匹配: node scripts/utilities/check-anvil-addresses.js');
+  console.log('  2. 重新开始: node scripts/start-networks.js anvil --fresh');
+  console.log('  3. 重新部署: npx hardhat run scripts/deploy-master.js --network anvil');
 }
 
 function buildAnvilCommand(options = {}) {
@@ -75,11 +83,18 @@ function buildAnvilCommand(options = {}) {
   // Add fixed mnemonic for consistent accounts
   cmd += ' --mnemonic "test test test test test test test test test test test junk"';
   
-  // Persistence support
+  // Persistence support with address mismatch warning
   if (options.persistent && !options.fresh) {
     if (fs.existsSync(stateFile)) {
-      cmd += ` --load-state ${stateFile}`;
       console.log('📁 Loading saved state file:', stateFile);
+      console.log('⚠️  注意：持久化模式可能导致合约地址不匹配！');
+      console.log('   如果前端返回空数据，请考虑：');
+      console.log('   1. 使用 --fresh 参数重新开始');
+      console.log('   2. 手动更新 src/contracts/addresses.json 中的地址');
+      console.log('   3. 重新部署合约以匹配当前地址配置');
+      cmd += ` --load-state ${stateFile}`;
+    } else {
+      console.log('📁 No existing state file found, starting fresh');
     }
     cmd += ` --dump-state ${stateFile}`;
   }

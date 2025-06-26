@@ -65,10 +65,7 @@ npm run compile
 npx hardhat run scripts/deploy-master.js --network anvil
 
 # Deploy to Ganache
-npx hardhat run scripts/deploy-master.js --network ganache
-
-# Deploy to Hardhat
-npx hardhat run scripts/deploy-master.js --network hardhat
+node scripts/deployment/deploy-to-ganache.js
 ```
 
 > 📖 **Deployment Guide**: See [Deployment with Sample Data Guide](docs/DEPLOYMENT_WITH_SAMPLE_DATA_GUIDE.md)
@@ -131,8 +128,7 @@ npm run build              # Build for production
 
 # Deployment
 npx hardhat run scripts/deploy-master.js --network anvil     # Deploy to Anvil
-npx hardhat run scripts/deploy-master.js --network ganache  # Deploy to Ganache
-npx hardhat run scripts/deploy-master.js --network hardhat  # Deploy to Hardhat
+node scripts/deployment/deploy-to-ganache.js # Deploy to Ganache
 ```
 
 > 📖 **More Scripts**: See [Development Scripts Guide](docs/DEVELOPMENT_SCRIPTS_GUIDE.md) for all available commands
@@ -145,10 +141,7 @@ When your local blockchain resets, simply redeploy:
 npx hardhat run scripts/deploy-master.js --network anvil
 
 # For Ganache
-npx hardhat run scripts/deploy-master.js --network ganache
-
-# For Hardhat
-npx hardhat run scripts/deploy-master.js --network hardhat
+node scripts/deployment/deploy-to-ganache.js
 ```
 
 ## 📊 What You Get

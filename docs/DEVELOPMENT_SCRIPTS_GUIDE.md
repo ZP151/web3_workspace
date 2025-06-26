@@ -1,509 +1,399 @@
-# Development Scripts Guide
+# 开发脚本指南
 
-## Overview
+## 概述
 
-This guide provides detailed information about all available development scripts in the project, including contract deployment, network management, frontend development, and testing-related commands.
+本指南详细介绍项目中所有可用的开发脚本，包括合约部署、网络管理、前端开发和测试相关的命令。
 
-## 📦 Contract-Related Scripts
+## 📦 合约相关脚本
 
-### Contract Compilation
+### 合约编译
 ```bash
-# Compile all contracts
+# 编译所有合约
 npm run compile
 
-# Or use Hardhat directly
+# 或使用 Hardhat 直接编译
 npx hardhat compile
 
-# Clean compilation cache
+# 清理编译缓存
 npx hardhat clean
 ```
 
-### Contract Deployment
+### 合约部署
 
-**Complete Deployment (Recommended)**
+**完整部署（推荐）**
 ```bash
-# Deploy all contracts and test data
+# 部署所有合约和测试数据
 npm run deploy:full
 
-# Equivalent command
+# 等效命令
 node scripts/deploy-with-sample-data.js
 ```
 
-**Step-by-Step Deployment**
+**分步部署**
 ```bash
-# Deploy contracts only (without test data)
+# 仅部署合约（不包含测试数据）
 npm run deploy:contracts
 
-# Deploy NFT test data only
+# 仅部署NFT测试数据
 npm run deploy:nft-data
 
-# Deploy to specific network
+# 部署到特定网络
 npm run deploy:full -- --network anvil
 npm run deploy:full -- --network ganache
 ```
 
-### Contract Verification
+### 合约验证
 ```bash
-# Verify contract deployment status
+# 验证合约部署状态
 npm run verify:contracts
 
-# Check contract addresses
+# 检查合约地址
 node scripts/check-contracts.js
 
-# Verify contract functionality
+# 验证合约功能
 node scripts/test-contracts.js
 ```
 
-## 🌐 Network Management Scripts
+## 🌐 网络管理脚本
 
-### Start Local Networks
+### 启动本地网络
 
-**Anvil Network**
+**Anvil网络**
 ```bash
-# Start Anvil (recommended)
+# 启动Anvil（推荐）
 npm run start:anvil
 
-# Start with persistence
+# 带持久化启动
 node scripts/start-networks.js anvil --persistent
 
-# Start with custom configuration
+# 自定义配置启动
 node scripts/start-networks.js anvil --port 8546 --accounts 20
 ```
 
-**Ganache Network**
+**Ganache网络**
 ```bash
-# Start Ganache GUI
+# 启动Ganache GUI
 npm run start:ganache
 
-# Start Ganache CLI
+# 启动Ganache CLI
 node scripts/start-networks.js ganache
 
-# Custom configuration
+# 自定义配置
 npx ganache --deterministic --accounts 10 --host 0.0.0.0
 ```
 
-**Hardhat Network**
+**Hardhat网络**
 ```bash
-# Start Hardhat node
+# 启动Hardhat节点
 npm run start:hardhat
 
-# Or use directly
+# 或直接使用
 npx hardhat node
 ```
 
-### Network Status Check
+### 网络状态检查
 ```bash
-# Check all network status
+# 检查所有网络状态
 npm run check:networks
 
-# Check specific network
+# 检查特定网络
 node scripts/check-network.js --network anvil
 node scripts/check-network.js --network ganache
 node scripts/check-network.js --network hardhat
 
-# Quick status check
+# 快速状态检查
 npm run status
 ```
 
-### Network Reset
+### 网络重置
 ```bash
-# Reset Anvil network
+# 重置Anvil网络
 npm run reset:anvil
 
-# Reset Ganache network
+# 重置Ganache网络
 npm run reset:ganache
 
-# Clean all network data
+# 清理所有网络数据
 npm run clean:networks
 ```
 
-## 🎨 Frontend Development Scripts
+## 🎨 前端开发脚本
 
-### Development Server
+### 开发服务器
 ```bash
-# Start frontend development server
+# 启动前端开发服务器
 npm run dev
 
-# Start on specific port
+# 指定端口启动
 npm run dev -- --port 3001
 
-# Start and automatically open browser
+# 启动并自动打开浏览器
 npm run dev:open
 ```
 
-### Build and Deploy
+### 构建和部署
 ```bash
-# Build production version
+# 构建生产版本
 npm run build
 
-# Preview build results
+# 预览构建结果
 npm run preview
 
-# Build and analyze bundle size
+# 构建并分析包大小
 npm run build:analyze
 ```
 
-### Code Quality
+### 代码质量
 ```bash
-# Run ESLint check
+# 运行ESLint检查
 npm run lint
 
-# Auto-fix ESLint issues
+# 自动修复ESLint问题
 npm run lint:fix
 
-# Run Prettier formatting
+# 运行Prettier格式化
 npm run format
 
-# Type checking (if using TypeScript)
+# 类型检查（如果使用TypeScript）
 npm run type-check
 ```
 
-## 🧪 Testing Scripts
+## 🧪 测试脚本
 
-### Contract Testing
+### 合约测试
 ```bash
-# Run all contract tests
+# 运行所有合约测试
 npm run test
 
-# Run specific test files
+# 运行特定测试文件
 npx hardhat test test/Banking.test.js
 npx hardhat test test/DEX.test.js
 npx hardhat test test/NFTMarketplace.test.js
 
-# Run tests with coverage report
+# 运行测试并生成覆盖率报告
 npm run test:coverage
 ```
 
-### Frontend Testing
+### 前端测试
 ```bash
-# Run frontend unit tests
+# 运行前端单元测试
 npm run test:frontend
 
-# Run E2E tests
+# 运行E2E测试
 npm run test:e2e
 
-# Run tests in watch mode
+# 监听模式运行测试
 npm run test:watch
 ```
 
-### Integration Testing
+### 集成测试
 ```bash
-# Run complete integration tests
+# 运行完整集成测试
 npm run test:integration
 
-# Test specific function modules
+# 测试特定功能模块
 npm run test:banking
 npm run test:dex
 npm run test:nft
 npm run test:governance
 ```
 
-## 🛠️ Utility Scripts
+## 🔧 实用工具脚本
 
-### Data Management
+### 数据管理
 ```bash
-# Reset all data
-npm run reset:data
+# 生成测试数据
+node scripts/generate-test-data.js
 
-# Clear NFT data
-npm run clear:nft-data
+# 清理测试数据
+node scripts/clean-test-data.js
 
-# Clear user data
-npm run clear:user-data
+# 备份合约状态
+node scripts/backup-state.js
 
-# Backup current state
-npm run backup:state
+# 恢复合约状态
+node scripts/restore-state.js
 ```
 
-### Development Tools
+### 账户管理
 ```bash
-# Generate documentation
-npm run docs:generate
+# 生成新的测试账户
+node scripts/generate-accounts.js
 
-# Start documentation server
-npm run docs:serve
+# 查看账户余额
+node scripts/check-balances.js
 
-# Update contract addresses
-npm run update:addresses
-
-# Check project health
-npm run health:check
+# 转账测试ETH
+node scripts/transfer-eth.js --to 0x... --amount 10
 ```
 
-### Debugging Scripts
+### 合约交互
 ```bash
-# Debug network connection
-npm run debug:network
+# 与Banking合约交互
+node scripts/interact-banking.js
 
-# Debug contract interactions
-npm run debug:contracts
+# 与DEX合约交互
+node scripts/interact-dex.js
 
-# Debug frontend issues
-npm run debug:frontend
+# 与NFT市场交互
+node scripts/interact-nft.js
 
-# View logs
-npm run logs:view
+# 与治理合约交互
+node scripts/interact-governance.js
 ```
 
-## 🔧 Configuration Scripts
+## 📊 监控和日志
 
-### Environment Setup
+### 日志查看
 ```bash
-# Setup development environment
-npm run setup:dev
+# 查看合约事件日志
+node scripts/view-logs.js
 
-# Setup production environment
-npm run setup:prod
+# 监听实时事件
+node scripts/monitor-events.js
 
-# Setup testing environment
-npm run setup:test
-
-# Install all dependencies
-npm run install:all
+# 查看交易历史
+node scripts/view-transactions.js
 ```
 
-### Network Configuration
+### 性能监控
 ```bash
-# Configure Anvil
-npm run config:anvil
+# 检查Gas使用情况
+node scripts/gas-analysis.js
 
-# Configure Ganache
-npm run config:ganache
+# 监控网络性能
+node scripts/network-monitor.js
 
-# Configure Hardhat
-npm run config:hardhat
-
-# Reset network configuration
-npm run config:reset
+# 生成性能报告
+node scripts/performance-report.js
 ```
 
-## 📊 Monitoring and Analytics
+## 🚀 一键操作脚本
 
-### Performance Monitoring
+### 快速启动
 ```bash
-# Monitor contract performance
-npm run monitor:contracts
-
-# Monitor frontend performance
-npm run monitor:frontend
-
-# Monitor network performance
-npm run monitor:network
-
-# Generate performance report
-npm run report:performance
+# 一键启动完整开发环境
+npm run dev:full
+# 等效于:
+# 1. 启动Anvil网络
+# 2. 部署所有合约
+# 3. 生成测试数据
+# 4. 启动前端服务器
 ```
 
-### Analytics Scripts
+### 快速重置
 ```bash
-# Analyze contract usage
-npm run analyze:contracts
-
-# Analyze user behavior
-npm run analyze:users
-
-# Analyze transaction patterns
-npm run analyze:transactions
-
-# Generate analytics report
-npm run report:analytics
+# 一键重置开发环境
+npm run reset:all
+# 等效于:
+# 1. 停止所有网络
+# 2. 清理缓存和数据
+# 3. 重新启动网络
+# 4. 重新部署合约
 ```
 
-## 🚀 Deployment Scripts
-
-### Local Deployment
+### 快速测试
 ```bash
-# Quick local deployment
-npm run deploy:local
-
-# Full local setup
-npm run setup:local
-
-# Local with sample data
-npm run deploy:local:sample
+# 一键运行所有测试
+npm run test:all
+# 等效于:
+# 1. 合约测试
+# 2. 前端测试
+# 3. 集成测试
+# 4. 生成报告
 ```
 
-### Testnet Deployment
+## 🔍 故障排除脚本
+
+### 诊断工具
 ```bash
-# Deploy to Sepolia
-npm run deploy:sepolia
+# 系统诊断
+node scripts/diagnose.js
 
-# Deploy to Mumbai
-npm run deploy:mumbai
+# 网络连接诊断
+node scripts/diagnose-network.js
 
-# Deploy to Goerli
-npm run deploy:goerli
+# 合约状态诊断
+node scripts/diagnose-contracts.js
+
+# 依赖检查
+node scripts/check-dependencies.js
 ```
 
-### Production Deployment
+### 修复工具
 ```bash
-# Deploy to mainnet (use with caution)
-npm run deploy:mainnet
+# 自动修复常见问题
+node scripts/auto-fix.js
 
-# Deploy to Polygon
-npm run deploy:polygon
+# 重新安装依赖
+npm run reinstall
 
-# Deploy to Arbitrum
-npm run deploy:arbitrum
+# 清理并重建
+npm run clean:all && npm run build
 ```
 
-## 📋 Script Categories
+## 📝 自定义脚本
 
-### Essential Scripts (Daily Use)
-```bash
-npm run dev              # Start development server
-npm run compile          # Compile contracts
-npm run deploy:full      # Complete deployment
-npm run test             # Run tests
-npm run lint            # Code quality check
+### 创建自定义脚本
+
+在 `scripts/` 目录下创建新的脚本文件：
+
+```javascript
+// scripts/my-custom-script.js
+const { ethers } = require('hardhat');
+
+async function main() {
+  // 你的自定义逻辑
+  console.log('执行自定义脚本...');
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
 ```
 
-### Network Scripts
-```bash
-npm run start:anvil      # Start Anvil
-npm run start:ganache    # Start Ganache
-npm run start:hardhat    # Start Hardhat
-npm run check:networks   # Check all networks
-npm run reset:anvil      # Reset Anvil
+### 在package.json中添加脚本
+
+```json
+{
+  "scripts": {
+    "my-script": "node scripts/my-custom-script.js"
+  }
+}
 ```
 
-### Development Scripts
+## 🔧 脚本参数说明
+
+### 常用参数
+- `--network <name>`: 指定网络（anvil, ganache, hardhat）
+- `--port <number>`: 指定端口号
+- `--accounts <number>`: 指定账户数量
+- `--persistent`: 启用数据持久化
+- `--verbose`: 启用详细输出
+- `--dry-run`: 模拟运行（不执行实际操作）
+
+### 示例用法
 ```bash
-npm run build           # Build production
-npm run preview         # Preview build
-npm run format          # Format code
-npm run type-check      # Check types
-npm run docs:generate   # Generate docs
+# 在特定网络上部署
+node scripts/deploy-with-sample-data.js --network anvil
+
+# 启动网络并指定端口
+node scripts/start-networks.js anvil --port 8547
+
+# 详细模式运行测试
+npm run test -- --verbose
 ```
 
-### Testing Scripts
-```bash
-npm run test:coverage   # Test with coverage
-npm run test:frontend   # Frontend tests
-npm run test:e2e        # End-to-end tests
-npm run test:integration # Integration tests
-```
+## 📚 相关文档
 
-### Utility Scripts
-```bash
-npm run setup:dev       # Setup development
-npm run reset:data      # Reset data
-npm run backup:state    # Backup state
-npm run health:check    # Check health
-npm run update:addresses # Update addresses
-```
+- [快速设置指南](./QUICK_SETUP_GUIDE.md)
+- [Anvil安装指南](./ANVIL_INSTALLATION_GUIDE.md)
+- [网络配置指南](./NETWORK_GUIDE.md)
+- [部署指南](./DEPLOYMENT_WITH_SAMPLE_DATA_GUIDE.md)
 
-## 🎯 Best Practices
+---
 
-### Script Usage Guidelines
-1. **Always start with network setup**
-   ```bash
-   npm run start:anvil
-   ```
-
-2. **Deploy contracts before frontend**
-   ```bash
-   npm run deploy:full
-   npm run dev
-   ```
-
-3. **Run tests regularly**
-   ```bash
-   npm run test
-   npm run lint
-   ```
-
-4. **Use appropriate network for testing**
-   - Anvil: For persistent development
-   - Hardhat: For quick testing
-   - Ganache: For GUI debugging
-
-### Common Workflows
-
-**Daily Development**
-```bash
-# Terminal 1: Start network
-npm run start:anvil
-
-# Terminal 2: Deploy and start frontend
-npm run deploy:full
-npm run dev
-
-# Terminal 3: Run tests (optional)
-npm run test:watch
-```
-
-**Testing Workflow**
-```bash
-# Run all tests
-npm run test
-npm run test:frontend
-npm run test:e2e
-
-# Check code quality
-npm run lint
-npm run type-check
-```
-
-**Deployment Workflow**
-```bash
-# Clean previous deployment
-npm run clean:networks
-
-# Start fresh network
-npm run start:anvil --fresh
-
-# Deploy with sample data
-npm run deploy:full
-
-# Verify deployment
-npm run verify:contracts
-```
-
-## 🔍 Troubleshooting
-
-### Common Script Issues
-
-**Script Not Found**
-```bash
-# Check if script exists in package.json
-npm run
-
-# Update npm and dependencies
-npm install
-```
-
-**Permission Issues**
-```bash
-# On Unix systems, ensure scripts are executable
-chmod +x scripts/*.js
-
-# Run with appropriate permissions
-sudo npm run [script-name]
-```
-
-**Network Issues**
-```bash
-# Check network status
-npm run check:networks
-
-# Reset network configuration
-npm run config:reset
-
-# Restart networks
-npm run reset:anvil
-```
-
-### Script Debugging
-```bash
-# Run scripts with verbose output
-npm run [script-name] -- --verbose
-
-# Debug specific script
-node --inspect scripts/[script-name].js
-
-# Check script logs
-npm run logs:view
-```
-
-This comprehensive guide covers all available development scripts in the project. For specific script issues, refer to the individual script documentation or check the troubleshooting section.
+**提示**: 所有脚本都支持 `--help` 参数来查看详细的使用说明。例如：`node scripts/deploy-with-sample-data.js --help`

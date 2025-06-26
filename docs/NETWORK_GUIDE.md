@@ -1,341 +1,356 @@
-# Network Configuration Guide
+# 网络配置指南
 
-## Overview
+## 概述
 
-This guide provides detailed instructions on configuring MetaMask to connect to different local blockchain networks, including setup methods for Anvil, Ganache, and Hardhat networks.
+本指南详细介绍如何配置MetaMask连接到不同的本地区块链网络，包括Anvil、Ganache和Hardhat网络的设置方法。
 
-## 🦊 MetaMask Installation and Setup
+## 🦊 MetaMask安装和设置
 
-### 1. Install MetaMask
+### 1. 安装MetaMask
 
-**Chrome Browser**
-1. Visit [Chrome Web Store](https://chrome.google.com/webstore/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn)
-2. Click "Add to Chrome"
-3. Confirm installation
+**Chrome浏览器**
+1. 访问 [Chrome Web Store](https://chrome.google.com/webstore/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn)
+2. 点击"添加至Chrome"
+3. 确认安装
 
-**Firefox Browser**
-1. Visit [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/ether-metamask/)
-2. Click "Add to Firefox"
-3. Confirm installation
+**Firefox浏览器**
+1. 访问 [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/ether-metamask/)
+2. 点击"添加到Firefox"
+3. 确认安装
 
-**Edge Browser**
-1. Visit [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/metamask/ejbalbakoplchlghecdalmeeeajnimhm)
-2. Click "Get"
-3. Confirm installation
+**Edge浏览器**
+1. 访问 [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/metamask/ejbalbakoplchlghecdalmeeeajnimhm)
+2. 点击"获取"
+3. 确认安装
 
-### 2. Create or Import Wallet
+### 2. 创建或导入钱包
 
-**New Users - Create Wallet**
-1. Click "Create New Wallet"
-2. Set password (at least 8 characters)
-3. Backup seed phrase (12 words)
-4. Confirm seed phrase
-5. Complete setup
+**新用户 - 创建钱包**
+1. 点击"创建新钱包"
+2. 设置密码（至少8位字符）
+3. 备份助记词（12个单词）
+4. 确认助记词
+5. 完成设置
 
-**Existing Users - Import Wallet**
-1. Click "Import Existing Wallet"
-2. Enter 12-word seed phrase
-3. Set new password
-4. Complete import
+**现有用户 - 导入钱包**
+1. 点击"导入现有钱包"
+2. 输入12个助记词
+3. 设置新密码
+4. 完成导入
 
-## 🌐 Local Network Configuration
+## 🌐 本地网络配置
 
-### Anvil Network Configuration
+### Anvil网络配置
 
-**Network Information**
-- **Network Name**: `Anvil Local`
+**网络信息**
+- **网络名称**: `Anvil Local`
 - **RPC URL**: `http://localhost:8546`
-- **Chain ID**: `31338`
-- **Currency Symbol**: `ETH`
-- **Block Explorer URL**: Leave empty
+- **链ID**: `31338`
+- **货币符号**: `ETH`
+- **区块浏览器URL**: 留空
 
-**Adding Steps**
-1. Open MetaMask extension
-2. Click network dropdown in top right
-3. Select "Add Network"
-4. Click "Add Network Manually"
-5. Fill in the above network information
-6. Click "Save"
+**添加步骤**
+1. 打开MetaMask扩展
+2. 点击右上角网络下拉菜单
+3. 选择"添加网络"
+4. 点击"手动添加网络"
+5. 填入上述网络信息
+6. 点击"保存"
 
-### Ganache Network Configuration
+### Ganache网络配置
 
-**Network Information**
-- **Network Name**: `Ganache Local`
+**网络信息**
+- **网络名称**: `Ganache Local`
 - **RPC URL**: `http://localhost:8545`
-- **Chain ID**: `1337`
-- **Currency Symbol**: `ETH`
-- **Block Explorer URL**: Leave empty
+- **链ID**: `1337`
+- **货币符号**: `ETH`
+- **区块浏览器URL**: 留空
 
-**Adding Steps**
-1. Open MetaMask extension
-2. Click network dropdown in top right
-3. Select "Add Network"
-4. Click "Add Network Manually"
-5. Fill in the above network information
-6. Click "Save"
+**添加步骤**
+1. 打开MetaMask扩展
+2. 点击右上角网络下拉菜单
+3. 选择"添加网络"
+4. 点击"手动添加网络"
+5. 填入上述网络信息
+6. 点击"保存"
 
-### Hardhat Network Configuration
+### Hardhat网络配置
 
-**Network Information**
-- **Network Name**: `Hardhat Local`
+**网络信息**
+- **网络名称**: `Hardhat Local`
 - **RPC URL**: `http://localhost:8545`
-- **Chain ID**: `31337`
-- **Currency Symbol**: `ETH`
-- **Block Explorer URL**: Leave empty
+- **链ID**: `31337`
+- **货币符号**: `ETH`
+- **区块浏览器URL**: 留空
 
-**Adding Steps**
-1. Open MetaMask extension
-2. Click network dropdown in top right
-3. Select "Add Network"
-4. Click "Add Network Manually"
-5. Fill in the above network information
-6. Click "Save"
+**添加步骤**
+1. 打开MetaMask扩展
+2. 点击右上角网络下拉菜单
+3. 选择"添加网络"
+4. 点击"手动添加网络"
+5. 填入上述网络信息
+6. 点击"保存"
 
-## 🔑 Import Test Accounts
+## 🔑 导入测试账户
 
-### Get Private Keys
+### 获取私钥
 
-**Anvil Network**
+**Anvil网络**
 ```bash
-# After starting Anvil, terminal will display accounts and private keys
+# 启动Anvil后，终端会显示账户和私钥
 node scripts/start-networks.js anvil --persistent
 
-# Example output:
+# 示例输出:
 # (0) 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 (10000 ETH)
 # Private Key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 ```
 
 **Ganache GUI**
-1. Open Ganache application
-2. Find the account you want to import in the account list
-3. Click the 🔑 icon to the right of the account
-4. Copy the displayed private key
+1. 打开Ganache应用
+2. 在账户列表中找到要导入的账户
+3. 点击账户右侧的🔑图标
+4. 复制显示的私钥
 
-**Ganache Command Line**
+**Ganache命令行**
 ```bash
-# After starting Ganache, terminal will display accounts and private keys
+# 启动Ganache后，终端会显示账户和私钥
 npx ganache --deterministic --accounts 10
 
-# Example output:
+# 示例输出:
 # (0) 0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1 (1000 ETH)
 # Private Key: 0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d
 ```
 
-## 💡 Web3 Account Behavior Explanation
+## 💡 Web3账户行为说明
 
-### MetaMask Account Behavior
-When you switch networks in MetaMask, **the same wallet address is used across all networks**. This is standard Web3 behavior.
+### MetaMask账户行为
+当您在MetaMask中切换网络时，**相同的钱包地址会在所有网络中使用**。这是标准的Web3行为。
 
-### What Changes When Switching Networks:
-1. **Balance**: Each network has its own native token balance
-2. **Transaction History**: Network-specific transaction records
-3. **Contract Addresses**: Smart contracts are deployed separately on each network
-4. **Gas Fees**: Different networks have different fee structures
+### 切换网络时的变化:
+1. **余额**: 每个网络都有自己的原生代币余额
+2. **交易历史**: 特定网络的交易记录
+3. **合约地址**: 智能合约在每个网络上单独部署
+4. **Gas费用**: 不同网络有不同的费用结构
 
-### What Remains Constant:
-1. **Wallet Address**: Your address (like 0xf39F...) is the same across all networks
-2. **Private Key**: The cryptographic key that controls your account
-3. **Account Access**: You maintain control across all networks
+### 保持不变的内容:
+1. **钱包地址**: 您的地址（如0xf39F...）在所有网络中相同
+2. **私钥**: 控制您账户的加密密钥
+3. **账户访问权限**: 您在所有网络中保持控制权
 
-### Import Account to MetaMask
+### 导入账户到MetaMask
 
-**Steps**
-1. Open MetaMask extension
-2. Click account icon in top right
-3. Select "Import Account"
-4. Select "Private Key" as import type
-5. Paste the copied private key
-6. Click "Import"
-7. Set an easily recognizable name for the account (like "Anvil Test 1")
+**步骤**
+1. 打开MetaMask扩展
+2. 点击右上角的账户图标
+3. 选择"导入账户"
+4. 选择"私钥"作为导入类型
+5. 粘贴复制的私钥
+6. 点击"导入"
+7. 为账户设置一个易识别的名称（如"Anvil Test 1"）
 
-**Recommended Test Accounts**
+**推荐的测试账户**
 
-**Anvil Default Accounts (first 3):**
+**Anvil默认账户（前3个）:**
 ```
-Account #0: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
-Private Key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-Balance: 10000 ETH
+账户 #0: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+私钥: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+余额: 10000 ETH
 
-Account #1: 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
-Private Key: 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
-Balance: 10000 ETH
+账户 #1: 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+私钥: 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
+余额: 10000 ETH
 
-Account #2: 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC
-Private Key: 0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a
-Balance: 10000 ETH
-```
-
-**Ganache Default Accounts (first 3):**
-```
-Account #0: 0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1
-Private Key: 0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d
-Balance: 1000 ETH
-
-Account #1: 0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0
-Private Key: 0x6cbed15c793ce57650b9877cf6fa156fbef513c4e6134f022a85b1ffdd59b2a1
-Balance: 1000 ETH
-
-Account #2: 0x22d491Bde2303f2f43325b2108D26f1eAbA1e32b
-Private Key: 0x6370fd033278c143179d81c5526140625662b8daa446c22ee2d73db3707e620c
-Balance: 1000 ETH
+账户 #2: 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC
+私钥: 0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a
+余额: 10000 ETH
 ```
 
-## 🔄 Network Switching
+**Ganache默认账户（前3个）:**
+```
+账户 #0: 0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1
+私钥: 0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d
+余额: 1000 ETH
 
-### Switch Networks Using MetaMask
-1. Click network dropdown in MetaMask extension
-2. Select the network to switch to
-3. Wait for connection confirmation
-4. Refresh application page (if needed)
+账户 #1: 0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0
+私钥: 0x6cbed15c793ce57650b9877cf6fa156fbef513c4e6134f022a85b1ffdd59b2a1
+余额: 1000 ETH
 
-### Use In-App Network Switcher
-Our application provides convenient network switching functionality:
-1. Find the network status indicator in the top right of the app
-2. Click the network name or status icon
-3. Select target network from dropdown menu
-4. Application will automatically handle network switching
+账户 #2: 0x22d491Bde2303f2f43325b2108D26f1eAbA1e32b
+私钥: 0x6370fd033278c143179d81c5526140625662b8daa446c22ee2d73db3707e620c
+余额: 1000 ETH
+```
 
-### Network Status Indicator
-- 🟢 **Green**: Network connection normal
-- 🟡 **Yellow**: Network connecting or syncing
-- 🔴 **Red**: Network connection failed
-- ⚪ **Gray**: Network not connected
+## 🔄 网络切换
 
-## 🔧 Advanced Configuration
+### 使用MetaMask切换网络
+1. 点击MetaMask扩展中的网络下拉菜单
+2. 选择要切换到的网络
+3. 等待连接确认
+4. 刷新应用页面（如果需要）
 
-### Custom RPC Settings
-For advanced users, you can configure custom RPC settings:
+### 使用应用内网络切换器
+我们的应用提供了便捷的网络切换功能：
+1. 在应用右上角找到网络状态指示器
+2. 点击网络名称或状态图标
+3. 从下拉菜单中选择目标网络
+4. 应用会自动处理网络切换
 
-**Gas Price Configuration**
-- **Anvil**: Uses default gas price (1 gwei)
-- **Ganache**: Configurable in GUI settings
-- **Hardhat**: Automatic gas price estimation
+### 网络状态指示器
+- 🟢 **绿色**: 网络连接正常
+- 🟡 **黄色**: 网络连接中或同步中
+- 🔴 **红色**: 网络连接失败或不可用
+- ⚪ **灰色**: 网络未启动
 
-**Block Time Configuration**
-- **Anvil**: Instant mining by default
-- **Ganache**: 0-14 second block times
-- **Hardhat**: Instant mining by default
+## 👥 多账户使用场景
 
-### Network Switching Automation
-Our application can automatically detect and switch networks:
+### 治理投票系统测试
+1. 导入多个测试账户
+2. 在MetaMask中切换账户
+3. 使用不同账户进行投票测试
+4. 验证投票权重和结果
 
+### 银行系统测试
+1. 使用不同账户测试借贷功能
+2. 模拟多用户DeFi场景
+3. 测试不同余额情况
+4. 验证利率和清算机制
+
+### 代币工厂测试
+1. 从不同创建者账户创建代币
+2. 测试账户间代币转账
+3. 验证所有权和权限
+4. 测试代币销毁和铸造
+
+### NFT市场测试
+1. 使用不同账户创建NFT
+2. 测试NFT买卖交易
+3. 验证版税分配
+4. 测试拍卖功能
+
+### DEX交易测试
+1. 使用多个账户提供流动性
+2. 测试不同交易对
+3. 验证滑点和手续费
+4. 测试流动性挖矿
+
+## ⚠️ 安全注意事项
+
+### 测试环境安全
+1. **专用测试账户**: 不要将真实资金与测试账户混合
+2. **私钥管理**: 测试私钥可以公开，但生产私钥必须保密
+3. **网络隔离**: 确保在正确的网络上进行测试
+4. **数据备份**: 重要的测试数据应该备份
+
+### MetaMask安全设置
+1. **账户标记**: 为测试账户使用描述性名称
+2. **网络验证**: 连接前确认网络信息
+3. **交易确认**: 仔细检查每笔交易的详情
+4. **定期清理**: 删除不再需要的测试账户和网络
+
+## 🛠️ 常见问题和解决方案
+
+### 网络连接问题
+
+**问题**: MetaMask无法连接到本地网络
+**解决方案**:
+1. 确认本地区块链网络正在运行
+2. 检查RPC URL和端口是否正确
+3. 尝试重新添加网络配置
+4. 重启MetaMask扩展
+
+**问题**: 网络切换后余额显示为0
+**解决方案**:
+1. 确认您在正确的网络上
+2. 检查账户是否已导入到当前网络
+3. 等待网络同步完成
+4. 刷新页面或重启MetaMask
+
+### 账户和交易问题
+
+**问题**: 导入私钥后账户余额为0
+**解决方案**:
+1. 确认网络正在运行且已连接
+2. 检查私钥是否正确
+3. 确认在正确的网络上查看余额
+4. 等待区块链同步
+
+**问题**: 交易不出现在历史记录中
+**解决方案**:
+1. 确认连接到执行交易的网络
+2. 等待交易确认（可能需要几秒钟）
+3. 检查交易哈希在区块浏览器中
+4. 刷新MetaMask或应用页面
+
+**问题**: 合约未找到或无法交互
+**解决方案**:
+1. 确认合约已部署到当前网络
+2. 检查合约地址是否正确
+3. 重新部署合约（如果在测试环境）
+4. 确认网络配置正确
+
+### Gas费用问题
+
+**问题**: 交易失败，提示Gas不足
+**解决方案**:
+1. 增加Gas限制
+2. 检查账户ETH余额
+3. 降低Gas价格（如果网络拥堵）
+4. 等待网络不那么拥堵时重试
+
+**问题**: Gas费用异常高
+**解决方案**:
+1. 检查是否连接到正确的本地网络
+2. 确认不是连接到主网
+3. 重启本地区块链网络
+4. 检查网络配置
+
+## 📱 移动端配置
+
+### MetaMask移动应用
+1. 下载MetaMask移动应用
+2. 导入现有钱包或创建新钱包
+3. 添加自定义网络（需要公网IP）
+4. 导入测试账户
+
+### 注意事项
+- 移动端需要公网可访问的RPC端点
+- 本地开发通常需要使用ngrok等工具
+- 建议主要在桌面端进行开发测试
+
+## 🔧 高级配置
+
+### 自定义RPC端点
+如果需要自定义网络配置：
 ```javascript
-// Example: Automatic network detection
-const detectNetwork = async () => {
-  const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-  switch (chainId) {
-    case '0x7A69': // 31337 - Hardhat
-      return 'hardhat';
-    case '0x7A6A': // 31338 - Anvil
-      return 'anvil';
-    case '0x539': // 1337 - Ganache
-      return 'ganache';
-    default:
-      return 'unknown';
-  }
+// 在项目中修改网络配置
+const customNetwork = {
+  name: 'Custom Local',
+  rpcUrl: 'http://localhost:8547',
+  chainId: 31339,
+  symbol: 'ETH'
 };
 ```
 
-## 🛠️ Troubleshooting
+### 网络自动检测
+我们的应用支持自动网络检测和切换：
+- **自动检测**: 检查本地网络是否运行
+- **状态指示器**: 网络可用性的视觉反馈
+- **一键切换**: 简单的网络更改
+- **错误处理**: 连接问题的清晰消息
 
-### Common Issues
+### 开发者工具
+- 使用浏览器开发者工具查看网络请求
+- 检查控制台错误信息
+- 使用MetaMask开发者模式
+- 启用详细日志记录
 
-**MetaMask Connection Problems**
-1. **Cannot connect to local network**
-   - Ensure blockchain network is running
-   - Verify RPC URL is correct
-   - Check firewall settings
+## 📚 相关文档
 
-2. **Wrong network displayed**
-   - Manually switch network in MetaMask
-   - Refresh application page
-   - Check Chain ID configuration
+- [Anvil安装指南](./ANVIL_INSTALLATION_GUIDE.md)
+- [快速设置指南](./QUICK_SETUP_GUIDE.md)
+- [本地网络指南](./LOCAL_NETWORKS_GUIDE.md)
+- [部署指南](./DEPLOYMENT_WITH_SAMPLE_DATA_GUIDE.md)
 
-3. **Transaction failures**
-   - Ensure sufficient ETH balance for gas
-   - Verify connected to correct network
-   - Reset account nonce if needed
+---
 
-**Account Import Issues**
-1. **Private key not working**
-   - Ensure private key format is correct (64 hex characters)
-   - Remove '0x' prefix if present during import
-   - Check for extra spaces or characters
-
-2. **Account balance not showing**
-   - Ensure connected to correct network
-   - Wait for network synchronization
-   - Refresh MetaMask
-
-**Network Configuration Problems**
-1. **RPC URL not responding**
-   - Verify blockchain network is running
-   - Check port number is correct
-   - Ensure no firewall blocking connection
-
-2. **Wrong Chain ID**
-   - Verify Chain ID matches network configuration
-   - Check hardhat.config.js settings
-   - Restart network if needed
-
-### Reset Network Configuration
-
-If you need to reset network configuration:
-
-1. **Reset MetaMask Network**
-   - Remove custom network from MetaMask
-   - Re-add with correct configuration
-   - Import accounts again
-
-2. **Reset Application State**
-   ```bash
-   # Clear browser local storage
-   # Or refresh page with hard reload (Ctrl+F5)
-   ```
-
-3. **Restart Blockchain Network**
-   ```bash
-   # Stop current network (Ctrl+C)
-   # Restart with fresh state
-   node scripts/start-networks.js anvil --persistent --fresh
-   ```
-
-## 📚 Additional Resources
-
-### Network Documentation
-- [Anvil Documentation](https://book.getfoundry.sh/anvil/)
-- [Hardhat Network Documentation](https://hardhat.org/hardhat-network/)
-- [Ganache Documentation](https://trufflesuite.com/ganache/)
-
-### MetaMask Help
-- [MetaMask Documentation](https://docs.metamask.io/)
-- [Adding Custom Networks](https://support.metamask.io/hc/en-us/articles/360043227612)
-- [Importing Accounts](https://support.metamask.io/hc/en-us/articles/360015489331)
-
-### Debugging Tools
-- Browser Developer Tools (F12)
-- MetaMask Activity Tab
-- Network logs in terminal
-
-## 🎯 Best Practices
-
-### Development Workflow
-1. Start with Anvil for persistence
-2. Use Hardhat for quick testing
-3. Test on Ganache for GUI debugging
-4. Always verify network configuration
-5. Keep private keys secure
-
-### Security Considerations
-- Never use development private keys on mainnet
-- Keep test accounts separate from real funds
-- Regularly backup important configurations
-- Use hardware wallets for mainnet operations
-
-### Performance Tips
-- Use Anvil for best performance
-- Enable persistence to avoid redeployment
-- Monitor gas usage and optimization
-- Use appropriate block confirmation times
-
-This concludes the Network Configuration Guide. For additional help, refer to the troubleshooting section or check the project documentation.
+**提示**: 如果遇到其他问题，请检查项目的GitHub Issues或创建新的Issue报告问题。

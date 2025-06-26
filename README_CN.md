@@ -82,7 +82,7 @@ npm run compile
 npx hardhat run scripts/deploy-master.js --network anvil
 
 # Ganache网络
-npx hardhat run scripts/deploy-master.js --network ganache
+npx hardhat run scripts/deploy-and-setup-all.js --network ganache
 
 # Hardhat网络
 npx hardhat run scripts/deploy-master.js --network hardhat
@@ -171,9 +171,8 @@ npm run compile              # 编译智能合约
 npm run test                # 运行合约测试
 
 # 部署相关
-npx hardhat run scripts/deploy-master.js --network anvil      # 部署到Anvil
-npx hardhat run scripts/deploy-master.js --network ganache   # 部署到Ganache
-npx hardhat run scripts/deploy-master.js --network hardhat   # 部署到Hardhat
+npx hardhat run scripts/deploy-and-setup-all.js --network ganache    # 完整部署
+npx hardhat run scripts/setup-complete-nft-data.js --network ganache # 仅NFT数据
 
 # 网络检查
 npx hardhat run scripts/test-network-stability.js --network ganache  # 检查网络状态
@@ -205,16 +204,9 @@ npx hardhat run scripts/test-network-stability.js --network ganache
 
 ## 🔄 重置环境
 
-当本地网络重置后，只需运行：
+当Ganache网络重置后，只需运行：
 ```bash
-# Anvil网络（推荐）
-npx hardhat run scripts/deploy-master.js --network anvil
-
-# Ganache网络
-npx hardhat run scripts/deploy-master.js --network ganache
-
-# Hardhat网络  
-npx hardhat run scripts/deploy-master.js --network hardhat
+npx hardhat run scripts/deploy-and-setup-all.js --network ganache
 ```
 
 这会自动：
@@ -256,8 +248,8 @@ contracts/                 # 智能合约
 └── VotingCore.sol        # 投票合约
 
 scripts/                  # 部署脚本
-├── deploy-master.js           # 通用部署脚本（支持多网络）
-└── deployment/               # 部署模块化脚本
+├── deploy-and-setup-all.js    # 完整部署脚本
+└── setup-complete-nft-data.js # NFT数据脚本
 ```
 
 ## 🔒 安全特性
@@ -370,7 +362,7 @@ A:
 ```bash
 # 解决方案：重新编译并部署
 npm run compile
-npx hardhat run scripts/deploy-master.js --network ganache
+npx hardhat run scripts/deploy-and-setup-all.js --network ganache
 ```
 
 **Q: 找不到合约地址？**
@@ -401,11 +393,9 @@ A:
 **Q: 如何完全重置开发环境？**
 ```bash
 # 1. 停止所有服务
-# 2. 重启Ganache (或Anvil/Hardhat)
-# 3. 重新部署 (根据使用的网络选择)
-npx hardhat run scripts/deploy-master.js --network ganache  # Ganache
-npx hardhat run scripts/deploy-master.js --network anvil    # Anvil
-npx hardhat run scripts/deploy-master.js --network hardhat  # Hardhat
+# 2. 重启Ganache
+# 3. 重新部署
+npx hardhat run scripts/deploy-and-setup-all.js --network ganache
 # 4. 在MetaMask中重置账户交易历史
 # 5. 刷新前端页面
 ```

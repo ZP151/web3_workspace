@@ -1,119 +1,139 @@
-# Anvil Scripts
+# Anvil Network Debug Tools
 
-This folder contains utility scripts for interacting with the Anvil local blockchain network.
+A collection of debugging and diagnostic tools specifically designed for Anvil local networks.
 
-## Scripts Overview
+## 🛠️ Available Tools
 
-### 1. explorer.js - Interactive Blockchain Explorer
-An interactive command-line tool that provides a comprehensive interface for exploring the Anvil blockchain.
+### Core Debugging Tools
+- **`quick-info.js`** - Quick network status and contract information
+- **`explorer.js`** - Comprehensive blockchain explorer for Anvil networks  
+- **`check-balance.js`** - Check account balances and basic network connectivity
 
-**Features:**
-- Network information display
-- Block information queries
-- Transaction details lookup
-- Account balance and information
-- List deployed contracts
-- Recent transactions view
-- Test account balances
+### 🆕 Persistence Test Suite
+- **`persistence-test-suite/`** - Complete testing suite for Anvil persistence functionality
+  - Address mismatch diagnosis and resolution
+  - Complete persistence lifecycle testing
+  - Transaction verification tools
 
-**Usage:**
+## 📋 Quick Start
+
+### Basic Network Diagnostics
 ```bash
-node scripts/anvil/explorer.js
+# Quick network overview
+node scripts/anvil-network-debug/quick-info.js
+
+# Detailed blockchain exploration
+node scripts/anvil-network-debug/explorer.js
+
+# Check specific account balance
+node scripts/anvil-network-debug/check-balance.js [address]
 ```
 
-Once started, you can navigate through different options by entering numbers (0-7):
-- `1` - Network Information
-- `2` - Block Information
-- `3` - Transaction Information
-- `4` - Account Information
-- `5` - List Deployed Contracts
-- `6` - Recent Transactions
-- `7` - Test Account Balances
-- `0` - Exit
-
-### 2. check-balance.js - Account Balance Checker
-A simple script to check the balance and transaction count of a specific account.
-
-**Usage:**
+### Persistence Testing and Troubleshooting
 ```bash
-node scripts/anvil/check-balance.js
+# Check contract address consistency
+node scripts/anvil-network-debug/persistence-test-suite/check-contract-addresses.js
+
+# Fix address mismatch issues
+node scripts/anvil-network-debug/persistence-test-suite/fix-address-mismatch.js --fresh
+
+# Run basic transaction tests
+node scripts/anvil-network-debug/persistence-test-suite/test-basic-transactions.js
+
+# Complete persistence lifecycle test
+node scripts/anvil-network-debug/persistence-test-suite/run-persistence-test.js
 ```
 
-**Features:**
-- Displays account balance in both Wei and ETH
-- Shows transaction count (nonce)
-- Provides blockchain information
-- Warns if account is in initial state
+## 🔍 Common Use Cases
 
-### 3. quick-info.js - Quick Network Overview
-Provides a quick overview of the Anvil network status and key information.
+### Troubleshooting Empty Frontend Data
+If your frontend returns empty data when using persistent Anvil networks:
 
-**Usage:**
+1. **Check contract addresses:**
+   ```bash
+   node scripts/anvil-network-debug/persistence-test-suite/check-contract-addresses.js
+   ```
+
+2. **Fix address mismatches:**
+   ```bash
+   # Option 1: Start fresh (recommended for development)
+   node scripts/anvil-network-debug/persistence-test-suite/fix-address-mismatch.js --fresh
+   
+   # Option 2: Redeploy to preserve data
+   node scripts/anvil-network-debug/persistence-test-suite/fix-address-mismatch.js --redeploy
+   ```
+
+3. **Verify fix:**
+   ```bash
+   node scripts/anvil-network-debug/persistence-test-suite/test-basic-transactions.js
+   ```
+
+### Network Health Monitoring
 ```bash
-node scripts/anvil/quick-info.js
+# Quick status check
+node scripts/anvil-network-debug/quick-info.js
+
+# Detailed analysis
+node scripts/anvil-network-debug/explorer.js
+
+# Persistence quick test
+node scripts/anvil-network-debug/persistence-test-suite/run-persistence-test.js --quick
 ```
 
-**Features:**
-- Network status (Chain ID, latest block, gas price)
-- Test account balances
-- Deployed contracts status
-- Recent block activity
-- Recent transactions summary
+## 📊 Tool Details
 
-## Prerequisites
+### quick-info.js
+Provides essential network information including:
+- Network status and chain ID
+- Account balances
+- Contract deployment status
+- Recent block information
 
-Before using these scripts, ensure that:
+### explorer.js  
+Comprehensive blockchain explorer featuring:
+- Block-by-block analysis
+- Transaction history
+- Contract interaction logs
+- Gas usage statistics
 
-1. **Anvil is running**: Start the Anvil network using:
-   ```bash
-   node scripts/start-networks.js anvil --persistent
-   ```
+### check-balance.js
+Simple balance checker with:
+- Account balance verification
+- Network connectivity testing
+- Multiple address support
 
-2. **Dependencies are installed**: Make sure you have the required dependencies:
-   ```bash
-   npm install
-   ```
+### persistence-test-suite/
+Complete testing suite for Anvil persistence issues:
+- **Address consistency verification**
+- **Automated fix tools**
+- **Transaction functionality testing**
+- **Complete persistence lifecycle validation**
 
-## Default Configuration
+## 🚀 Prerequisites
 
-All scripts are configured to connect to:
-- **RPC URL**: `http://127.0.0.1:8546`
-- **Default Test Account**: `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`
+- Node.js installed
+- Anvil (Foundry) installed and accessible
+- Hardhat project properly configured
+- Anvil network running on port 8546
 
-## Troubleshooting
+## 💡 Tips
 
-If you encounter connection errors:
+- Use `quick-info.js` for rapid status checks
+- Run `explorer.js` for detailed debugging sessions
+- Use the persistence test suite when experiencing address mismatch issues
+- All tools support `--help` flag for detailed usage information
 
-1. **Check if Anvil is running**:
-   ```bash
-   # Start Anvil with persistence
-   node scripts/start-networks.js anvil --persistent
-   ```
+## 📚 Related Documentation
 
-2. **Verify the RPC URL**: Ensure Anvil is listening on `http://127.0.0.1:8546`
+- [Anvil Persistence Test Suite](./persistence-test-suite/README.md) - Complete guide for persistence testing
+- [Local Networks Guide](../../docs/LOCAL_NETWORKS_GUIDE.md) - General network setup
+- [Network Troubleshooting Guide](../../README_ANVIL_TROUBLESHOOTING.md) - Common issues and solutions
 
-3. **Check network connectivity**: The scripts will display connection status when started
+## 🔧 Troubleshooting
 
-## Example Workflow
+If tools fail to connect:
+1. Ensure Anvil is running: `node scripts/start-networks.js anvil`
+2. Verify port 8546 is accessible
+3. Check that contracts are deployed: `npx hardhat run scripts/deploy-master.js --network anvil`
 
-1. **Start Anvil network**:
-   ```bash
-   node scripts/start-networks.js anvil --persistent
-   ```
-
-2. **Get quick overview**:
-   ```bash
-   node scripts/anvil/quick-info.js
-   ```
-
-3. **Check specific account**:
-   ```bash
-   node scripts/anvil/check-balance.js
-   ```
-
-4. **Explore interactively**:
-   ```bash
-   node scripts/anvil/explorer.js
-   ```
-
-These scripts provide a comprehensive alternative to Ganache's GUI interface, allowing you to monitor and explore your local Anvil blockchain through the command line.
+For persistence-specific issues, see the [Persistence Test Suite README](./persistence-test-suite/README.md) for detailed troubleshooting steps.
