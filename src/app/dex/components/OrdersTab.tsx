@@ -1,7 +1,7 @@
 import React from 'react';
 import { Coins, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { LimitOrderData, UserOrder, TokenAddresses } from '../types';
+import { LimitOrderData, UserOrder } from '../types';
 
 interface OrdersTabProps {
   limitOrderData: LimitOrderData;

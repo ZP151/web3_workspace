@@ -12,8 +12,8 @@ export function useVotingContract() {
   const [selectedVote, setSelectedVote] = useState<{proposalId: number, optionId: number} | null>(null);
 
   // Get contract address for current network
-  const contractAddress = chain?.id ? getContractAddress(chain.id, 'VotingCore') : null;
-  const contractABI = getContractABI('VotingCore');
+  const contractAddress = chain?.id ? getContractAddress(chain.id, 'Voting') : undefined;
+  const contractABI = getContractABI('Voting');
 
   // Get contract statistics
   const { data: stats, refetch: refetchStats } = useContractRead({
@@ -120,8 +120,8 @@ export function useCreateProposal() {
   const [formData, setFormData] = useState<FormData | null>(null);
 
   // Get contract address for current network
-  const contractAddress = chain?.id ? getContractAddress(chain.id, 'VotingCore') : null;
-  const contractABI = getContractABI('VotingCore');
+  const contractAddress = chain?.id ? getContractAddress(chain.id, 'Voting') : undefined;
+  const contractABI = getContractABI('Voting');
 
   // Get creation fee
   const { data: stats } = useContractRead({
@@ -209,8 +209,8 @@ export function useProposals() {
   const [loading, setLoading] = useState(false);
 
   // Get contract address for current network
-  const contractAddress = chain?.id ? getContractAddress(chain.id, 'VotingCore') : null;
-  const contractABI = getContractABI('VotingCore');
+  const contractAddress = chain?.id ? getContractAddress(chain.id, 'Voting') : undefined;
+  const contractABI = getContractABI('Voting');
 
   // Get proposal count
   const { data: proposalCount } = useContractRead({
@@ -219,66 +219,4 @@ export function useProposals() {
     functionName: 'getProposalCount',
     enabled: !!contractAddress,
   });
-
-  const loadProposals = async () => {
-    if (!contractAddress || !proposalCount) return;
-    
-    setLoading(true);
-    try {
-      const count = Number(proposalCount);
-      const proposalPromises = [];
-      
-      for (let i = 0; i < count; i++) {
-        proposalPromises.push(loadSingleProposal(i));
-      }
-      
-      const loadedProposals = await Promise.all(proposalPromises);
-      const validProposals = loadedProposals.filter(Boolean) as Proposal[];
-      
-      setProposals(validProposals.reverse()); // Show newest first
-    } catch (error) {
-      console.error('Failed to load proposals:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadSingleProposal = async (id: number): Promise<Proposal | null> => {
-    if (!contractAddress) return null;
-    
-    try {
-      // This would need to be implemented with actual contract calls
-      // For now, return mock data
-      return {
-        id,
-        title: `Proposal ${id + 1}`,
-        description: `Description for proposal ${id + 1}`,
-        voteCount: Math.floor(Math.random() * 100),
-        deadline: Math.floor(Date.now() / 1000) + 86400 * (id + 1),
-        executed: false,
-        minVotes: 50,
-        proposalType: id % 3,
-        category: id % 4,
-        creator: "0x1234567890123456789012345678901234567890",
-        createdAt: Math.floor(Date.now() / 1000) - 86400 * id,
-        hasVoted: false
-      };
-    } catch (error) {
-      console.error(`Failed to load proposal ${id}:`, error);
-      return null;
-    }
-  };
-
-  useEffect(() => {
-    if (proposalCount) {
-      loadProposals();
-    }
-  }, [proposalCount, contractAddress]);
-
-  return {
-    proposals,
-    loading,
-    loadProposals,
-    isContractAvailable: !!contractAddress
-  };
-} 
+}

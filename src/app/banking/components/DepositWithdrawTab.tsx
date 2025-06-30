@@ -14,6 +14,10 @@ interface DepositWithdrawTabProps {
   isDepositing: boolean;
   isWithdrawing: boolean;
   isWithdrawingAll: boolean;
+  bankBalance?: string;
+  ethBalance?: any;
+  minimumDeposit?: any;
+  pendingInterest?: string;
 }
 
 export default function DepositWithdrawTab({
@@ -28,6 +32,10 @@ export default function DepositWithdrawTab({
   isDepositing,
   isWithdrawing,
   isWithdrawingAll,
+  bankBalance,
+  ethBalance,
+  minimumDeposit,
+  pendingInterest,
 }: DepositWithdrawTabProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

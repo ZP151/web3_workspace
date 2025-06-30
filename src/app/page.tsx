@@ -4,6 +4,7 @@ import React from 'react';
 import { useAccount } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import WalletConnection from '@/components/WalletConnection';
+import { UserAvatar } from '@/components/UserAvatar';
 
 import { 
   Code, 
@@ -82,6 +83,7 @@ export default function HomePage() {
             </div>
             <div className="flex items-center space-x-4">
               <WalletConnection />
+              <UserAvatar />
             </div>
           </div>
         </div>

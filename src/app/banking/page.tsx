@@ -46,8 +46,8 @@ export default function BankingPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   // 合约配置
-  const contractAddress = chain?.id ? getContractAddress(chain.id, 'EnhancedBank') : undefined;
-  const contractABI = getContractABI('EnhancedBank');
+  const contractAddress = chain?.id ? getContractAddress(chain.id, 'Bank') : undefined;
+  const contractABI = getContractABI('Bank');
 
   // 钱包余额
   const { data: ethBalance } = useBalance({
@@ -369,9 +369,7 @@ export default function BankingPage() {
             onTransferExternal={handleTransferExternal}
             onBatchTransfer={handleBatchTransfer}
             onUserToUserTransfer={handleUserToUserTransfer}
-            onBatchUserTransfer={handleBatchUserTransfer}
-            onSocialTransfer={handleSocialTransfer}
-            isLoading={isWeb3Loading || isTransferring}
+            isTransferring={isWeb3Loading || isTransferring}
           />
         )}
 

@@ -472,22 +472,16 @@ export default function DEXPage() {
               setLiquidityAmount={setLiquidityAmount}
               handleAddLiquidity={handleAddLiquidity}
               isAddingLiquidity={isAddingLiquidity}
-              poolInfo={poolInfo}
-              userLiquidityInfo={userLiquidityInfo}
             />
           )}
           {activeView === 'pools' && (
             <PoolsTab
               liquidityPools={liquidityPools}
-              allPoolIds={allPoolIds}
-              refetchPools={refetchPools}
             />
           )}
           {activeView === 'analytics' && (
             <AnalyticsTab
-              poolInfo={poolInfo}
-              userLiquidityInfo={userLiquidityInfo}
-              allPoolIds={allPoolIds}
+              liquidityPools={liquidityPools}
             />
           )}
           {activeView === 'orders' && (
@@ -495,10 +489,12 @@ export default function DEXPage() {
               limitOrderData={limitOrderData}
               setLimitOrderData={setLimitOrderData}
               userOrders={userOrders}
+              calculatePoolId={calculatePoolId}
               handleCreateLimitOrder={handleCreateLimitOrder}
               handleCancelOrder={handleCancelOrder}
               isCreatingOrder={isCreatingOrder}
               isCancellingOrder={isCancellingOrder}
+              refetchUserOrders={refetchUserOrders}
             />
           )}
           {activeView === 'mining' && (

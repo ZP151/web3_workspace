@@ -1,18 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Palette, Star, Plus, Grid3X3, List, Image, ArrowLeft, RefreshCw, Wallet } from 'lucide-react';
+import React, { useState, useMemo, Dispatch, SetStateAction, useEffect } from 'react';
+import { Palette, Star, Plus, Grid3X3, List, Image, ArrowLeft, RefreshCw, Wallet, Gavel, Loader2, ShoppingCart } from 'lucide-react';
 import { useAccount, useBalance, useNetwork } from 'wagmi';
 import { formatEther } from 'viem';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 
 import { 
   NFTNavigation,
   CreateNFTForm,
   MarketplaceTab,
   MyCollectionTab,
-  AnalyticsTab
+  AnalyticsTab,
+  SecurityStatusDisplay
 } from './components';
 import { SystemFeedback } from '@/components/SystemFeedback';
 import { 
@@ -25,7 +27,13 @@ import {
   SortBy 
 } from './types';
 import { useNFTContract } from './hooks/useNFTContract';
-import { getContractAddress } from '@/config/contracts';
+import { UserAvatar } from '@/components/UserAvatar';
+
+// Enhanced type for local state to handle auction data
+interface EnhancedListingData extends ListingData {
+  isAuction?: boolean;
+  duration?: number;
+}
 
 export default function NFTPage() {
   const { address, isConnected } = useAccount();
@@ -41,38 +49,68 @@ export default function NFTPage() {
     category: 'art',
     price: '',
   });
-  const [listingData, setListingData] = useState<ListingData>({
+  const [listingData, setListingData] = useState<EnhancedListingData>({
     nft: null,
     price: '',
     isOpen: false,
+    isAuction: false,
+    duration: 3600, // Default duration 1 hour
   });
   const [selectedNFT, setSelectedNFT] = useState<NFT | null>(null);
+  const [bidData, setBidData] = useState<{
+    isOpen: boolean;
+    nft: NFT | null;
+    amount: string;
+  }>({
+    isOpen: false,
+    nft: null,
+    amount: '',
+  });
+
 
   const {
     nfts,
-    myNfts,
     mintNFT,
     buyNFT,
     listForSale,
-    cancelListing,
-    likeNFT,
-    updateNFTViews,
-    loadNFTsFromBlockchain,
-    forceRefresh,
+    placeBid,
+    endAuction,
+    isLoading,
     isMinting,
-    isLoadingFromContract,
-    marketplaceAddress,
-    isContractAvailable,
+    isListing,
+    isListSuccess,
+    isBuying,
+    isBidding,
+    isEndingAuction,
+    isApproving,
+    isApprovalSuccess,
     totalSupply,
     marketplaceStats,
     contractAddress,
-    listingCount,
+    marketplaceAddress,
+    isPaused,
+    isMarketplacePaused,
+    isMarketplaceApproved,
+    securityFeatures,
+    forceRefresh,
+    approveMarketplace,
+    likeNFT,
+    updateNFTViews,
   } = useNFTContract();
 
   const { data: balance } = useBalance({
     address,
     enabled: !!address,
   });
+
+  useEffect(() => {
+    if (isListSuccess) {
+      // After a successful listing, close the modal.
+      setListingData({ nft: null, price: '', isOpen: false });
+    }
+  }, [isListSuccess]);
+
+
 
   const categories: NFTCategory[] = [
     { id: 'all', name: 'All', icon: Grid3X3 },
@@ -115,6 +153,8 @@ export default function NFTPage() {
     return filtered;
   }, [nfts, selectedCategory, sortBy]);
 
+  const myNfts = useMemo(() => nfts.filter(nft => nft.owner?.toLowerCase() === address?.toLowerCase()), [nfts, address]);
+
   if (!isConnected) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -132,10 +172,10 @@ export default function NFTPage() {
                   Manual Refresh
                 </div>
                 <button
-                  onClick={forceRefresh}
+                  onClick={() => {}}
                   className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors duration-200"
                   title="Refresh data"
-                  disabled={isLoadingFromContract}
+                  disabled={true}
                 >
                   <RefreshCw className="h-4 w-4" />
                 </button>
@@ -166,39 +206,101 @@ export default function NFTPage() {
   if (!marketplaceAddress || !contractAddress) {
     return (
       <div className="w-full h-full">
-                      <SystemFeedback type="contract-not-deployed" moduleName="NFT Marketplace" />
+        <SystemFeedback type="contract-not-deployed" moduleName="NFT Marketplace" />
       </div>
     );
   }
 
   const handleMintNFT = async () => {
-    await mintNFT(mintData);
-    setMintData({
-      name: '',
-      description: '',
-      image: '',
-      category: 'art',
-      price: '',
+    if (!mintData.name || !mintData.description) {
+      alert("Please fill out name and description.");
+      return;
+    }
+    
+    // 如果没有图片URL，提供默认图片
+    const imageUrl = mintData.image || `https://via.placeholder.com/400x400/8B5CF6/FFFFFF?text=${encodeURIComponent(mintData.name)}`;
+    
+    // 1. Build the metadata object from the form state.
+    const metadataObject = {
+      name: mintData.name,
+      description: mintData.description,
+      image: imageUrl,
+      attributes: [{ trait_type: "Category", value: mintData.category }],
+    };
+    
+    // 2. Stringify the metadata to create the tokenURI.
+    const tokenURIString = JSON.stringify(metadataObject);
+
+    // 3. Call the hook with the correct data structure.
+    await mintNFT({
+      name: mintData.name,
+      description: mintData.description,
+      category: mintData.category,
+      price: mintData.price,
+      image: tokenURIString, // This is the crucial part.
+    });
+    
+    // 4. Reset the form.
+    setMintData({ name: '', description: '', image: '', category: 'art', price: '' });
+  };
+
+  const handlePlaceBid = (nft: NFT) => {
+    setBidData({
+      isOpen: true,
+      nft: nft,
+      amount: '',
     });
   };
 
-  const handleViewDetails = (nft: NFT) => {
-    setSelectedNFT(nft);
-    updateNFTViews(nft);
+  const handleConfirmBid = async () => {
+    if (bidData.nft && bidData.amount) {
+      // Ensure listingId exists before calling
+      if (bidData.nft.listingId) {
+        await placeBid(bidData.nft.listingId, bidData.amount);
+        setBidData({ isOpen: false, nft: null, amount: '' });
+      } else {
+        console.error("Cannot place bid: NFT does not have a listing ID.");
+        alert("Cannot place bid: This NFT is not properly listed for auction.");
+      }
+    }
   };
 
-  const handleListForSale = (nft: NFT) => {
+  const handleViewDetails = (nft: NFT) => {
+    updateNFTViews(nft.tokenId);
+    setSelectedNFT(nft);
+  };
+
+  const handleListForSale = async (nft: NFT) => {
     setListingData({
       nft,
       price: nft.price || '0.1',
       isOpen: true,
+      isAuction: false,
+      duration: 3600, // Default duration 1 hour
     });
+    // 使用全局授权状态即可
+    console.log('🔄 Current global approval status:', isMarketplaceApproved);
   };
 
   const handleConfirmListing = async () => {
     if (listingData.nft && listingData.price) {
-      await listForSale(listingData.nft, listingData.price);
-      setListingData({ nft: null, price: '', isOpen: false });
+      // This now ONLY starts the transaction.
+      // The modal will be closed by the useEffect watching isListSuccess.
+      await listForSale(
+        listingData.nft.tokenId, 
+        listingData.price, 
+        listingData.isAuction || false,
+        listingData.duration || 0
+      );
+    }
+  };
+
+  // 处理取消上架
+  const handleCancelListing = async (nft: NFT) => {
+    if (nft.listingId) {
+      // TODO: 实现取消上架功能
+      console.log('Cancel listing for NFT:', nft.tokenId, 'Listing ID:', nft.listingId);
+      alert('Cancel listing feature will be implemented soon.');
     }
   };
 
@@ -209,6 +311,8 @@ export default function NFTPage() {
           <MarketplaceTab
             nfts={nfts}
             filteredNfts={filteredNfts}
+            onBuy={(nft: NFT) => buyNFT(nft.listingId!, nft.price)}
+            onPlaceBid={handlePlaceBid}
             selectedCategory={selectedCategory}
             sortBy={sortBy}
             viewMode={viewMode}
@@ -217,8 +321,7 @@ export default function NFTPage() {
             onSortChange={setSortBy}
             onViewModeChange={setViewMode}
             onViewDetails={handleViewDetails}
-            onLike={likeNFT}
-            onBuy={buyNFT}
+            onLike={(nft: NFT) => likeNFT(nft.tokenId)}
           />
         );
       case 'mint':
@@ -228,7 +331,7 @@ export default function NFTPage() {
             onMintDataChange={setMintData}
             onMintNFT={handleMintNFT}
             isMinting={isMinting}
-            categories={categories}
+            categories={categories.filter(c => c.id !== 'all')}
             address={address}
           />
         );
@@ -236,13 +339,13 @@ export default function NFTPage() {
         return (
           <MyCollectionTab
             myNfts={myNfts}
-            onViewDetails={handleViewDetails}
-            onLike={likeNFT}
             onListForSale={handleListForSale}
-            onCancelListing={cancelListing}
+            onCancelListing={handleCancelListing}
+            onViewDetails={handleViewDetails}
+            onLike={(nft: NFT) => likeNFT(nft.tokenId)}
             onViewChange={setActiveView}
             onRefresh={forceRefresh}
-            isLoading={isLoadingFromContract}
+            isLoading={isLoading}
           />
         );
       case 'analytics':
@@ -277,10 +380,11 @@ export default function NFTPage() {
                 onClick={forceRefresh}
                 className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors duration-200"
                 title="Refresh data"
-                disabled={isLoadingFromContract}
+                disabled={isLoading}
               >
-                <RefreshCw className="h-4 w-4" />
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               </button>
+              <UserAvatar />
             </div>
           </div>
         </div>
@@ -292,9 +396,7 @@ export default function NFTPage() {
         {/* NFT Information Card */}
         {isConnected && (
           <div className={`bg-white border rounded-lg p-6 mb-8 shadow-sm ${
-            isContractAvailable 
-              ? 'border-green-200' 
-              : 'border-yellow-200'
+            marketplaceStats ? 'border-green-200' : 'border-yellow-200'
           }`}>
             <div className="flex items-center justify-between">
               <div>
@@ -310,12 +412,12 @@ export default function NFTPage() {
                 </div>
                 <div className="mt-3 flex items-center">
                   <div className={`w-2 h-2 rounded-full mr-2 ${
-                    isContractAvailable ? 'bg-green-500' : 'bg-yellow-500'
+                    marketplaceStats ? 'bg-green-500' : 'bg-yellow-500'
                   }`}></div>
                   <span className={`text-sm ${
-                    isContractAvailable ? 'text-green-600' : 'text-yellow-600'
+                    marketplaceStats ? 'text-green-600' : 'text-yellow-600'
                   }`}>
-                    {isContractAvailable ? 'Contract Connected' : 'Contract Not Deployed'}
+                    {marketplaceStats ? 'Contract Connected' : 'Contract Not Deployed'}
                   </span>
                 </div>
               </div>
@@ -338,22 +440,27 @@ export default function NFTPage() {
           </div>
         )}
 
-        {!isContractAvailable && (
+        {/* Security Status Display */}
+        <SecurityStatusDisplay
+          isPaused={isPaused}
+          isMarketplacePaused={isMarketplacePaused}
+          securityFeatures={securityFeatures}
+        />
+
+        {!marketplaceStats && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 ⚠️
               </div>
               <div className="ml-3">
-                              <p className="text-sm text-yellow-800">
-                NFT contract not available on this network. Please switch to a supported network.
-              </p>
+                <p className="text-sm text-yellow-800">
+                  NFT contract not available on this network. Please switch to a supported network.
+                </p>
               </div>
             </div>
           </div>
         )}
-
-
 
         {/* NFT Navigation Tabs */}
         <NFTNavigation activeView={activeView} setActiveView={setActiveView} />
@@ -363,265 +470,379 @@ export default function NFTPage() {
           {renderContent()}
         </div>
 
+        {/* Enhanced NFT Details Modal */}
         {selectedNFT && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-3xl font-bold text-gray-900">{selectedNFT.name}</h2>
-                  <button
-                    onClick={() => setSelectedNFT(null)}
-                    className="text-gray-400 hover:text-gray-600 text-2xl"
-                  >
-                    ✕
-                  </button>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedNFT(null)}>
+            <Card className="w-full max-w-5xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <CardHeader className="flex flex-row justify-between items-start">
+                <div className="flex-1">
+                  <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                    {selectedNFT.name}
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      selectedNFT.rarity === 'Legendary' ? 'bg-yellow-100 text-yellow-800' :
+                      selectedNFT.rarity === 'Epic' ? 'bg-purple-100 text-purple-800' :
+                      selectedNFT.rarity === 'Rare' ? 'bg-blue-100 text-blue-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {selectedNFT.rarity}
+                    </span>
+                  </CardTitle>
+                  <div className="text-sm text-gray-500 mt-1">
+                    Token ID: #{selectedNFT.tokenId} • Category: {selectedNFT.category}
+                  </div>
                 </div>
-                
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Image Section */}
-                  <div className="space-y-4">
-                    <img
-                      src={selectedNFT.image}
-                      alt={selectedNFT.name}
-                      className="w-full aspect-square object-cover rounded-lg border"
-                    />
-                    
-                    {/* Asset Links */}
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <h4 className="font-semibold text-gray-900 mb-3">Asset Information</h4>
-                      <div className="space-y-2">
-                        {/* Image IPFS Link */}
-                        {selectedNFT.image && selectedNFT.image.includes('ipfs') && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">Image (IPFS):</span>
-                            <a
-                              href={selectedNFT.image}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 text-sm truncate max-w-48"
-                              title={selectedNFT.image}
-                            >
-                              {selectedNFT.image.replace('https://gateway.pinata.cloud/ipfs/', 'ipfs://')}
-                            </a>
-                          </div>
-                        )}
-                        
-                        {/* Metadata IPFS Link */}
-                        {selectedNFT.metadataUri && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">Metadata (IPFS):</span>
-                            <a
-                              href={selectedNFT.metadataUri}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 text-sm truncate max-w-48"
-                              title={selectedNFT.metadataUri}
-                            >
-                              {selectedNFT.metadataUri.replace('https://gateway.pinata.cloud/ipfs/', 'ipfs://')}
-                            </a>
-                          </div>
-                        )}
-                        
-                        {/* Contract Address */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">Contract:</span>
-                          <a
-                            href={`https://etherscan.io/address/${contractAddress}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 text-sm"
-                          >
-                            {contractAddress?.slice(0, 6)}...{contractAddress?.slice(-4)}
-                          </a>
-                        </div>
-                        
-                        {/* Token Standard */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">Standard:</span>
-                          <span className="text-sm font-medium">ERC-721</span>
-                        </div>
-                        
-                        {/* Data Source */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">Data Source:</span>
-                          <span className={`text-sm font-medium ${
-                            selectedNFT.id.startsWith('blockchain-') ? 'text-green-600' : 'text-blue-600'
-                          }`}>
-                            {selectedNFT.id.startsWith('blockchain-') ? '🔗 Blockchain' : '💾 Local/Mock'}
-                          </span>
-                        </div>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedNFT(null)}>✕</Button>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Left Column: Image & Asset Info */}
+                <div className="space-y-4">
+                  <div className="relative">
+                    <img src={selectedNFT.image} alt={selectedNFT.name} className="w-full aspect-square object-cover rounded-lg border" />
+                    {selectedNFT.isListed && (
+                      <div className="absolute top-2 left-2">
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                          {selectedNFT.listingType === 'AUCTION' ? 'Live Auction' : 'For Sale'}
+                        </span>
                       </div>
-                    </div>
+                    )}
                   </div>
                   
-                  {/* Details Section */}
-                  <div className="space-y-6">
-                    {/* Description */}
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">Description</h3>
-                      <p className="text-gray-600">{selectedNFT.description}</p>
-                    </div>
-                    
-                    {/* Properties */}
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3">Properties</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-gray-50 rounded-lg p-3">
-                          <span className="text-sm text-gray-500">Token ID</span>
-                          <div className="font-bold text-lg">{selectedNFT.tokenId}</div>
-                        </div>
-                        <div className="bg-gray-50 rounded-lg p-3">
-                          <span className="text-sm text-gray-500">Rarity</span>
-                          <div className={`font-bold text-lg ${
-                            selectedNFT.rarity === 'Legendary' ? 'text-yellow-600' :
-                            selectedNFT.rarity === 'Epic' ? 'text-purple-600' :
-                            selectedNFT.rarity === 'Rare' ? 'text-blue-600' : 'text-gray-600'
-                          }`}>
-                            {selectedNFT.rarity}
-                          </div>
-                        </div>
-                        <div className="bg-gray-50 rounded-lg p-3">
-                          <span className="text-sm text-gray-500">Category</span>
-                          <div className="font-bold text-lg capitalize">{selectedNFT.category}</div>
-                        </div>
-                        <div className="bg-gray-50 rounded-lg p-3">
-                          <span className="text-sm text-gray-500">Views</span>
-                          <div className="font-bold text-lg">{selectedNFT.views}</div>
-                        </div>
+                  <Card>
+                    <CardHeader><CardTitle className="text-base">Asset Information</CardTitle></CardHeader>
+                    <CardContent className="text-sm space-y-2">
+                      <div className="flex justify-between">
+                        <span>Contract:</span> 
+                        <a 
+                          href={`https://etherscan.io/address/${contractAddress}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-purple-600 hover:text-purple-800 truncate max-w-[150px]"
+                        >
+                          {contractAddress?.slice(0,6)}...{contractAddress?.slice(-4)}
+                        </a>
                       </div>
-                    </div>
-                    
-                    {/* Attributes */}
-                    {selectedNFT.attributes && selectedNFT.attributes.length > 0 && (
-                      <div>
-                        <h3 className="font-semibold text-gray-900 mb-3">Attributes</h3>
-                        <div className="grid grid-cols-1 gap-2">
-                          {selectedNFT.attributes.map((attr, index) => (
-                            <div key={index} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
-                              <span className="text-sm text-gray-600">{attr.trait_type}</span>
-                              <span className="font-medium">{attr.value}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Owner & Creator */}
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3">Ownership</h3>
-                      <div className="space-y-2">
-                        {selectedNFT.owner && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">Owner:</span>
-                            <span className="font-medium text-sm">
-                              {selectedNFT.owner === address ? 'You' : 
-                               `${selectedNFT.owner.slice(0, 6)}...${selectedNFT.owner.slice(-4)}`}
-                            </span>
-                          </div>
-                        )}
-                        {selectedNFT.creator && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">Creator:</span>
-                            <span className="font-medium text-sm">
-                              {selectedNFT.creator === address ? 'You' : 
-                               `${selectedNFT.creator.slice(0, 6)}...${selectedNFT.creator.slice(-4)}`}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Price & Actions */}
-                    {selectedNFT.isListed && (
-                      <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4">
-                        <div className="text-sm text-green-600 mb-1">Listed for sale</div>
-                        <div className="text-3xl font-bold text-green-800 mb-3">{selectedNFT.price} ETH</div>
-                        {selectedNFT.owner !== address && (
-                          <button
-                            onClick={() => {
-                              buyNFT(selectedNFT);
-                              setSelectedNFT(null);
-                            }}
-                            className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
+                      <div className="flex justify-between"><span>Token ID:</span> <span>#{selectedNFT.tokenId}</span></div>
+                      <div className="flex justify-between"><span>Standard:</span> <span>ERC-721</span></div>
+                      <div className="flex justify-between"><span>Blockchain:</span> <span>{chain?.name || 'Unknown'}</span></div>
+                      {selectedNFT.metadataUri && (
+                        <div className="flex justify-between">
+                          <span>Metadata:</span> 
+                          <a 
+                            href={selectedNFT.metadataUri.startsWith('ipfs') ? 
+                              selectedNFT.metadataUri.replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/') : 
+                              selectedNFT.metadataUri
+                            } 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-purple-600 hover:text-purple-800"
                           >
-                            Buy Now
-                          </button>
-                        )}
+                            View Metadata
+                          </a>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  
+                </div>
+                
+                {/* Right Column: Details, Attributes, Pricing */}
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="font-semibold text-gray-800 mb-2">Description</h3>
+                    <p className="text-gray-600 text-sm leading-relaxed">{selectedNFT.description}</p>
+                  </div>
+                  
+                  <div className="border p-4 rounded-lg bg-gray-50">
+                    <h3 className="font-semibold text-gray-800 mb-3">Statistics</h3>
+                    <div className="grid grid-cols-2 gap-4 text-center">
+                      <div>
+                        <div className="font-bold text-2xl text-blue-600">{selectedNFT.likes}</div>
+                        <div className="text-xs text-gray-500 uppercase tracking-wide">Likes</div>
                       </div>
-                    )}
-                    
-                    {/* Statistics */}
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <h4 className="font-semibold text-gray-900 mb-3">Statistics</h4>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-blue-600">{selectedNFT.likes}</div>
-                          <div className="text-gray-600">Likes</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-purple-600">{selectedNFT.views}</div>
-                          <div className="text-gray-600">Views</div>
-                        </div>
+                      <div>
+                        <div className="font-bold text-2xl text-green-600">{selectedNFT.views}</div>
+                        <div className="text-xs text-gray-500 uppercase tracking-wide">Views</div>
                       </div>
                     </div>
                   </div>
+
+                  {selectedNFT.attributes && selectedNFT.attributes.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-gray-800 mb-3">Attributes</h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        {selectedNFT.attributes.map((attr, i) => (
+                          <div key={i} className="bg-gradient-to-br from-purple-50 to-blue-50 p-3 rounded-lg text-center border">
+                            <div className="text-xs text-purple-600 uppercase font-medium">{attr.trait_type}</div>
+                            <div className="font-semibold text-sm text-gray-900 mt-1">{attr.value}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <h3 className="font-semibold text-gray-800 mb-3">Ownership</h3>
+                    <div className="text-sm space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span>Owner:</span> 
+                        <span className={`font-mono px-2 py-1 rounded text-xs ${
+                          selectedNFT.owner?.toLowerCase() === address?.toLowerCase() 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {selectedNFT.owner?.toLowerCase() === address?.toLowerCase() 
+                            ? 'You' 
+                            : `${selectedNFT.owner?.slice(0,6)}...${selectedNFT.owner?.slice(-4)}`
+                          }
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span>Creator:</span> 
+                        <span className="font-mono bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                          {`${selectedNFT.creator?.slice(0,6)}...${selectedNFT.creator?.slice(-4)}`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                                     {/* Action Buttons Section */}
+                   <div className="space-y-3">
+                     {/* Like Button */}
+                     <Button
+                       variant="outline"
+                       className="w-full"
+                       onClick={() => likeNFT(selectedNFT.tokenId)}
+                     >
+                       ❤️ Like ({selectedNFT.likes})
+                     </Button>
+                     
+                     {/* Owner Actions */}
+                     {selectedNFT.owner?.toLowerCase() === address?.toLowerCase() ? (
+                       <div className="space-y-2">
+                         {!selectedNFT.isListed ? (
+                           <Button
+                             className="w-full bg-green-600 hover:bg-green-700"
+                             onClick={() => {
+                               handleListForSale(selectedNFT);
+                               setSelectedNFT(null);
+                             }}
+                           >
+                             List for Sale
+                           </Button>
+                         ) : (
+                           <div className="space-y-2">
+                             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                               <div className="text-sm text-blue-800">
+                                 <div className="font-medium">
+                                   {selectedNFT.listingType === 'AUCTION' ? 'Auction Active' : 'Listed for Sale'}
+                                 </div>
+                                 <div className="text-lg font-bold text-blue-900">
+                                   {selectedNFT.price} ETH
+                                 </div>
+                               </div>
+                             </div>
+                             <Button
+                               variant="outline"
+                               className="w-full text-red-600 hover:text-red-700"
+                               onClick={() => {
+                                 handleCancelListing(selectedNFT);
+                                 setSelectedNFT(null);
+                               }}
+                             >
+                               Cancel Listing
+                             </Button>
+                           </div>
+                         )}
+                       </div>
+                     ) : (
+                       /* Buyer Actions */
+                       selectedNFT.isListed && (
+                         <div className="border-2 border-green-200 p-4 rounded-lg bg-green-50">
+                           <div className="flex items-center justify-between mb-3">
+                             <div>
+                               <div className="text-lg font-bold text-green-800">
+                                 {selectedNFT.listingType === 'AUCTION' ? 'Current Bid' : 'Price'}
+                               </div>
+                               <div className="text-2xl font-bold text-green-900">
+                                 {selectedNFT.price} ETH
+                               </div>
+                             </div>
+                             <div className="text-right text-sm text-green-700">
+                               {selectedNFT.listingType === 'AUCTION' && (
+                                 <div>Auction Active</div>
+                               )}
+                             </div>
+                           </div>
+                           
+                           <Button 
+                             className={`w-full text-white ${
+                               selectedNFT.listingType === 'AUCTION' 
+                                 ? 'bg-purple-600 hover:bg-purple-700' 
+                                 : 'bg-green-600 hover:bg-green-700'
+                             }`}
+                             onClick={() => {
+                               if(selectedNFT.listingType === 'AUCTION') {
+                                 handlePlaceBid(selectedNFT);
+                               } else {
+                                 buyNFT(selectedNFT.listingId!, selectedNFT.price);
+                               }
+                               setSelectedNFT(null);
+                             }}
+                             disabled={isBuying || isBidding}
+                           >
+                             {selectedNFT.listingType === 'AUCTION' ? (
+                               isBidding ? (
+                                 <>
+                                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                   Placing Bid...
+                                 </>
+                               ) : (
+                                 <>
+                                   <Gavel className="h-4 w-4 mr-2" />
+                                   Place Bid
+                                 </>
+                               )
+                             ) : (
+                               isBuying ? (
+                                 <>
+                                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                   Purchasing...
+                                 </>
+                               ) : (
+                                 <>
+                                   <ShoppingCart className="h-4 w-4 mr-2" />
+                                   Buy Now for {selectedNFT.price} ETH
+                                 </>
+                               )
+                             )}
+                           </Button>
+                         </div>
+                       )
+                     )}
+                   </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
         )}
 
-        {listingData.isOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-md w-full p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">List NFT for Sale</h2>
-              
-              {listingData.nft && (
-                <div className="mb-4">
-                  <div className="flex items-center space-x-4 mb-4">
-                    <img
-                      src={listingData.nft.image}
-                      alt={listingData.nft.name}
-                      className="w-16 h-16 object-cover rounded-lg"
-                    />
-                    <div>
-                      <h3 className="font-semibold">{listingData.nft.name}</h3>
-                      <p className="text-sm text-gray-600">Token #{listingData.nft.tokenId}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Price (ETH)
-                    </label>
+        {/* Listing Modal */}
+        {listingData.isOpen && listingData.nft && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <Card className="w-full max-w-md">
+              <CardHeader>
+                <CardTitle>List "{listingData.nft.name}" for Sale</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Sale Type Toggle */}
+                <div className="flex items-center space-x-2 rounded-lg bg-gray-100 p-1">
+                  <Button
+                    onClick={() => setListingData({ ...listingData, isAuction: false })}
+                    variant={!listingData.isAuction ? 'default' : 'ghost'}
+                    className="flex-1"
+                  >
+                    Fixed Price
+                  </Button>
+                  <Button
+                    onClick={() => setListingData({ ...listingData, isAuction: true })}
+                    variant={listingData.isAuction ? 'default' : 'ghost'}
+                    className="flex-1"
+                  >
+                    Auction
+                  </Button>
+                </div>
+
+                {/* Price Input */}
+                <div>
+                  <label className="text-sm font-medium">{listingData.isAuction ? 'Starting Bid' : 'Price'} (ETH)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g., 0.1"
+                    value={listingData.price}
+                    onChange={(e) => setListingData({ ...listingData, price: e.target.value })}
+                    className="mt-1 flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                  />
+                </div>
+
+                {/* Duration Input for Auctions */}
+                {listingData.isAuction && (
+                  <div>
+                    <label className="text-sm font-medium">Auction Duration (hours)</label>
                     <input
                       type="number"
-                      step="0.001"
-                      min="0"
-                      value={listingData.price}
-                      onChange={(e) => setListingData({ ...listingData, price: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      placeholder="0.1"
+                      placeholder="e.g., 24"
+                      value={listingData.duration ? listingData.duration / 3600 : ''}
+                      onChange={(e) => setListingData({ ...listingData, duration: Number(e.target.value) * 3600 })}
+                      className="mt-1 flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                     />
                   </div>
-                  
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={() => setListingData({ nft: null, price: '', isOpen: false })}
-                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleConfirmListing}
-                      className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
-                    >
-                      List for Sale
-                    </button>
+                )}
+
+
+
+                {/* Process indicator */}
+                {(!isMarketplaceApproved && !isApprovalSuccess) && (
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <div className="text-sm text-blue-800">
+                      <div className="font-medium">First-time setup:</div>
+                      <div className="text-xs mt-1">
+                        You need to approve our marketplace to list your NFTs.<br/>
+                        This is a one-time approval for all your NFTs.
+                      </div>
+                    </div>
                   </div>
+                )}
+              </CardContent>
+              <CardFooter className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setListingData({ nft: null, price: '', isOpen: false })}>
+                  Cancel
+                </Button>
+                {(!isMarketplaceApproved && !isApprovalSuccess) ? (
+                  <Button onClick={approveMarketplace} disabled={isApproving}>
+                    {isApproving ? 'Approving Marketplace...' : 'Approve & List'}
+                  </Button>
+                ) : (
+                  <Button onClick={handleConfirmListing} disabled={isListing || !listingData.price}>
+                    {isListing ? 'Listing...' : `List for ${listingData.isAuction ? 'Auction' : 'Sale'}`}
+                  </Button>
+                )}
+              </CardFooter>
+            </Card>
+          </div>
+        )}
+
+        {/* Bid Modal */}
+        {bidData.isOpen && bidData.nft && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <Card className="w-full max-w-md">
+              <CardHeader>
+                <CardTitle>Place a Bid on "{bidData.nft.name}"</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <img src={bidData.nft.image} alt={bidData.nft.name} className="w-full aspect-square object-cover rounded-lg mb-4" />
+                  <p className="text-sm text-gray-600">Current highest bid: <span className="font-bold text-gray-900">{bidData.nft.price} ETH</span></p>
+                  <p className="text-sm text-gray-600">Your bid must be higher than the current bid.</p>
                 </div>
-              )}
-            </div>
+                <input
+                  type="number"
+                  step="0.001"
+                  placeholder="Enter your bid amount in ETH"
+                  value={bidData.amount}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBidData({ ...bidData, amount: e.target.value })}
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </CardContent>
+              <CardFooter className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setBidData({ isOpen: false, nft: null, amount: '' })}>
+                  Cancel
+                </Button>
+                <Button onClick={handleConfirmBid} disabled={isBidding}>
+                  {isBidding ? 'Placing Bid...' : 'Confirm Bid'}
+                </Button>
+              </CardFooter>
+            </Card>
           </div>
         )}
       </div>

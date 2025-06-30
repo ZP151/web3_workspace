@@ -21,8 +21,8 @@ export default function NetworkDebugger() {
     );
   }
 
-  const votingAddress = getContractAddress(chain.id, 'VotingCore');
-  const bankAddress = getContractAddress(chain.id, 'SimpleBank');
+  const votingAddress = getContractAddress(chain.id, 'Voting');
+  const bankAddress = getContractAddress(chain.id, 'Bank');
   const tokenAddress = getContractAddress(chain.id, 'TokenFactory');
 
   return (
@@ -43,14 +43,14 @@ export default function NetworkDebugger() {
           
           <div className="space-y-1 text-xs">
             <div className="flex justify-between">
-              <span>VotingCore:</span>
+              <span>Voting:</span>
               <code className="bg-white px-1 rounded">
                 {votingAddress || '未部署'}
               </code>
             </div>
             
             <div className="flex justify-between">
-              <span>SimpleBank:</span>
+              <span>Bank:</span>
               <code className="bg-white px-1 rounded">
                 {bankAddress || '未部署'}
               </code>

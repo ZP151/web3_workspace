@@ -23,6 +23,14 @@ export interface NFT {
   attributes?: NFTAttribute[];
 }
 
+export interface MarketplaceStats {
+  totalListings: bigint;
+  totalSales: bigint;
+  totalVolume: bigint;
+  totalNFTs: bigint;
+  activeListings: bigint;
+}
+
 export interface MintData {
   name: string;
   description: string;

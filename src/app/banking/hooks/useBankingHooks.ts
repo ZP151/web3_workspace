@@ -301,7 +301,7 @@ export const useDepositWithdrawFunctions = (
   };
 
     const handleClaimInterest = async () => {
-    // 在EnhancedBank合约中，利息会在任何交易时自动计算并添加到余额
+    // 在Bank合约中，利息会在任何交易时自动计算并添加到余额
     // 我们通过最小金额的存款来触发利息更新，这是最安全的方式
     if (!contractAddress) {
       toast.error('Contract not available');

@@ -1,19 +1,9 @@
-import VotingCoreABI from '../../artifacts/contracts/VotingCore.sol/VotingCore.json';
-import SimpleBankABI from '../../artifacts/contracts/SimpleBank.sol/SimpleBank.json';
+import VotingABI from '../../artifacts/contracts/Voting.sol/Voting.json';
+import BankABI from '../../artifacts/contracts/Bank.sol/Bank.json';
 import TokenFactoryABI from '../../artifacts/contracts/TokenFactory.sol/TokenFactory.json';
-import PlatformNFTABI from '../../artifacts/contracts/NFTMarketplace.sol/PlatformNFT.json';
+import PlatformNFTABI from '../../artifacts/contracts/PlatformNFT.sol/PlatformNFT.json';
 import NFTMarketplaceABI from '../../artifacts/contracts/NFTMarketplace.sol/NFTMarketplace.json';
 import DEXPlatformABI from '../../artifacts/contracts/DEXPlatform.sol/DEXPlatform.json';
-
-// 动态加载 EnhancedBank ABI，如果不存在则回退到 SimpleBank ABI
-let EnhancedBankABI: any;
-try {
-  EnhancedBankABI = require('../../artifacts/contracts/EnhancedBank.sol/EnhancedBank.json');
-  console.log('✅ 成功加载 EnhancedBank ABI');
-} catch (error) {
-  console.warn('⚠️ EnhancedBank ABI 未找到，使用 SimpleBank ABI 作为回退');
-  EnhancedBankABI = SimpleBankABI;
-}
 
 // 动态加载地址配置
 let dynamicAddresses: any = {};
@@ -91,7 +81,7 @@ function generateContractAddresses() {
   const supportedNetworks = [31338, 31337, 1337, 11155111, 80001, 1, 137, 56];
   
   // 支持的合约列表
-  const contractNames = ['VotingCore', 'SimpleBank', 'EnhancedBank', 'TokenFactory', 'PlatformNFT', 'NFTMarketplace', 'DEXPlatform'];
+  const contractNames = ['Voting', 'Bank', 'TokenFactory', 'PlatformNFT', 'NFTMarketplace', 'DEXPlatform'];
   
   // 为每个网络生成配置
   supportedNetworks.forEach(chainId => {
@@ -110,9 +100,8 @@ export const CONTRACT_ADDRESSES = generateContractAddresses();
 
 // ABI 导出
 export const ABIS = {
-  VotingCore: VotingCoreABI.abi as any,
-  SimpleBank: SimpleBankABI.abi as any,
-  EnhancedBank: EnhancedBankABI.abi as any, // 动态加载的 EnhancedBank ABI
+  Voting: VotingABI.abi as any,
+  Bank: BankABI.abi as any,
   TokenFactory: TokenFactoryABI.abi as any,
   PlatformNFT: PlatformNFTABI.abi as any,
   NFTMarketplace: NFTMarketplaceABI.abi as any,
@@ -143,25 +132,13 @@ export function getContractAddress(chainId: number, contractName: string) {
       return fallbackAddress;
     }
     
-    // 特殊处理 EnhancedBank
-    if (contractName === 'EnhancedBank' && dynamicAddresses.enhancedBank) {
-      console.log(`使用 enhancedBank 地址:`, dynamicAddresses.enhancedBank);
-      return dynamicAddresses.enhancedBank;
+    // 特殊处理 Bank
+    if (contractName === 'Bank' && dynamicAddresses.bank) {
+      console.log(`使用 bank 地址:`, dynamicAddresses.bank);
+      return dynamicAddresses.bank;
     }
     
     return null;
-  }
-  
-  // 优先使用增强版银行合约
-  if (contractName === 'SimpleBank' && addresses['EnhancedBank']) {
-    console.log('使用增强版银行合约 EnhancedBank:', addresses['EnhancedBank']);
-    return addresses['EnhancedBank'];
-  }
-  
-  // 如果请求 EnhancedBank 但未部署，回退到 SimpleBank
-  if (contractName === 'EnhancedBank' && !addresses['EnhancedBank'] && addresses['SimpleBank']) {
-    console.log('EnhancedBank 未部署，回退到 SimpleBank:', addresses['SimpleBank']);
-    return addresses['SimpleBank'];
   }
   
   const address = addresses[contractName];
@@ -173,10 +150,10 @@ export function getContractAddress(chainId: number, contractName: string) {
       return fallbackAddress;
     }
     
-    // 特殊处理 EnhancedBank
-    if (contractName === 'EnhancedBank' && dynamicAddresses.enhancedBank) {
-      console.log(`使用 enhancedBank 地址:`, dynamicAddresses.enhancedBank);
-      return dynamicAddresses.enhancedBank;
+    // 特殊处理 Bank
+    if (contractName === 'Bank' && dynamicAddresses.bank) {
+      console.log(`使用 bank 地址:`, dynamicAddresses.bank);
+      return dynamicAddresses.bank;
     }
     
     console.warn(`合约 ${contractName} 在网络 ${chainId} 上未部署`);

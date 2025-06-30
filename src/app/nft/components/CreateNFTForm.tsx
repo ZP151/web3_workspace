@@ -69,18 +69,18 @@ export function CreateNFTForm({
       } else {
         throw new Error('Image generation failed');
       }
-          } catch (error) {
-        console.error('Image generation error:', error);
-        if (error instanceof Error) {
-          if (error.message.includes('fetch')) {
-            toast.error('Cannot connect to image generation service. Please make sure it\'s running on port 5200.');
-          } else {
-            toast.error('Image generation failed: ' + error.message);
-          }
+    } catch (error) {
+      console.error('Image generation error:', error);
+      if (error instanceof Error) {
+        if (error.message.includes('fetch')) {
+          toast.error('Cannot connect to image generation service. Please make sure it\'s running on port 5200.');
         } else {
-          toast.error('Image generation failed: Unknown error');
+          toast.error('Image generation failed: ' + error.message);
         }
-      } finally {
+      } else {
+        toast.error('Image generation failed: Unknown error');
+      }
+    } finally {
       setIsGeneratingImage(false);
     }
   };
@@ -254,7 +254,7 @@ export function CreateNFTForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">NFT Image</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">NFT Image (Optional)</label>
             
             <div className="space-y-4">
 
@@ -346,34 +346,38 @@ export function CreateNFTForm({
 
               <div className="border-t border-gray-200 pt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Or enter image URL manually
+                  Or enter image URL manually (Optional)
                 </label>
                 <input
                   type="url"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="https://example.com/image.png"
+                  placeholder="https://example.com/image.png (optional)"
                   value={mintData.image}
                   onChange={(e) => onMintDataChange({ ...mintData, image: e.target.value })}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Leave empty to generate placeholder image
-                </p>
+                <div className="mt-2 text-xs text-gray-500 space-y-1">
+                  <p>• Leave empty to auto-generate a placeholder image based on NFT name</p>
+                  <p>• You can use generated images above or any external URL</p>
+                  <p>• Supported formats: PNG, JPG, GIF, SVG</p>
+                </div>
               </div>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Price (ETH)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Price (ETH) (Optional)</label>
             <input
               type="number"
               step="0.001"
               min="0"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="0.0"
+              placeholder="0.0 (leave empty if not for immediate sale)"
               value={mintData.price}
               onChange={(e) => onMintDataChange({ ...mintData, price: e.target.value })}
             />
-            <p className="text-xs text-gray-500 mt-1">Leave empty if not for sale</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Set a price if you want to list immediately after minting. Leave empty if not for sale.
+            </p>
           </div>
 
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
@@ -387,20 +391,45 @@ export function CreateNFTForm({
             </div>
           </div>
 
+          {/* Preview Section */}
+          {mintData.name && mintData.description && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-medium text-blue-900 mb-2">Preview</h4>
+              <div className="text-sm text-blue-800 space-y-1">
+                <p><strong>Name:</strong> {mintData.name}</p>
+                <p><strong>Description:</strong> {mintData.description.slice(0, 100)}{mintData.description.length > 100 ? '...' : ''}</p>
+                <p><strong>Category:</strong> {categories.find(c => c.id === mintData.category)?.name}</p>
+                <p><strong>Image:</strong> {
+                  mintData.image ? 'Custom URL provided' : 
+                  generatedImageUrl ? 'Generated image ready' : 
+                  'Will auto-generate placeholder'
+                }</p>
+                {mintData.price && <p><strong>Price:</strong> {mintData.price} ETH</p>}
+              </div>
+            </div>
+          )}
+
           <Button
             onClick={onMintNFT}
             disabled={!mintData.name.trim() || !mintData.description.trim() || isMinting}
-            className="w-full"
+            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
           >
             {isMinting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Minting...
+                Minting NFT...
               </>
             ) : (
-              'Mint NFT (0.001 ETH)'
+              <>
+                <Plus className="h-4 w-4 mr-2" />
+                Mint NFT (0.001 ETH)
+              </>
             )}
           </Button>
+          
+          <p className="text-xs text-center text-gray-500">
+            Only name and description are required. All other fields are optional.
+          </p>
         </div>
       </div>
     </div>

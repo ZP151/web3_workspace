@@ -51,7 +51,7 @@ export default function SystemStatusPage() {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
   // 合约名称列表
-  const contractNames = ['VotingCore', 'SimpleBank', 'EnhancedBank', 'TokenFactory', 'PlatformNFT', 'NFTMarketplace', 'DEXPlatform'];
+  const contractNames = ['Voting', 'Bank', 'TokenFactory', 'PlatformNFT', 'NFTMarketplace', 'DEXPlatform'];
 
   // 检查合约状态
   const checkContractStatus = async (contractName: string): Promise<ContractStatus> => {

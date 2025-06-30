@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Heart, Tag, ShoppingCart, X } from 'lucide-react';
+import { Eye, Heart, Tag, ShoppingCart, X, Gavel } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NFT } from '../types';
 
@@ -8,6 +8,7 @@ interface NFTCardProps {
   onViewDetails: (nft: NFT) => void;
   onLike: (nft: NFT) => void;
   onBuy?: (nft: NFT) => void;
+  onPlaceBid?: (nft: NFT) => void;
   onListForSale?: (nft: NFT) => void;
   onCancelListing?: (nft: NFT) => void;
   isOwner?: boolean;
@@ -18,6 +19,7 @@ export function NFTCard({
   onViewDetails, 
   onLike, 
   onBuy, 
+  onPlaceBid,
   onListForSale, 
   onCancelListing,
   isOwner = false 
@@ -71,7 +73,8 @@ export function NFTCard({
           </div>
           {nft.isListed && (
             <div className="text-right">
-              <div className="text-sm font-bold text-gray-900">{nft.price} ETH</div>
+              <div className="text-sm text-gray-500">{nft.listingType === 'AUCTION' ? 'Highest Bid' : 'Price'}</div>
+              <div className="text-lg font-bold text-gray-900">{nft.price} ETH</div>
             </div>
           )}
         </div>
@@ -130,15 +133,30 @@ export function NFTCard({
               </Button>
             )
           ) : (
-            nft.isListed && onBuy && (
-              <Button
-                size="sm"
-                className="w-full bg-green-600 hover:bg-green-700"
-                onClick={() => onBuy(nft)}
-              >
-                <ShoppingCart className="h-4 w-4 mr-1" />
-                Buy for {nft.price} ETH
-              </Button>
+            nft.isListed && (
+              nft.listingType === 'AUCTION' ? (
+                onPlaceBid && (
+                  <Button
+                    size="sm"
+                    className="w-full bg-purple-600 hover:bg-purple-700"
+                    onClick={() => onPlaceBid(nft)}
+                  >
+                    <Gavel className="h-4 w-4 mr-1" />
+                    Place Bid
+                  </Button>
+                )
+              ) : (
+                onBuy && (
+                  <Button
+                    size="sm"
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    onClick={() => onBuy(nft)}
+                  >
+                    <ShoppingCart className="h-4 w-4 mr-1" />
+                    Buy for {nft.price} ETH
+                  </Button>
+                )
+              )
             )
           )}
         </div>

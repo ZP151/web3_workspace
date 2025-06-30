@@ -17,6 +17,7 @@ interface MarketplaceTabProps {
   onViewDetails: (nft: NFT) => void;
   onLike: (nft: NFT) => void;
   onBuy: (nft: NFT) => void;
+  onPlaceBid: (nft: NFT) => void;
 }
 
 export function MarketplaceTab({
@@ -31,7 +32,8 @@ export function MarketplaceTab({
   onViewModeChange,
   onViewDetails,
   onLike,
-  onBuy
+  onBuy,
+  onPlaceBid
 }: MarketplaceTabProps) {
   const sortOptions = [
     { value: 'newest', label: 'Newest' },
@@ -130,6 +132,7 @@ export function MarketplaceTab({
               onViewDetails={onViewDetails}
               onLike={onLike}
               onBuy={onBuy}
+              onPlaceBid={onPlaceBid}
               isOwner={false}
             />
           ))}

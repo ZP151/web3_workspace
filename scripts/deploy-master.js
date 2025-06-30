@@ -2,6 +2,8 @@ const { ethers } = require("hardhat");
 const fs = require("fs");
 const path = require("path");
 
+//npx hardhat run scripts/deploy-master.js --network anvil
+
 // Import staged deployment modules
 const { deployAllContracts } = require("./deployment/01-deploy-all-contracts");
 const { deployAndMintTokens } = require("./deployment/02-deploy-tokens");

@@ -11,13 +11,13 @@ export default function ContractAddressDebugger() {
 
   useEffect(() => {
     if (chain?.id) {
-      const votingAddr = getContractAddress(chain.id, 'VotingCore');
-      const bankAddr = getContractAddress(chain.id, 'SimpleBank');
+      const votingAddr = getContractAddress(chain.id, 'Voting');
+      const bankAddr = getContractAddress(chain.id, 'Bank');
       const tokenAddr = getContractAddress(chain.id, 'TokenFactory');
       
       setAddresses({
-        VotingCore: votingAddr || '',
-        SimpleBank: bankAddr || '',
+        Voting: votingAddr || '',
+        Bank: bankAddr || '',
         TokenFactory: tokenAddr || ''
       });
       
@@ -25,8 +25,8 @@ export default function ContractAddressDebugger() {
         chainId: chain.id,
         chainName: chain.name,
         addresses: {
-          VotingCore: votingAddr,
-          SimpleBank: bankAddr,
+          Voting: votingAddr,
+          Bank: bankAddr,
           TokenFactory: tokenAddr
         }
       });
@@ -48,8 +48,8 @@ export default function ContractAddressDebugger() {
 
   const isGanache = chain.id === 1337;
   const expectedAddresses = {
-    VotingCore: '0x63720931a4Fd34b9179D856abA9E8098949e3Ff1',
-    SimpleBank: '0x1060970f9F0C4231316D016fE5cF47d9aEa2f8ce',
+    Voting: '0x63720931a4Fd34b9179D856abA9E8098949e3Ff1',
+    Bank: '0x1060970f9F0C4231316D016fE5cF47d9aEa2f8ce',
     TokenFactory: '0xe1275d4Ac5a1c1AcE9a0410474ca15Ef32B06299'
   };
 

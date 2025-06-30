@@ -6,8 +6,7 @@ const { ethers } = require("hardhat");
  * - Including Bank, Voting, DEX, NFT Marketplace, etc.
  */
 async function deployAllContracts() {
-  console.log("📄 Stage 1: Deploy All Contracts");
-  console.log("=".repeat(40));
+  console.log("🚀 Stage 1: Deploying all contracts with V2 versions...");
 
   const [deployer] = await ethers.getSigners();
   const deployerAddress = await deployer.getAddress();
@@ -16,12 +15,33 @@ async function deployAllContracts() {
   let deploymentCount = 0;
 
   try {
+    // Deploy PlatformNFTv2
+    console.log("  -> Deploying PlatformNFTv2...");
+    const PlatformNFTv2 = await ethers.getContractFactory("PlatformNFTv2");
+    const platformNFT = await PlatformNFTv2.deploy(deployerAddress);
+    await platformNFT.waitForDeployment();
+    const platformNFTAddress = await platformNFT.getAddress();
+    deployedContracts.PlatformNFT = platformNFTAddress;
+    deploymentCount++;
+    console.log(`  ✅ PlatformNFTv2 deployed to: ${platformNFTAddress}`);
+
+    // Deploy NFTMarketplaceV2
+    console.log("  -> Deploying NFTMarketplaceV2...");
+    const NFTMarketplaceV2 = await ethers.getContractFactory("NFTMarketplaceV2");
+    const nftMarketplace = await NFTMarketplaceV2.deploy(
+      platformNFTAddress,
+      deployerAddress // Fee recipient
+    );
+    await nftMarketplace.waitForDeployment();
+    const nftMarketplaceAddress = await nftMarketplace.getAddress();
+    deployedContracts.NFTMarketplace = nftMarketplaceAddress;
+    deploymentCount++;
+    console.log(`  ✅ NFTMarketplaceV2 deployed to: ${nftMarketplaceAddress}`);
+
     // 1. Deploy EnhancedBank
     console.log("\n🏦 Deploying EnhancedBank...");
     const EnhancedBank = await ethers.getContractFactory("EnhancedBank");
-    const enhancedBank = await EnhancedBank.deploy({
-      gasLimit: 6000000 // Sufficient gas limit
-    });
+    const enhancedBank = await EnhancedBank.deploy();
     await enhancedBank.waitForDeployment();
     
     const enhancedBankAddress = await enhancedBank.getAddress();
@@ -63,49 +83,14 @@ async function deployAllContracts() {
     const creationFee = await tokenFactory.creationFee();
     console.log(`   💵 Creation fee: ${ethers.formatEther(creationFee)} ETH`);
 
-    // 4. Deploy PlatformNFT
-    console.log("\n🎨 Deploying PlatformNFT...");
-    const PlatformNFT = await ethers.getContractFactory("PlatformNFT");
-    const platformNFT = await PlatformNFT.deploy();
-    await platformNFT.waitForDeployment();
-    
-    const platformNFTAddress = await platformNFT.getAddress();
-    deployedContracts.PlatformNFT = platformNFTAddress;
-    deploymentCount++;
-    console.log(`✅ PlatformNFT deployed: ${platformNFTAddress}`);
-
-    // Verify PlatformNFT
-    const nftName = await platformNFT.name();
-    const nftSymbol = await platformNFT.symbol();
-    console.log(`   📊 Name: ${nftName}, Symbol: ${nftSymbol}`);
-
-    // 5. Deploy NFTMarketplace
-    console.log("\n🛒 Deploying NFTMarketplace...");
-    const NFTMarketplace = await ethers.getContractFactory("NFTMarketplace");
-    const nftMarketplace = await NFTMarketplace.deploy(
-      platformNFTAddress, // nftContract
-      deployerAddress     // feeRecipient
-    );
-    await nftMarketplace.waitForDeployment();
-    
-    const nftMarketplaceAddress = await nftMarketplace.getAddress();
-    deployedContracts.NFTMarketplace = nftMarketplaceAddress;
-    deploymentCount++;
-    console.log(`✅ NFTMarketplace deployed: ${nftMarketplaceAddress}`);
-
-    // Verify NFTMarketplace
-    const marketplaceFeeRecipient = await nftMarketplace.feeRecipient();
-    console.log(`   📊 Fee recipient: ${marketplaceFeeRecipient}`);
-
-    // 6. Deploy DEXPlatform
+    // 4. Deploy DEXPlatform
     console.log("\n💱 Deploying DEXPlatform...");
     const DEXPlatform = await ethers.getContractFactory("DEXPlatform");
     const dexPlatform = await DEXPlatform.deploy(
-      deployerAddress, // feeRecipient
-      ethers.ZeroAddress // rewardToken (temporarily set to zero address, can be updated later)
+        deployerAddress, // feeRecipient
+        deployerAddress  // rewardToken (placeholder)
     );
     await dexPlatform.waitForDeployment();
-    
     const dexPlatformAddress = await dexPlatform.getAddress();
     deployedContracts.DEXPlatform = dexPlatformAddress;
     deploymentCount++;

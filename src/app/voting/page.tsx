@@ -27,8 +27,8 @@ export default function VotingPage() {
   const [formData, setFormData] = useState<FormData | null>(null);
 
   // Get contract info
-  const contractAddress = chain?.id ? getContractAddress(chain.id, 'VotingCore') : null;
-  const contractABI = getContractABI('VotingCore');
+  const contractAddress = chain?.id ? getContractAddress(chain.id, 'Voting') : null;
+  const contractABI = getContractABI('Voting');
   const isContractAvailable = !!contractAddress;
 
   // Get contract statistics

@@ -11,6 +11,8 @@ import { useEffect } from 'react';
 import { getNetworkAccounts } from '@/utils/web3';
 
 interface TransfersTabProps {
+  address?: string;
+  bankBalance?: string;
   onTransferInternal: (to: string, amount: string) => Promise<void>;
   onTransferExternal: (to: string, amount: string) => Promise<void>;
   onBatchTransfer: (recipients: string[], amounts: string[], internal: boolean) => Promise<void>;
@@ -35,6 +37,8 @@ const GANACHE_DEFAULT_ADDRESSES = [
 ];
 
 export default function TransfersTab({
+  address: addrProp,
+  bankBalance = '0',
   onTransferInternal,
   onTransferExternal,
   onBatchTransfer,
@@ -52,29 +56,30 @@ export default function TransfersTab({
   const [networkAddresses, setNetworkAddresses] = useState<string[]>([]);
 
   const { address } = useAccount();
-  const { data: ethBalance } = useBalance({ address: address as `0x${string}` });
+  const userAddress = addrProp || address;
+  const { data: ethBalance } = useBalance({ address: userAddress as `0x${string}` });
   const { sendTransaction } = useSendTransaction();
 
   // 动态获取网络中的其他账户
   useEffect(() => {
     const fetchNetworkAddresses = async () => {
-      if (!address) return;
+      if (!userAddress) return;
       
       try {
-        const addresses = await getNetworkAccounts(address, 9);
+        const addresses = await getNetworkAccounts(userAddress, 9);
         setNetworkAddresses(addresses);
       } catch (error) {
         console.error('获取网络地址失败:', error);
         // 使用备用地址
         const fallbackAddresses = GANACHE_DEFAULT_ADDRESSES
-          .filter(addr => addr.toLowerCase() !== address?.toLowerCase())
+          .filter(addr => addr.toLowerCase() !== userAddress?.toLowerCase())
           .slice(0, 9);
         setNetworkAddresses(fallbackAddresses);
       }
     };
 
     fetchNetworkAddresses();
-  }, [address]);
+  }, [userAddress]);
 
   const subTabs = [
     { id: 'quick', name: 'Quick Transfer', icon: Wallet, desc: 'Direct wallet transfer' },
@@ -228,7 +233,7 @@ export default function TransfersTab({
 
   const availableAddresses = networkAddresses.length > 0 ? networkAddresses : 
     GANACHE_DEFAULT_ADDRESSES.filter((addr: string) => 
-      addr.toLowerCase() !== address?.toLowerCase()
+      addr.toLowerCase() !== userAddress?.toLowerCase()
     ).slice(0, 9);
 
   return (
@@ -265,7 +270,7 @@ export default function TransfersTab({
         <div className="bg-green-50 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-green-600">Bank Balance:</span>
-            <span className="text-lg font-bold text-green-900">{/* bankBalance */} ETH</span>
+            <span className="text-lg font-bold text-green-900">{bankBalance} ETH</span>
           </div>
         </div>
       </div>

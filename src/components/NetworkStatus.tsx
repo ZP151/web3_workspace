@@ -29,8 +29,8 @@ export default function NetworkStatus() {
   const isSupported = isHardhat || isGanache;
 
   // Check contract deployment status
-  const votingDeployed = isContractDeployed(chain.id, 'VotingCore');
-  const bankDeployed = isContractDeployed(chain.id, 'SimpleBank');
+  const bankDeployed = isContractDeployed(chain.id, 'Bank');
+  const votingDeployed = isContractDeployed(chain.id, 'Voting');
   const tokenFactoryDeployed = isContractDeployed(chain.id, 'TokenFactory');
 
   const allContractsDeployed = votingDeployed && bankDeployed && tokenFactoryDeployed;
@@ -79,14 +79,14 @@ export default function NetworkStatus() {
         
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span>VotingCore:</span>
+            <span>Voting:</span>
             <div className={`flex items-center ${getStatusColor(votingDeployed)}`}>
               {getStatusIcon(votingDeployed)}
               <span className="ml-1">{votingDeployed ? 'Deployed' : 'Not Deployed'}</span>
             </div>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span>SimpleBank:</span>
+            <span>Bank:</span>
             <div className={`flex items-center ${getStatusColor(bankDeployed)}`}>
               {getStatusIcon(bankDeployed)}
               <span className="ml-1">{bankDeployed ? 'Deployed' : 'Not Deployed'}</span>
