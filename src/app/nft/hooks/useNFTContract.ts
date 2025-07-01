@@ -260,16 +260,24 @@ export function useNFTContract() {
       });
 
       const listingPromises: Promise<any>[] = [];
-      for (let i = 1; i <= Number(listingCount); i++) {
+      for (let i = 0; i < Number(listingCount); i++) {
         listingPromises.push(publicClient.readContract({
           address: marketplaceAddress as `0x${string}`,
           abi: marketplaceABI.abi,
           functionName: 'getListing',
           args: [BigInt(i)]
         }).then(listingResult => {
-          // Manually construct the object to avoid spread issues with contract results
-          const [tokenId, seller, price, listingType, status] = listingResult as any;
-          return { tokenId, seller, price, listingType, status, listingId: i };
+          // Handle Viem's object return format
+          const result = listingResult as any;
+          // Viem returns an object, not an array
+          return { 
+            tokenId: result.tokenId, 
+            seller: result.seller, 
+            price: result.price, 
+            listingType: result.listingType, 
+            status: result.status, 
+            listingId: i 
+          };
         })
         .catch(err => {
           console.warn(`Could not fetch listing #${i}, it might be invalid.`, err.shortMessage);
@@ -282,13 +290,13 @@ export function useNFTContract() {
 
       validListings.forEach((listing) => {
         // ListingStatus enum: 0: Active, 1: Sold, 2: Cancelled, 3: Ended
-        if (listing && listing.status === 0) {
+        if (listing && Number(listing.status) === 0) {
           listingsMap.set(Number(listing.tokenId), {
             listingId: listing.listingId,
             tokenId: Number(listing.tokenId),
             price: ethers.formatEther(listing.price),
             isListed: true,
-            listingType: listing.listingType === 0 ? 'FIXED_PRICE' : 'AUCTION',
+            listingType: Number(listing.listingType) === 0 ? 'FIXED_PRICE' : 'AUCTION',
             seller: listing.seller,
           });
         }

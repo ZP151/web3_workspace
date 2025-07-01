@@ -230,18 +230,21 @@ export const switchToNetwork = async (chainId: number) => {
   }
 };
 
+// Toggle verbose debug output for local network checks
+const DEBUG = false;
+
 // 本地网络连接检查
 export const checkLocalNetworkConnection = async (chainId: number): Promise<boolean> => {
   const networkConfig = NETWORK_CONFIG[chainId as keyof typeof NETWORK_CONFIG];
-  console.log(`[Debug] Checking network: ${networkConfig.name} (ChainID: ${chainId}) at ${networkConfig.rpcUrl}`);
+  if (DEBUG) console.log(`[Debug] Checking network: ${networkConfig.name} (ChainID: ${chainId}) at ${networkConfig.rpcUrl}`);
 
   if (!networkConfig || !networkConfig.rpcUrl.includes('127.0.0.1')) {
-    console.log(`[Debug] ${networkConfig.name}: Invalid config or not a local network.`);
+    if (DEBUG) console.log(`[Debug] ${networkConfig.name}: Invalid config or not a local network.`);
     return false;
   }
 
   try {
-    console.log(`[Debug] ${networkConfig.name}: Sending fetch request...`);
+    if (DEBUG) console.log(`[Debug] ${networkConfig.name}: Sending fetch request...`);
     const response = await fetch(networkConfig.rpcUrl, {
       method: 'POST',
       headers: {
@@ -256,19 +259,19 @@ export const checkLocalNetworkConnection = async (chainId: number): Promise<bool
       cache: 'no-cache', // 显式禁用缓存
     });
 
-    console.log(`[Debug] ${networkConfig.name}: Response received. Status: ${response.status}, OK: ${response.ok}`);
+    if (DEBUG) console.log(`[Debug] ${networkConfig.name}: Response received. Status: ${response.status}, OK: ${response.ok}`);
 
     if (response.ok) {
       const data = await response.json();
-      console.log(`[Debug] ${networkConfig.name}: Response data:`, data);
+      if (DEBUG) console.log(`[Debug] ${networkConfig.name}: Response data:`, data);
       const isMatch = data.result === `0x${chainId.toString(16)}`;
-      console.log(`[Debug] ${networkConfig.name}: ChainID match? ${isMatch}. (Expected: 0x${chainId.toString(16)}, Got: ${data.result})`);
+      if (DEBUG) console.log(`[Debug] ${networkConfig.name}: ChainID match? ${isMatch}. (Expected: 0x${chainId.toString(16)}, Got: ${data.result})`);
       return isMatch;
     }
-    console.log(`[Debug] ${networkConfig.name}: Response not OK.`);
+    if (DEBUG) console.log(`[Debug] ${networkConfig.name}: Response not OK.`);
     return false;
   } catch (error) {
-    console.error(`[Debug] ${networkConfig.name}: Fetch failed with error:`, error);
+    if (DEBUG) console.error(`[Debug] ${networkConfig.name}: Fetch failed with error:`, error);
     return false;
   }
 };
