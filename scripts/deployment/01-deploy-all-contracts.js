@@ -15,20 +15,20 @@ async function deployAllContracts() {
   let deploymentCount = 0;
 
   try {
-    // Deploy PlatformNFTv2
-    console.log("  -> Deploying PlatformNFTv2...");
-    const PlatformNFTv2 = await ethers.getContractFactory("PlatformNFTv2");
-    const platformNFT = await PlatformNFTv2.deploy(deployerAddress);
+    // Deploy PlatformNFT
+    console.log("  -> Deploying PlatformNFT...");
+    const PlatformNFT = await ethers.getContractFactory("PlatformNFT");
+    const platformNFT = await PlatformNFT.deploy(deployerAddress);
     await platformNFT.waitForDeployment();
     const platformNFTAddress = await platformNFT.getAddress();
     deployedContracts.PlatformNFT = platformNFTAddress;
     deploymentCount++;
-    console.log(`  ✅ PlatformNFTv2 deployed to: ${platformNFTAddress}`);
+    console.log(`  ✅ PlatformNFT deployed to: ${platformNFTAddress}`);
 
-    // Deploy NFTMarketplaceV2
-    console.log("  -> Deploying NFTMarketplaceV2...");
-    const NFTMarketplaceV2 = await ethers.getContractFactory("NFTMarketplaceV2");
-    const nftMarketplace = await NFTMarketplaceV2.deploy(
+    // Deploy NFTMarketplace
+    console.log("  -> Deploying NFTMarketplace...");
+    const NFTMarketplace = await ethers.getContractFactory("NFTMarketplace");
+    const nftMarketplace = await NFTMarketplace.deploy(
       platformNFTAddress,
       deployerAddress // Fee recipient
     );
@@ -36,36 +36,36 @@ async function deployAllContracts() {
     const nftMarketplaceAddress = await nftMarketplace.getAddress();
     deployedContracts.NFTMarketplace = nftMarketplaceAddress;
     deploymentCount++;
-    console.log(`  ✅ NFTMarketplaceV2 deployed to: ${nftMarketplaceAddress}`);
+    console.log(`  ✅ NFTMarketplace deployed to: ${nftMarketplaceAddress}`);
 
-    // 1. Deploy EnhancedBank
-    console.log("\n🏦 Deploying EnhancedBank...");
-    const EnhancedBank = await ethers.getContractFactory("EnhancedBank");
-    const enhancedBank = await EnhancedBank.deploy();
-    await enhancedBank.waitForDeployment();
+    // 1. Deploy Bank
+    console.log("\n🏦 Deploying Bank...");
+    const Bank = await ethers.getContractFactory("Bank");
+    const bank = await Bank.deploy();
+    await bank.waitForDeployment();
     
-    const enhancedBankAddress = await enhancedBank.getAddress();
-    deployedContracts.EnhancedBank = enhancedBankAddress;
+    const bankAddress = await bank.getAddress();
+    deployedContracts.Bank = bankAddress;
     deploymentCount++;
-    console.log(`✅ EnhancedBank deployed: ${enhancedBankAddress}`);
+    console.log(`✅ Bank deployed: ${bankAddress}`);
 
-    // Verify EnhancedBank features
-    const minDeposit = await enhancedBank.minimumDeposit();
+    // Verify Bank features
+    const minDeposit = await bank.minimumDeposit();
     console.log(`   💰 Minimum deposit: ${ethers.formatEther(minDeposit)} ETH`);
 
-    // 2. Deploy VotingCore
-    console.log("\n🗳️  Deploying VotingCore...");
-    const VotingCore = await ethers.getContractFactory("VotingCore");
-    const votingCore = await VotingCore.deploy();
-    await votingCore.waitForDeployment();
+    // 2. Deploy Voting
+    console.log("\n🗳️  Deploying Voting...");
+    const Voting = await ethers.getContractFactory("Voting");
+    const voting = await Voting.deploy();
+    await voting.waitForDeployment();
     
-    const votingCoreAddress = await votingCore.getAddress();
-    deployedContracts.VotingCore = votingCoreAddress;
+    const votingAddress = await voting.getAddress();
+    deployedContracts.Voting = votingAddress;
     deploymentCount++;
-    console.log(`✅ VotingCore deployed: ${votingCoreAddress}`);
+    console.log(`✅ Voting deployed: ${votingAddress}`);
 
-    // Verify VotingCore
-    const proposalCount = await votingCore.getProposalCount();
+    // Verify Voting
+    const proposalCount = await voting.getProposalCount();
     console.log(`   📊 Current proposal count: ${proposalCount.toString()}`);
 
     // 3. Deploy TokenFactory

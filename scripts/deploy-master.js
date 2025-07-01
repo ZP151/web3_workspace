@@ -1,8 +1,10 @@
+const hre = require("hardhat");
 const { ethers } = require("hardhat");
 const fs = require("fs");
 const path = require("path");
 
 //npx hardhat run scripts/deploy-master.js --network anvil
+//npx hardhat run scripts/deploy-master.js --network hardhat
 
 // Import staged deployment modules
 const { deployAllContracts } = require("./deployment/01-deploy-all-contracts");
@@ -13,15 +15,37 @@ async function main() {
   console.log("🚀 Starting Complete Deployment");
   console.log("=".repeat(60));
 
+  // Network verification
+  const hardhatNetworkName = hre.network.name;
   const [deployer] = await ethers.getSigners();
   const deployerAddress = await deployer.getAddress();
   const network = await ethers.provider.getNetwork();
   const chainId = network.chainId.toString();
 
   console.log("🔧 Deployment Configuration:");
+  console.log(`  Hardhat Network: ${hardhatNetworkName}`);
   console.log(`  Deployer Account: ${deployerAddress}`);
   console.log(`  Network ID: ${chainId}`);
   console.log(`  Network Name: ${network.name}`);
+  
+  // Network validation
+  const expectedChainIds = {
+    "anvil": "31338",
+    "hardhat": "31337", 
+    "localhost": "31337",
+    "ganache": "1337"
+  };
+  
+  const expectedChainId = expectedChainIds[hardhatNetworkName];
+  if (expectedChainId && chainId !== expectedChainId) {
+    console.error(`❌ Network mismatch!`);
+    console.error(`  Expected Chain ID for ${hardhatNetworkName}: ${expectedChainId}`);
+    console.error(`  Actual Chain ID: ${chainId}`);
+    console.error(`  💡 Make sure to use: npx hardhat run scripts/deploy-master.js --network ${hardhatNetworkName}`);
+    process.exit(1);
+  } else if (expectedChainId) {
+    console.log(`  ✅ Network validation passed: ${hardhatNetworkName} (${chainId})`);
+  }
 
   // Check account balance
   const balance = await ethers.provider.getBalance(deployerAddress);

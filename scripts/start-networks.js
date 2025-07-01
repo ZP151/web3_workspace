@@ -52,11 +52,13 @@ function printUsage() {
   console.log('\nOptions:');
   console.log('  --persistent  - Enable persistence (Anvil only)');
   console.log('  --fresh      - Start fresh (clear state)');
+  console.log('  --clean      - Same as --fresh (clear state)');
   console.log('  --port PORT  - Specify port (override default)');
   console.log('\nExamples:');
   console.log('  node scripts/start-networks.js anvil --persistent');
   console.log('  node scripts/start-networks.js hardhat --port 8548');
   console.log('  node scripts/start-networks.js anvil --fresh --port 8549');
+  console.log('  node scripts/start-networks.js anvil --clean  # 清空状态重新开始');
   console.log('\nPort Allocation:');
   console.log('  8545 - Hardhat Network');
   console.log('  8546 - Anvil Network (Persistent)');
@@ -67,7 +69,8 @@ function printUsage() {
   console.log('Solutions:');
   console.log('  1. Check address matching: node scripts/utilities/check-anvil-addresses.js');
   console.log('  2. Start fresh: node scripts/start-networks.js anvil --fresh');
-  console.log('  3. Re-deploy: npx hardhat run scripts/deploy-master.js --network anvil');
+  console.log('  3. Or use clean: node scripts/start-networks.js anvil --clean');
+  console.log('  4. Re-deploy: npx hardhat run scripts/deploy-master.js --network anvil');
 }
 
 function buildAnvilCommand(options = {}) {
@@ -221,7 +224,7 @@ function parseArgs() {
   
   const options = {
     persistent: args.includes('--persistent'),
-    fresh: args.includes('--fresh'),
+    fresh: args.includes('--fresh') || args.includes('--clean'), // 支持 --clean 作为 --fresh 的别名
     port: null
   };
   
